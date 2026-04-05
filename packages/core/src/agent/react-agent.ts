@@ -18,10 +18,18 @@ import type {
 import type { AgentConfig } from '../config/types.js';
 import type { AgentEvent, StateTransition } from './types.js';
 import { BaseAgent } from './base-agent.js';
+import { enterPlanModeTool } from '../tools/internal/enter-plan-mode.js';
+import { exitPlanModeTool } from '../tools/internal/exit-plan-mode.js';
 
 export class ReActAgent extends BaseAgent {
   constructor(config: AgentConfig) {
-    super(config);
+    if (config.allowPlanMode) {
+      // 注入 plan mode 工具到工具列表末尾
+      const tools = [...(config.tools ?? []), enterPlanModeTool, exitPlanModeTool];
+      super({ ...config, tools });
+    } else {
+      super(config);
+    }
   }
 
   /**

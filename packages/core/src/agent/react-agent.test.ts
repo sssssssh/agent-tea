@@ -386,3 +386,58 @@ describe('ReActAgent', () => {
     expect(stateChanges[1]).toMatchObject({ from: 'reacting', to: 'error' });
   });
 });
+
+describe('ReActAgent with allowPlanMode', () => {
+  it('injects plan mode tools when allowPlanMode is true', async () => {
+    const provider = mockProvider([
+      [
+        { type: 'text', text: 'Done.' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    let capturedOptions: any;
+    const origChat = provider.chat;
+    provider.chat = function(options: any) {
+      capturedOptions = options;
+      return origChat.call(this, options);
+    };
+
+    const agent = new ReActAgent({
+      provider,
+      model: 'test-model',
+      allowPlanMode: true,
+    });
+
+    await collectEvents(agent, 'Hello');
+
+    const toolNames = capturedOptions?.tools?.map((t: any) => t.name) ?? [];
+    expect(toolNames).toContain('enter_plan_mode');
+    expect(toolNames).toContain('exit_plan_mode');
+  });
+
+  it('does not inject plan mode tools by default', async () => {
+    const provider = mockProvider([
+      [
+        { type: 'text', text: 'Done.' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    let capturedOptions: any;
+    const origChat = provider.chat;
+    provider.chat = function(options: any) {
+      capturedOptions = options;
+      return origChat.call(this, options);
+    };
+
+    const agent = new ReActAgent({
+      provider,
+      model: 'test-model',
+    });
+
+    await collectEvents(agent, 'Hello');
+
+    expect(capturedOptions?.tools).toBeUndefined();
+  });
+});

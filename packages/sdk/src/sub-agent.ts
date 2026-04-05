@@ -30,7 +30,7 @@
  */
 
 import { z } from 'zod';
-import { Agent, tool, type LLMProvider, type Tool } from '@agent-tea/core';
+import { ReActAgent, tool, type LLMProvider, type Tool } from '@agent-tea/core';
 
 export interface SubAgentConfig {
   /** 工具名称（父 Agent 通过此名称调用子 Agent） */
@@ -56,7 +56,7 @@ export interface SubAgentConfig {
  */
 export function subAgent(config: SubAgentConfig): Tool {
   // 在创建时就实例化 Agent，避免每次调用都重新创建
-  const agent = new Agent({
+  const agent = new ReActAgent({
     provider: config.provider,
     model: config.model,
     tools: config.tools,
