@@ -51,7 +51,9 @@ export { ToolRegistry } from './tools/registry.js';
 export { Agent } from './agent/agent.js';
 export { BaseAgent } from './agent/base-agent.js';
 export { ReActAgent } from './agent/react-agent.js';
+export { PlanAndExecuteAgent } from './agent/plan-and-execute-agent.js';
 export { AgentStateMachine } from './agent/state-machine.js';
+export { PlanStore } from './agent/plan-store.js';
 
 export type {
   AgentEvent,
