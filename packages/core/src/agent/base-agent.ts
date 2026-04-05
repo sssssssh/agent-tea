@@ -161,11 +161,13 @@ export abstract class BaseAgent {
 
       // executeLoop 正常结束，根据状态机当前状态决定结束原因
       const state = this.stateMachine.current;
-      let reason: 'complete' | 'error' | 'abort';
+      let reason: 'complete' | 'error' | 'abort' | 'paused';
       if (state === 'aborted') {
         reason = 'abort';
       } else if (state === 'completed') {
         reason = 'complete';
+      } else if (state === 'paused') {
+        reason = 'paused';
       } else {
         reason = 'error';
       }

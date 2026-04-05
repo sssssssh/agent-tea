@@ -25,6 +25,7 @@ export type AgentState =
   | 'awaiting_approval'
   | 'executing'
   | 'step_failed'
+  | 'paused'
   | 'completed'
   | 'error'
   | 'aborted';
@@ -113,7 +114,7 @@ export interface AgentStartEvent {
 export interface AgentEndEvent {
   type: 'agent_end';
   sessionId: string;
-  reason: 'complete' | 'error' | 'abort';
+  reason: 'complete' | 'error' | 'abort' | 'paused';
   agentId?: string;
 }
 

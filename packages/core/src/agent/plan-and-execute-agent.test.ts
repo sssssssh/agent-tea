@@ -444,6 +444,126 @@ describe('PlanAndExecuteAgent', () => {
     });
   });
 
+  it('handles step failure with pause action', async () => {
+    const tmpDir = await createTmpDir();
+
+    const provider = mockProvider([
+      // Planning phase
+      [
+        { type: 'text', text: '1. First step\n2. Second step' },
+        { type: 'finish', reason: 'stop' },
+      ],
+      // Step 1: provider throws
+      [
+        { type: 'error', error: new Error('LLM API error during step 1') },
+      ],
+    ]);
+
+    class PauseAgent extends PlanAndExecuteAgent {
+      protected async onStepFailed(
+        _step: unknown,
+        _error: Error,
+      ): Promise<StepFailureAction> {
+        return 'pause';
+      }
+    }
+
+    const agent = new PauseAgent({
+      provider,
+      model: 'test-model',
+      tools: [],
+      planStoreDir: tmpDir,
+    });
+
+    const events = await collectEvents(agent, 'Do two things');
+
+    // Should emit execution_paused event
+    const pausedEvents = events.filter((e) => e.type === 'execution_paused');
+    expect(pausedEvents).toHaveLength(1);
+
+    // Should transition step_failed → paused
+    const stateChanges = events.filter((e) => e.type === 'state_change');
+    expect(stateChanges).toContainEqual(
+      expect.objectContaining({ from: 'executing', to: 'step_failed' }),
+    );
+    expect(stateChanges).toContainEqual(
+      expect.objectContaining({ from: 'step_failed', to: 'paused' }),
+    );
+
+    // Should end with reason 'paused', not 'complete' or 'error'
+    expect(events[events.length - 1]).toMatchObject({
+      type: 'agent_end',
+      reason: 'paused',
+    });
+  });
+
+  it('handles step failure with replan action', async () => {
+    const tmpDir = await createTmpDir();
+
+    const provider = mockProvider([
+      // First planning phase
+      [
+        { type: 'text', text: '1. Risky step\n2. Safe step' },
+        { type: 'finish', reason: 'stop' },
+      ],
+      // Step 1: provider throws
+      [
+        { type: 'error', error: new Error('Step 1 exploded') },
+      ],
+      // Second planning phase (replan): outputs a new plan
+      [
+        { type: 'text', text: '1. Alternative step' },
+        { type: 'finish', reason: 'stop' },
+      ],
+      // Execution of new plan step 1
+      [
+        { type: 'text', text: 'Alternative step done.' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    class ReplanAgent extends PlanAndExecuteAgent {
+      protected async onStepFailed(
+        _step: unknown,
+        _error: Error,
+      ): Promise<StepFailureAction> {
+        return 'replan';
+      }
+    }
+
+    const agent = new ReplanAgent({
+      provider,
+      model: 'test-model',
+      tools: [],
+      planStoreDir: tmpDir,
+    });
+
+    const events = await collectEvents(agent, 'Do something');
+
+    const stateChanges = events.filter((e) => e.type === 'state_change');
+
+    // Should transition: step_failed → planning (replan)
+    expect(stateChanges).toContainEqual(
+      expect.objectContaining({ from: 'step_failed', to: 'planning' }),
+    );
+
+    // Should have 2 plan_created events (original + replan)
+    const planCreatedEvents = events.filter((e) => e.type === 'plan_created');
+    expect(planCreatedEvents).toHaveLength(2);
+
+    // Second plan should have the alternative step
+    if (planCreatedEvents[1]?.type === 'plan_created') {
+      expect(planCreatedEvents[1].plan.steps).toHaveLength(1);
+      expect(planCreatedEvents[1].plan.steps[0].description).toBe('Alternative step');
+    }
+
+    // Should complete successfully after replan
+    expect(events[events.length - 1]).toMatchObject({
+      type: 'agent_end',
+      reason: 'complete',
+    });
+  });
+
   it('parses plan with numbered list format', async () => {
     const tmpDir = await createTmpDir();
 

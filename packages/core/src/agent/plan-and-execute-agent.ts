@@ -49,6 +49,7 @@ export class PlanAndExecuteAgent extends BaseAgent {
       { from: 'executing', to: 'step_failed' },
       { from: 'step_failed', to: 'executing' }, // 跳过或重试
       { from: 'step_failed', to: 'planning' }, // 重新规划
+      { from: 'step_failed', to: 'paused' }, // 暂停执行
       { from: 'step_failed', to: 'error' },
       { from: 'step_failed', to: 'aborted' },
       { from: 'planning', to: 'error' },
@@ -85,32 +86,58 @@ export class PlanAndExecuteAgent extends BaseAgent {
   // Phase 1: Planning — 只读 ReAct 子循环生成计划
   // ============================================================
 
+  /**
+   * 进入规划阶段。
+   * @param transitionToPlanning 是否需要执行状态转换到 planning（首次规划为 true，重新规划已在调用方完成转换则为 false）
+   */
   private async *planPhase(
     messages: Message[],
     sessionId: string,
     abortController: AbortController,
+    transitionToPlanning = true,
   ): AsyncGenerator<AgentEvent> {
-    // 转换到 planning 状态
-    const fromState = this.stateMachine.current;
-    this.stateMachine.transition('planning');
-    yield {
-      type: 'state_change',
-      from: fromState,
-      to: 'planning',
-      agentId: this.agentId,
-    };
+    // 首次规划需要转换状态；重新规划时调用方已完成转换
+    if (transitionToPlanning) {
+      const fromState = this.stateMachine.current;
+      this.stateMachine.transition('planning');
+      yield {
+        type: 'state_change',
+        from: fromState,
+        to: 'planning',
+        agentId: this.agentId,
+      };
+    }
 
-    // 创建只读工具的 ChatSession（onToolFilter 会过滤）
+    // 运行规划循环，获取计划文本
+    const planText = yield* this.runPlanningLoop(messages, sessionId, abortController);
+
+    // planText 为 null 表示循环已处理了终止逻辑（abort 或超时 error）
+    if (planText === null) return;
+
+    // 解析计划
+    const plan = this.parsePlan(planText);
+
+    // Phase 2: Approval
+    yield* this.approvalPhase(plan, messages, sessionId, abortController);
+  }
+
+  /**
+   * 规划循环的核心逻辑 —— 运行只读 ReAct 子循环直到 LLM 输出计划文本。
+   * 返回计划文本，如果因 abort 或超过迭代上限而终止则返回 null。
+   */
+  private async *runPlanningLoop(
+    messages: Message[],
+    sessionId: string,
+    abortController: AbortController,
+  ): AsyncGenerator<AgentEvent, string | null> {
     const chatSession = this.createChatSession();
     const maxIter = this.maxIterations;
-
-    let planText = '';
 
     for (let iteration = 0; iteration < maxIter; iteration++) {
       if (abortController.signal.aborted) {
         this.stateMachine.transition('aborted');
         yield { type: 'state_change', from: 'planning', to: 'aborted', agentId: this.agentId };
-        return;
+        return null;
       }
 
       await this.onBeforeIteration({
@@ -136,8 +163,6 @@ export class PlanAndExecuteAgent extends BaseAgent {
 
       // 没有工具调用 → LLM 输出了最终计划文本
       if (toolCalls.length === 0) {
-        planText = text;
-
         const assistantParts: ContentPart[] = [];
         if (text) assistantParts.push({ type: 'text', text });
         messages.push({ role: 'assistant', content: assistantParts });
@@ -149,7 +174,7 @@ export class PlanAndExecuteAgent extends BaseAgent {
           state: this.stateMachine.current,
         });
 
-        break;
+        return text;
       }
 
       // 有工具调用 → 执行只读工具探索，继续循环
@@ -189,24 +214,16 @@ export class PlanAndExecuteAgent extends BaseAgent {
       });
     }
 
-    // 如果没有拿到计划文本（超过迭代上限），报错
-    if (!planText) {
-      yield {
-        type: 'error',
-        message: `Planning phase exceeded maximum iterations (${maxIter})`,
-        fatal: true,
-        agentId: this.agentId,
-      };
-      this.stateMachine.transition('error');
-      yield { type: 'state_change', from: 'planning', to: 'error', agentId: this.agentId };
-      return;
-    }
-
-    // 解析计划
-    const plan = this.parsePlan(planText);
-
-    // Phase 2: Approval
-    yield* this.approvalPhase(plan, messages, sessionId, abortController);
+    // 超过迭代上限
+    yield {
+      type: 'error',
+      message: `Planning phase exceeded maximum iterations (${maxIter})`,
+      fatal: true,
+      agentId: this.agentId,
+    };
+    this.stateMachine.transition('error');
+    yield { type: 'state_change', from: 'planning', to: 'error', agentId: this.agentId };
+    return null;
   }
 
   // ============================================================
@@ -256,126 +273,13 @@ export class PlanAndExecuteAgent extends BaseAgent {
         agentId: this.agentId,
       };
 
-      // 递归回到规划阶段（状态已经是 planning，planPhase 里会再次转换，
-      // 所以这里直接调用内部的规划循环逻辑）
-      yield* this.continuePlanPhase(messages, sessionId, abortController);
+      // 递归回到规划阶段（状态已经转换为 planning，无需再次转换）
+      yield* this.planPhase(messages, sessionId, abortController, false);
       return;
     }
 
     // 审批通过，进入执行阶段
     yield* this.executePhase(plan, sessionId, abortController);
-  }
-
-  /**
-   * 规划阶段的延续 —— 状态已经是 planning，直接运行规划循环。
-   * 与 planPhase 的区别：不再做 idle → planning 的状态转换。
-   */
-  private async *continuePlanPhase(
-    messages: Message[],
-    sessionId: string,
-    abortController: AbortController,
-  ): AsyncGenerator<AgentEvent> {
-    // 创建新的只读 ChatSession
-    const chatSession = this.createChatSession();
-    const maxIter = this.maxIterations;
-
-    let planText = '';
-
-    for (let iteration = 0; iteration < maxIter; iteration++) {
-      if (abortController.signal.aborted) {
-        this.stateMachine.transition('aborted');
-        yield { type: 'state_change', from: 'planning', to: 'aborted', agentId: this.agentId };
-        return;
-      }
-
-      await this.onBeforeIteration({
-        iteration,
-        messages,
-        sessionId,
-        state: this.stateMachine.current,
-      });
-
-      const { text, toolCalls, usage } = await this.collectResponse(
-        chatSession,
-        messages,
-        abortController.signal,
-      );
-
-      if (usage) {
-        yield { type: 'usage', model: this.config.model, usage, agentId: this.agentId };
-      }
-
-      if (text) {
-        yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
-      }
-
-      if (toolCalls.length === 0) {
-        planText = text;
-
-        const assistantParts: ContentPart[] = [];
-        if (text) assistantParts.push({ type: 'text', text });
-        messages.push({ role: 'assistant', content: assistantParts });
-
-        await this.onAfterIteration({
-          iteration,
-          messages,
-          sessionId,
-          state: this.stateMachine.current,
-        });
-
-        break;
-      }
-
-      const assistantParts: ContentPart[] = [];
-      if (text) assistantParts.push({ type: 'text', text });
-      for (const tc of toolCalls) {
-        assistantParts.push({
-          type: 'tool_call',
-          toolCallId: tc.id,
-          toolName: tc.name,
-          args: tc.args,
-        });
-      }
-      messages.push({ role: 'assistant', content: assistantParts });
-
-      const toolResultsGen = this.executeToolCalls(
-        toolCalls,
-        sessionId,
-        messages as readonly Message[],
-        abortController.signal,
-      );
-
-      let genResult = await toolResultsGen.next();
-      while (!genResult.done) {
-        yield genResult.value;
-        genResult = await toolResultsGen.next();
-      }
-      const toolResults = genResult.value;
-
-      messages.push({ role: 'tool', content: toolResults });
-
-      await this.onAfterIteration({
-        iteration,
-        messages,
-        sessionId,
-        state: this.stateMachine.current,
-      });
-    }
-
-    if (!planText) {
-      yield {
-        type: 'error',
-        message: `Planning phase exceeded maximum iterations (${maxIter})`,
-        fatal: true,
-        agentId: this.agentId,
-      };
-      this.stateMachine.transition('error');
-      yield { type: 'state_change', from: 'planning', to: 'error', agentId: this.agentId };
-      return;
-    }
-
-    const plan = this.parsePlan(planText);
-    yield* this.approvalPhase(plan, messages, sessionId, abortController);
   }
 
   // ============================================================
@@ -466,15 +370,14 @@ export class PlanAndExecuteAgent extends BaseAgent {
               error: stepError,
               agentId: this.agentId,
             };
-            // step_failed → executing（恢复），然后完成
-            this.stateMachine.transition('executing');
+            // step_failed → paused，表示执行被暂停而非完成或出错
+            this.stateMachine.transition('paused');
             yield {
               type: 'state_change',
               from: 'step_failed',
-              to: 'executing',
+              to: 'paused',
               agentId: this.agentId,
             };
-            // pause 时中止整个执行
             return;
 
           case 'replan':
@@ -493,7 +396,7 @@ export class PlanAndExecuteAgent extends BaseAgent {
                 content: `The previous plan failed at step ${step.index + 1}: "${step.description}". Error: ${stepError.message}. Please create a new plan.`,
               },
             ];
-            yield* this.continuePlanPhase(replanMessages, sessionId, abortController);
+            yield* this.planPhase(replanMessages, sessionId, abortController, false);
             return;
 
           case 'abort':
