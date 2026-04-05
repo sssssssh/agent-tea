@@ -37,7 +37,66 @@ export interface StateTransition {
   guard?: () => boolean;
 }
 
-import type { UsageInfo } from '../llm/types.js';
+// ============================================================
+// Plan 相关类型
+// ============================================================
+
+export interface Plan {
+  id: string;
+  filePath: string;
+  steps: PlanStep[];
+  rawContent: string;
+  createdAt: Date;
+}
+
+export interface PlanStep {
+  index: number;
+  description: string;
+  status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
+  result?: StepResult;
+}
+
+export interface StepResult {
+  summary: string;
+  toolCallCount: number;
+}
+
+export interface PlanApproval {
+  approved: boolean;
+  feedback?: string;
+}
+
+export type StepFailureAction = 'pause' | 'skip' | 'replan' | 'abort';
+
+// ============================================================
+// 生命周期钩子辅助类型
+// ============================================================
+
+export interface IterationContext {
+  iteration: number;
+  messages: readonly Message[];
+  sessionId: string;
+  state: AgentState;
+}
+
+export interface ToolCallDecision {
+  allow: boolean;
+  modifiedArgs?: Record<string, unknown>;
+}
+
+export interface CollectedResponse {
+  text: string;
+  toolCalls: ToolCallInfo[];
+  usage?: UsageInfo;
+}
+
+export interface ToolCallInfo {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+}
+
+import type { Message, UsageInfo } from '../llm/types.js';
 
 // ============================================================
 // Agent 生命周期事件
@@ -129,6 +188,43 @@ export interface StateChangeEvent {
   agentId?: string;
 }
 
+// ============================================================
+// Plan 执行事件
+// ============================================================
+
+export interface PlanCreatedEvent {
+  type: 'plan_created';
+  plan: Plan;
+  filePath: string;
+  agentId?: string;
+}
+
+export interface StepStartEvent {
+  type: 'step_start';
+  step: PlanStep;
+  agentId?: string;
+}
+
+export interface StepCompleteEvent {
+  type: 'step_complete';
+  step: PlanStep;
+  agentId?: string;
+}
+
+export interface StepFailedEvent {
+  type: 'step_failed';
+  step: PlanStep;
+  error: unknown;
+  agentId?: string;
+}
+
+export interface ExecutionPausedEvent {
+  type: 'execution_paused';
+  step: PlanStep;
+  error: unknown;
+  agentId?: string;
+}
+
 /** 所有事件的可区分联合 */
 export type AgentEvent =
   | AgentStartEvent
@@ -138,4 +234,9 @@ export type AgentEvent =
   | ToolResponseEvent
   | UsageEvent
   | ErrorEvent
-  | StateChangeEvent;
+  | StateChangeEvent
+  | PlanCreatedEvent
+  | StepStartEvent
+  | StepCompleteEvent
+  | StepFailedEvent
+  | ExecutionPausedEvent;

@@ -49,6 +49,9 @@ export { ToolRegistry } from './tools/registry.js';
 
 // ---- Agent 核心 ----
 export { Agent } from './agent/agent.js';
+export { BaseAgent } from './agent/base-agent.js';
+export { ReActAgent } from './agent/react-agent.js';
+export { AgentStateMachine } from './agent/state-machine.js';
 
 export type {
   AgentEvent,
@@ -59,6 +62,23 @@ export type {
   ToolResponseEvent,
   UsageEvent,
   ErrorEvent,
+  StateChangeEvent,
+  PlanCreatedEvent,
+  StepStartEvent,
+  StepCompleteEvent,
+  StepFailedEvent,
+  ExecutionPausedEvent,
+  AgentState,
+  StateTransition,
+  Plan,
+  PlanStep,
+  StepResult,
+  PlanApproval,
+  StepFailureAction,
+  IterationContext,
+  ToolCallDecision,
+  CollectedResponse,
+  ToolCallInfo,
 } from './agent/types.js';
 
 // ---- 配置 ----
