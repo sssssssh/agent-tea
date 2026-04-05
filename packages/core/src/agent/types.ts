@@ -13,6 +13,30 @@
  * 架构位置：Core 层的 Agent 子模块，是框架对外的事件契约。
  */
 
+// ============================================================
+// Agent 状态机类型
+// ============================================================
+
+/** Agent 的所有可能状态 */
+export type AgentState =
+  | 'idle'
+  | 'reacting'
+  | 'planning'
+  | 'awaiting_approval'
+  | 'executing'
+  | 'step_failed'
+  | 'completed'
+  | 'error'
+  | 'aborted';
+
+/** 状态转换规则 */
+export interface StateTransition {
+  from: AgentState | AgentState[];
+  to: AgentState;
+  /** 可选的转换条件，返回 false 则阻止此转换 */
+  guard?: () => boolean;
+}
+
 import type { UsageInfo } from '../llm/types.js';
 
 // ============================================================
@@ -23,6 +47,7 @@ import type { UsageInfo } from '../llm/types.js';
 export interface AgentStartEvent {
   type: 'agent_start';
   sessionId: string;
+  agentId?: string;
 }
 
 /** Agent 运行结束，reason 区分正常完成、出错和被取消三种情况 */
@@ -30,6 +55,7 @@ export interface AgentEndEvent {
   type: 'agent_end';
   sessionId: string;
   reason: 'complete' | 'error' | 'abort';
+  agentId?: string;
 }
 
 // ============================================================
@@ -41,6 +67,7 @@ export interface MessageEvent {
   type: 'message';
   role: 'user' | 'assistant';
   content: string;
+  agentId?: string;
 }
 
 // ============================================================
@@ -56,6 +83,7 @@ export interface ToolRequestEvent {
   requestId: string;
   toolName: string;
   args: Record<string, unknown>;
+  agentId?: string;
 }
 
 /** 工具执行完毕（执行后） */
@@ -65,6 +93,7 @@ export interface ToolResponseEvent {
   toolName: string;
   content: string;
   isError?: boolean;
+  agentId?: string;
 }
 
 // ============================================================
@@ -76,6 +105,7 @@ export interface UsageEvent {
   type: 'usage';
   model: string;
   usage: UsageInfo;
+  agentId?: string;
 }
 
 /**
@@ -88,6 +118,15 @@ export interface ErrorEvent {
   message: string;
   fatal: boolean;
   error?: Error;
+  agentId?: string;
+}
+
+/** Agent 状态变更事件 */
+export interface StateChangeEvent {
+  type: 'state_change';
+  from: AgentState;
+  to: AgentState;
+  agentId?: string;
 }
 
 /** 所有事件的可区分联合 */
@@ -98,4 +137,5 @@ export type AgentEvent =
   | ToolRequestEvent
   | ToolResponseEvent
   | UsageEvent
-  | ErrorEvent;
+  | ErrorEvent
+  | StateChangeEvent;
