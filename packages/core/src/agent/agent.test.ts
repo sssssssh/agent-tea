@@ -1,0 +1,316 @@
+import { describe, it, expect } from 'vitest';
+import { z } from 'zod';
+import { Agent } from './agent.js';
+import { tool } from '../tools/builder.js';
+import type { LLMProvider, ChatSession, ChatOptions } from '../llm/provider.js';
+import type { Message, ChatStreamEvent } from '../llm/types.js';
+import type { AgentEvent } from './types.js';
+
+// --- Mock LLM Provider ---
+
+/**
+ * Create a mock provider where you specify the sequence of responses.
+ * Each response is an array of ChatStreamEvents.
+ */
+function mockProvider(
+  responses: ChatStreamEvent[][],
+): LLMProvider {
+  let callIndex = 0;
+
+  return {
+    id: 'mock',
+    chat(_options: ChatOptions): ChatSession {
+      return {
+        async *sendMessage(
+          _messages: Message[],
+          _signal?: AbortSignal,
+        ): AsyncGenerator<ChatStreamEvent> {
+          const events = responses[callIndex++];
+          if (!events) throw new Error('No more mock responses');
+          for (const event of events) {
+            yield event;
+          }
+        },
+      };
+    },
+  };
+}
+
+/** Collect all events from agent.run() */
+async function collectEvents(
+  agent: Agent,
+  input: string,
+): Promise<AgentEvent[]> {
+  const events: AgentEvent[] = [];
+  for await (const event of agent.run(input)) {
+    events.push(event);
+  }
+  return events;
+}
+
+describe('Agent', () => {
+  it('handles a simple text response (no tool calls)', async () => {
+    const provider = mockProvider([
+      [
+        { type: 'text', text: 'Hello, world!' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    const agent = new Agent({ provider, model: 'test-model' });
+    const events = await collectEvents(agent, 'Hi');
+
+    expect(events[0].type).toBe('agent_start');
+    expect(events).toContainEqual({
+      type: 'message',
+      role: 'assistant',
+      content: 'Hello, world!',
+    });
+    expect(events[events.length - 1]).toMatchObject({
+      type: 'agent_end',
+      reason: 'complete',
+    });
+  });
+
+  it('handles a single tool call cycle', async () => {
+    const greetTool = tool(
+      {
+        name: 'greet',
+        description: 'Greet someone',
+        parameters: z.object({ name: z.string() }),
+      },
+      async ({ name }) => `Hello, ${name}!`,
+    );
+
+    const provider = mockProvider([
+      // First call: LLM requests tool call
+      [
+        { type: 'tool_call', id: 'tc1', name: 'greet', args: { name: 'Alice' } },
+        { type: 'finish', reason: 'tool_calls' },
+      ],
+      // Second call: LLM responds with text after seeing tool result
+      [
+        { type: 'text', text: 'I greeted Alice for you.' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    const agent = new Agent({
+      provider,
+      model: 'test-model',
+      tools: [greetTool],
+    });
+
+    const events = await collectEvents(agent, 'Greet Alice');
+
+    // Should have tool_request and tool_response events
+    const toolRequest = events.find((e) => e.type === 'tool_request');
+    expect(toolRequest).toMatchObject({
+      type: 'tool_request',
+      toolName: 'greet',
+    });
+
+    const toolResponse = events.find((e) => e.type === 'tool_response');
+    expect(toolResponse).toMatchObject({
+      type: 'tool_response',
+      toolName: 'greet',
+      content: 'Hello, Alice!',
+      isError: undefined,
+    });
+
+    // Should have final text response
+    expect(events).toContainEqual({
+      type: 'message',
+      role: 'assistant',
+      content: 'I greeted Alice for you.',
+    });
+  });
+
+  it('handles tool validation errors gracefully', async () => {
+    const strictTool = tool(
+      {
+        name: 'strict',
+        description: 'Requires a number',
+        parameters: z.object({ count: z.number().min(1) }),
+      },
+      async ({ count }) => `Count: ${count}`,
+    );
+
+    const provider = mockProvider([
+      // LLM sends invalid args
+      [
+        { type: 'tool_call', id: 'tc1', name: 'strict', args: { count: -5 } },
+        { type: 'finish', reason: 'tool_calls' },
+      ],
+      // LLM gets error result and responds
+      [
+        { type: 'text', text: 'Sorry, invalid input.' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    const agent = new Agent({
+      provider,
+      model: 'test-model',
+      tools: [strictTool],
+    });
+
+    const events = await collectEvents(agent, 'Count -5');
+
+    const toolResponse = events.find((e) => e.type === 'tool_response');
+    expect(toolResponse).toMatchObject({
+      type: 'tool_response',
+      isError: true,
+    });
+  });
+
+  it('handles unknown tool names', async () => {
+    const provider = mockProvider([
+      [
+        { type: 'tool_call', id: 'tc1', name: 'nonexistent', args: {} },
+        { type: 'finish', reason: 'tool_calls' },
+      ],
+      [
+        { type: 'text', text: 'Tool not found.' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    const agent = new Agent({ provider, model: 'test-model' });
+    const events = await collectEvents(agent, 'Do something');
+
+    const toolResponse = events.find((e) => e.type === 'tool_response');
+    expect(toolResponse).toMatchObject({
+      type: 'tool_response',
+      toolName: 'nonexistent',
+      isError: true,
+    });
+  });
+
+  it('respects maxIterations', async () => {
+    // Provider always requests a tool call, creating an infinite loop
+    let callCount = 0;
+    const provider: LLMProvider = {
+      id: 'mock',
+      chat() {
+        return {
+          async *sendMessage() {
+            callCount++;
+            yield { type: 'tool_call' as const, id: `tc${callCount}`, name: 'echo', args: { text: 'loop' } };
+            yield { type: 'finish' as const, reason: 'tool_calls' as const };
+          },
+        };
+      },
+    };
+
+    const echoTool = tool(
+      {
+        name: 'echo',
+        description: 'Echo text',
+        parameters: z.object({ text: z.string() }),
+      },
+      async ({ text }) => text,
+    );
+
+    const agent = new Agent({
+      provider,
+      model: 'test-model',
+      tools: [echoTool],
+      maxIterations: 3,
+    });
+
+    const events = await collectEvents(agent, 'Loop forever');
+
+    const errorEvent = events.find((e) => e.type === 'error');
+    expect(errorEvent).toMatchObject({
+      type: 'error',
+      fatal: true,
+    });
+
+    expect(events[events.length - 1]).toMatchObject({
+      type: 'agent_end',
+      reason: 'error',
+    });
+  });
+
+  it('handles multiple tool calls in one turn', async () => {
+    const addTool = tool(
+      {
+        name: 'add',
+        description: 'Add two numbers',
+        parameters: z.object({ a: z.number(), b: z.number() }),
+      },
+      async ({ a, b }) => String(a + b),
+    );
+
+    const provider = mockProvider([
+      // LLM sends two tool calls at once
+      [
+        { type: 'tool_call', id: 'tc1', name: 'add', args: { a: 1, b: 2 } },
+        { type: 'tool_call', id: 'tc2', name: 'add', args: { a: 3, b: 4 } },
+        { type: 'finish', reason: 'tool_calls' },
+      ],
+      // LLM responds after receiving both results
+      [
+        { type: 'text', text: '1+2=3, 3+4=7' },
+        { type: 'finish', reason: 'stop' },
+      ],
+    ]);
+
+    const agent = new Agent({
+      provider,
+      model: 'test-model',
+      tools: [addTool],
+    });
+
+    const events = await collectEvents(agent, 'Add 1+2 and 3+4');
+
+    const toolResponses = events.filter((e) => e.type === 'tool_response');
+    expect(toolResponses).toHaveLength(2);
+    expect(toolResponses[0]).toMatchObject({ content: '3' });
+    expect(toolResponses[1]).toMatchObject({ content: '7' });
+  });
+
+  it('handles LLM errors', async () => {
+    const provider: LLMProvider = {
+      id: 'mock',
+      chat() {
+        return {
+          async *sendMessage() {
+            yield { type: 'error' as const, error: new Error('API rate limit') };
+          },
+        };
+      },
+    };
+
+    const agent = new Agent({ provider, model: 'test-model' });
+    const events = await collectEvents(agent, 'Hello');
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: 'error',
+        fatal: true,
+        message: 'API rate limit',
+      }),
+    );
+  });
+
+  it('tracks usage events', async () => {
+    const provider = mockProvider([
+      [
+        { type: 'text', text: 'Hi' },
+        { type: 'finish', reason: 'stop', usage: { inputTokens: 10, outputTokens: 5 } },
+      ],
+    ]);
+
+    const agent = new Agent({ provider, model: 'gpt-4o' });
+    const events = await collectEvents(agent, 'Hello');
+
+    const usageEvent = events.find((e) => e.type === 'usage');
+    expect(usageEvent).toMatchObject({
+      type: 'usage',
+      model: 'gpt-4o',
+      usage: { inputTokens: 10, outputTokens: 5 },
+    });
+  });
+});
