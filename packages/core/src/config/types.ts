@@ -33,4 +33,16 @@ export interface AgentConfig {
   temperature?: number;
   /** 单次 LLM 响应的最大 token 数 */
   maxTokens?: number;
+  /** Agent 标识，多 Agent 场景下用于区分来源。默认自动生成 UUID */
+  agentId?: string;
+  /** Agent 策略，默认 'react' */
+  strategy?: 'react' | 'plan-and-execute';
+  /**
+   * 是否允许 LLM 运行时切换到 Plan 模式。
+   * 仅当 strategy 为 'react'（默认）时有效 —— 自动注入 enter_plan_mode 工具。
+   * strategy 为 'plan-and-execute' 时始终从 Plan 阶段开始，无需此选项。
+   */
+  allowPlanMode?: boolean;
+  /** Plan 文件存储目录，默认 '.agent-tea/plans' */
+  planStoreDir?: string;
 }

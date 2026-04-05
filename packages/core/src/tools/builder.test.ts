@@ -76,6 +76,33 @@ describe('tool()', () => {
     expect(counter.parameters.safeParse({ count: 'x' }).success).toBe(false);
   });
 
+  it('supports tags on tool', () => {
+    const readFile = tool(
+      {
+        name: 'read_file',
+        description: 'Read a file',
+        parameters: z.object({ path: z.string() }),
+        tags: ['readonly'],
+      },
+      async ({ path }) => `content of ${path}`,
+    );
+
+    expect(readFile.tags).toEqual(['readonly']);
+  });
+
+  it('tags default to undefined', () => {
+    const greet = tool(
+      {
+        name: 'greet',
+        description: 'Greet',
+        parameters: z.object({ name: z.string() }),
+      },
+      async ({ name }) => `Hello, ${name}!`,
+    );
+
+    expect(greet.tags).toBeUndefined();
+  });
+
   it('provides context to execute function', async () => {
     const echo = tool(
       {

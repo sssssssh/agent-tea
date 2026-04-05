@@ -63,6 +63,8 @@ export interface Tool<TParams = Record<string, unknown>> {
   readonly description: string;
   /** Zod 参数 Schema，同时用于类型推导和运行时校验 */
   readonly parameters: ZodType<TParams>;
+  /** 工具标签，用于分类过滤（如 'readonly' 表示只读工具） */
+  readonly tags?: string[];
 
   /**
    * 执行工具逻辑。参数已经过 Zod 校验，可安全使用。

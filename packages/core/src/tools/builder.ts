@@ -34,6 +34,7 @@ interface ToolConfig<T extends ZodType> {
   name: string;
   description: string;
   parameters: T;
+  tags?: string[];
 }
 
 /**
@@ -49,6 +50,7 @@ export function tool<T extends ZodType>(
     name: config.name,
     description: config.description,
     parameters: config.parameters,
+    tags: config.tags,
     async execute(params, context) {
       const result = await execute(params, context);
       // 允许简单工具直接返回字符串，自动包装为 ToolResult
