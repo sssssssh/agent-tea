@@ -36,12 +36,12 @@ importers:
 
   packages/provider-anthropic:
     dependencies:
-      '@agent-tea/core':
-        specifier: workspace:*
-        version: link:../core
       '@anthropic-ai/sdk':
         specifier: ^0.52.0
         version: 0.52.0
+      '@t-agent/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       tsup:
         specifier: ^8.0.0
@@ -52,12 +52,12 @@ importers:
 
   packages/provider-gemini:
     dependencies:
-      '@agent-tea/core':
-        specifier: workspace:*
-        version: link:../core
       '@google/genai':
         specifier: ^1.0.0
         version: 1.48.0
+      '@t-agent/core':
+        specifier: workspace:*
+        version: link:../core
     devDependencies:
       tsup:
         specifier: ^8.0.0
@@ -68,7 +68,7 @@ importers:
 
   packages/provider-openai:
     dependencies:
-      '@agent-tea/core':
+      '@t-agent/core':
         specifier: workspace:*
         version: link:../core
       openai:
@@ -84,7 +84,7 @@ importers:
 
   packages/sdk:
     dependencies:
-      '@agent-tea/core':
+      '@t-agent/core':
         specifier: workspace:*
         version: link:../core
       zod:

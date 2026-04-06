@@ -123,7 +123,7 @@ interface PlanStep {
 
 ### 阶段二：审批
 
-计划通过 `PlanStore` 持久化到 `.agent-tea/plans/{sessionId}-{planId}.json`。
+计划通过 `PlanStore` 持久化到 `.t-agent/plans/{sessionId}-{planId}.json`。
 
 然后调用 `onPlanCreated(plan)` 钩子。这是一个**阻塞点** — Agent 停在这里，等你在外部代码中决定批准还是拒绝：
 

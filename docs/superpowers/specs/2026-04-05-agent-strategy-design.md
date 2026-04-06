@@ -2,7 +2,7 @@
 
 ## 概述
 
-为 agent-tea 框架引入 BaseAgent 抽象类体系，支持 ReAct 和 Plan-and-Execute 两种 Agent 策略，并预留 Multi-Agent 和 WorkflowGraph 的扩展空间。
+为 t-agent 框架引入 BaseAgent 抽象类体系，支持 ReAct 和 Plan-and-Execute 两种 Agent 策略，并预留 Multi-Agent 和 WorkflowGraph 的扩展空间。
 
 ## 目标
 
@@ -298,7 +298,7 @@ interface StepResult {
 
 ```typescript
 class PlanStore {
-  constructor(private readonly baseDir: string = '.agent-tea/plans');
+  constructor(private readonly baseDir: string = '.t-agent/plans');
 
   async save(plan: Plan, sessionId: string): Promise<string>;
   async load(filePath: string): Promise<Plan>;
@@ -393,7 +393,7 @@ packages/core/src/
 
 ## 八、兼容性
 
-- `import { Agent } from '@agent-tea/core'` 继续可用，是 `ReActAgent` 的别名
+- `import { Agent } from '@t-agent/core'` 继续可用，是 `ReActAgent` 的别名
 - 不指定 `strategy` 时默认行为与现有完全一致
 - `Tool` 接口新增的 `tags` 为可选字段，现有工具定义无需修改
 - 所有新增事件类型是 `AgentEvent` 联合类型的扩展，现有事件消费代码不受影响

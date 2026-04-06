@@ -54,7 +54,7 @@ flowchart LR
 ## 定义一个工具
 
 ```typescript
-import { tool } from '@agent-tea/core';
+import { tool } from '@t-agent/core';
 import { z } from 'zod';
 
 const searchCode = tool(

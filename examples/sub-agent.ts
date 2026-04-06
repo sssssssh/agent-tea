@@ -29,7 +29,7 @@ const lookupKB = tool(
   async ({ topic }) => {
     // Simulated knowledge base
     const kb: Record<string, string> = {
-      'agent-tea': 'Agent-Tea is a flexible, extensible AI agent framework built with TypeScript.',
+      't-agent': 'T-Agent is a flexible, extensible AI agent framework built with TypeScript.',
       typescript: 'TypeScript is a typed superset of JavaScript that compiles to plain JavaScript.',
       openai: 'OpenAI provides API access to large language models like GPT-4.',
     };
@@ -57,7 +57,7 @@ const agent = new Agent({
 });
 
 async function main() {
-  const query = process.argv[2] || '帮我了解一下 Agent-Tea 框架是什么？';
+  const query = process.argv[2] || '帮我了解一下 T-Agent 框架是什么？';
   console.log(`\n> ${query}\n`);
 
   for await (const event of agent.run(query)) {

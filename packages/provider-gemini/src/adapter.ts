@@ -1,5 +1,5 @@
 /**
- * Google Gemini 消息格式适配器：agent-tea 归一化格式 ↔ Gemini API 格式
+ * Google Gemini 消息格式适配器：t-agent 归一化格式 ↔ Gemini API 格式
  *
  * Gemini API 与 OpenAI/Anthropic 的关键差异：
  * - 消息是 Content 对象，角色只有 'user' | 'model'（没有 assistant/tool/system）
@@ -15,7 +15,7 @@ import type {
   Message,
   ToolDefinition,
   ContentPart,
-} from '@agent-tea/core';
+} from '@t-agent/core';
 import type {
   Content,
   Part,
@@ -23,7 +23,7 @@ import type {
   Tool as GeminiTool,
 } from '@google/genai';
 
-/** 将 agent-tea 归一化消息转为 Gemini Content 格式 */
+/** 将 t-agent 归一化消息转为 Gemini Content 格式 */
 export function toGeminiContents(messages: Message[]): Content[] {
   const result: Content[] = [];
 
@@ -86,7 +86,7 @@ export function toGeminiContents(messages: Message[]): Content[] {
   return result;
 }
 
-/** 将 agent-tea ToolDefinition 转为 Gemini 工具格式 */
+/** 将 t-agent ToolDefinition 转为 Gemini 工具格式 */
 export function toGeminiTools(tools: ToolDefinition[]): GeminiTool[] {
   const declarations: FunctionDeclaration[] = tools.map((tool) => ({
     name: tool.name,

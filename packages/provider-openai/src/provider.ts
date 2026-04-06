@@ -1,7 +1,7 @@
 /**
  * OpenAI LLM Provider 实现
  *
- * 将 agent-tea 的 LLMProvider 接口适配到 OpenAI 的 Chat Completions API。
+ * 将 t-agent 的 LLMProvider 接口适配到 OpenAI 的 Chat Completions API。
  * 支持通过 baseURL 接入 OpenAI 兼容服务（如 Azure OpenAI、本地模型）。
  *
  * 流式处理的复杂性主要来自 OpenAI 的增量传输机制：
@@ -18,7 +18,7 @@ import type {
   ChatOptions,
   Message,
   ChatStreamEvent,
-} from '@agent-tea/core';
+} from '@t-agent/core';
 import { toOpenAIMessages, toOpenAITools } from './adapter.js';
 
 export interface OpenAIProviderOptions {

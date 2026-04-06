@@ -30,7 +30,7 @@ interface StoredConversation {
 
 export class FileConversationStore implements ConversationStore {
   constructor(
-    private readonly baseDir: string = '.agent-tea/conversations',
+    private readonly baseDir: string = '.t-agent/conversations',
   ) {}
 
   async save(

@@ -30,7 +30,7 @@
  */
 
 import { z } from 'zod';
-import { ReActAgent, tool, type LLMProvider, type Tool } from '@agent-tea/core';
+import { ReActAgent, tool, type LLMProvider, type Tool } from '@t-agent/core';
 
 export interface SubAgentConfig {
   /** 工具名称（父 Agent 通过此名称调用子 Agent） */

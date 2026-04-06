@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { Tool } from '@agent-tea/core';
+import type { Tool } from '@t-agent/core';
 
 export interface Skill {
   /** 技能唯一名称 */

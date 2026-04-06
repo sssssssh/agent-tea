@@ -46,7 +46,7 @@ export interface AgentConfig {
    * strategy 为 'plan-and-execute' 时始终从 Plan 阶段开始，无需此选项。
    */
   allowPlanMode?: boolean;
-  /** Plan 文件存储目录，默认 '.agent-tea/plans' */
+  /** Plan 文件存储目录，默认 '.t-agent/plans' */
   planStoreDir?: string;
 
   // ---- 审批系统 ----

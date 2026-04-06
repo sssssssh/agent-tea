@@ -1,7 +1,9 @@
 {
-  "name": "@agent-tea/core",
+  "name": "@t-agent/core",
   "version": "0.1.0",
   "type": "module",
+  "files": ["dist"],
+  "publishConfig": { "access": "public" },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

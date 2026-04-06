@@ -1,7 +1,9 @@
 {
-  "name": "@agent-tea/provider-gemini",
+  "name": "@t-agent/provider-gemini",
   "version": "0.1.0",
   "type": "module",
+  "files": ["dist"],
+  "publishConfig": { "access": "public" },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -15,7 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agent-tea/core": "workspace:*",
+    "@t-agent/core": "workspace:*",
     "@google/genai": "^1.0.0"
   },
   "devDependencies": {

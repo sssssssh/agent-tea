@@ -1,5 +1,5 @@
 {
-  "name": "agent-tea",
+  "name": "t-agent",
   "private": true,
   "type": "module",
   "engines": {
@@ -12,7 +12,8 @@
     "typecheck": "pnpm -r run typecheck",
     "example": "node --env-file=.env --import tsx examples/basic-agent.ts",
     "example:subagent": "node --env-file=.env --import tsx examples/sub-agent.ts",
-    "example:approval": "node --env-file=.env --import tsx examples/approval-and-memory.ts"
+    "example:approval": "node --env-file=.env --import tsx examples/approval-and-memory.ts",
+    "publish:all": "pnpm build && pnpm -r publish --no-git-checks"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",

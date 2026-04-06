@@ -134,7 +134,7 @@ const agent = new Agent({
     maxTokens: 4000,
   },
 
-  // 会话持久化：保存到 .agent-tea/conversations/
+  // 会话持久化：保存到 .t-agent/conversations/
   conversationStore: new FileConversationStore(),
 });
 
@@ -230,7 +230,7 @@ async function main() {
     console.log(`#${t.id} [${t.status}] ${t.title} (@${t.assignee})`);
   }
 
-  console.log('\n💾 会话已保存到 .agent-tea/conversations/');
+  console.log('\n💾 会话已保存到 .t-agent/conversations/');
 }
 
 main().catch(console.error);

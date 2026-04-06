@@ -15,8 +15,8 @@ const agent = new Agent({
   tools: [...],
   approvalPolicy: { mode: 'tagged', requireApprovalTags: ['write'] },
   contextManager: { maxTokens: 8000 },
-  conversationStore: new FileConversationStore('.agent-tea/conversations'),
-  memoryStore: new FileMemoryStore('.agent-tea/memory'),
+  conversationStore: new FileConversationStore('.t-agent/conversations'),
+  memoryStore: new FileMemoryStore('.t-agent/memory'),
 });
 ```
 
@@ -252,7 +252,7 @@ interface ConversationStore {
 **FileConversationStore** 的存储结构：
 
 ```
-.agent-tea/conversations/
+.t-agent/conversations/
 ├── sess_abc123.json    # 会话 1 的完整消息历史
 ├── sess_def456.json    # 会话 2
 └── ...
@@ -300,7 +300,7 @@ interface MemoryEntry {
 **FileMemoryStore** 的存储结构：
 
 ```
-.agent-tea/memory/
+.t-agent/memory/
 ├── index.json              # 索引文件，快速查找
 └── entries/
     ├── user-preference.json

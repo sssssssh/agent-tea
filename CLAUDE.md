@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-agent-tea 是一个 TypeScript AI Agent 框架，实现 ReAct（推理 + 行动）模式。提供厂商无关的 Agent 循环，编排 LLM ↔ Tool 交互，流式优先、类型安全。
+t-agent 是一个 TypeScript AI Agent 框架，实现 ReAct（推理 + 行动）模式。提供厂商无关的 Agent 循环，编排 LLM ↔ Tool 交互，流式优先、类型安全。
 
 ## 常用命令
 
@@ -37,7 +37,7 @@ packages/
 examples/               # 使用示例
 3th-agents/             # 第三方 Agent 实现参考（codex、gemini-cli）
 docs/                   # 设计文档和实施计划
-.agent-tea/             # 运行时产物（会话、记忆、计划）— 已 gitignore
+.t-agent/             # 运行时产物（会话、记忆、计划）— 已 gitignore
 ```
 
 ### 核心概念
@@ -59,15 +59,15 @@ docs/                   # 设计文档和实施计划
 
 **内置工具**（`packages/core/src/tools/internal/`）：如 `enter_plan_mode` 和 `exit_plan_mode`，在 ReActAgent 设置 `allowPlanMode` 时动态启用计划模式切换。
 
-**PlanStore**（`packages/core/src/agent/plan-store.ts`）：基于文件的计划持久化（JSON）。保存到 `planStoreDir`（默认 `.agent-tea/plans/`），跟踪步骤状态，支持恢复和审计。
+**PlanStore**（`packages/core/src/agent/plan-store.ts`）：基于文件的计划持久化（JSON）。保存到 `planStoreDir`（默认 `.t-agent/plans/`），跟踪步骤状态，支持恢复和审计。
 
 **审批系统**（`packages/core/src/approval/`）：工具调用审批/拒绝工作流。通过 `AgentConfig` 中的 `ApprovalPolicy` 控制，三种模式：`'always'`（所有工具）、`'tagged'`（仅指定标签的工具，推荐）、`'never'`（默认）。复用现有 `Tool.tags` 标记。在 `executeToolCalls()` 中，Agent 产出 `approval_request` 事件并等待 `resolveApproval()` 调用 — 非阻塞异步模式，适用于 CLI/UI。`ApprovalDecision` 支持 `modifiedArgs` 在执行前修改参数。
 
 **上下文管理**（`packages/core/src/context/`）：Token 感知的消息裁剪。`ContextManager` 接口，`prepare(messages): Message[]` 方法。默认 `SlidingWindowContextManager` 用 `字符数/4` 估算 token，保留前 N 条保留消息 + 最新消息，中间插入截断标记。在 `collectResponse()` 中每次 LLM 调用前自动应用。通过 `AgentConfig` 中的 `contextManager: { maxTokens, strategy?, reservedMessageCount? }` 配置。
 
 **记忆/持久化**（`packages/core/src/memory/`）：两个独立存储层，均为可选：
-- `ConversationStore` — 会话级：保存/加载/列举/删除完整消息历史。`FileConversationStore` 以 JSON 存储在 `.agent-tea/conversations/`。
-- `MemoryStore` — 知识级：带标签的键值条目，用于跨会话知识。`FileMemoryStore` 存储在 `.agent-tea/memory/`，通过 index.json 支持快速标签搜索。
+- `ConversationStore` — 会话级：保存/加载/列举/删除完整消息历史。`FileConversationStore` 以 JSON 存储在 `.t-agent/conversations/`。
+- `MemoryStore` — 知识级：带标签的键值条目，用于跨会话知识。`FileMemoryStore` 存储在 `.t-agent/memory/`，通过 index.json 支持快速标签搜索。
 
 **钩子系统**：BaseAgent 暴露扩展点，无需子类化即可定制行为：
 - `onBeforeIteration` / `onAfterIteration` — 迭代生命周期

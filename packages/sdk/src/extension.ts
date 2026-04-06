@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { Tool } from '@agent-tea/core';
+import type { Tool } from '@t-agent/core';
 import type { Skill } from './skill.js';
 
 export interface Extension {
