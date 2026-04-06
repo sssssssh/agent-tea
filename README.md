@@ -22,7 +22,7 @@ Core 层    Agent 循环 / 工具系统 / 事件流     框架核心
 Provider   OpenAI / Anthropic / Gemini      LLM 适配
 ```
 
-详细架构文档见 [docs/architecture.md](docs/architecture.md)。
+详细架构文档见 [docs/](docs/README.md)（8 篇专题，从概念到实现逐层深入）。
 
 ## 快速开始
 
