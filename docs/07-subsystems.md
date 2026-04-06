@@ -1,4 +1,4 @@
-# 7. 可选子系统 — 审批、上下文管理、记忆
+# 7. 可选子系统 — 审批、上下文管理、记忆、循环检测
 
 ## 设计哲学：默认关闭，按需启用
 
@@ -187,15 +187,45 @@ flowchart LR
 4. 返回新数组（不修改原始消息）
 ```
 
+### PipelineContextManager（推荐）
+
+当需要更精细的控制时，使用管道策略。多个处理器依次加工消息数组：
+
+```
+原始 messages
+  │
+  ├─ ToolOutputTruncator    截断过长的工具输出（保留头尾）
+  ├─ SlidingWindowProcessor  滑动窗口裁剪
+  └─ MessageCompressor       消息压缩（占位，待异步支持）
+  │
+  ▼
+裁剪后的 messages
+```
+
+每个处理器实现 `ContextProcessor` 接口，只需一个 `process(messages, budget)` 方法。处理器之间互不依赖，可以自由组合。
+
 ### 配置
 
 ```typescript
+// 简单模式 — 滑动窗口
 contextManager: {
-  maxTokens: 8000,              // token 预算
-  strategy: 'sliding_window',   // 策略（当前唯一选项）
-  reservedMessageCount: 1,      // 保留开头几条消息
+  maxTokens: 8000,
+  strategy: 'sliding_window',
+  reservedMessageCount: 1,
+}
+
+// 管道模式 — 多处理器组合（推荐）
+contextManager: {
+  maxTokens: 8000,
+  strategy: 'pipeline',
+  processors: [
+    new ToolOutputTruncator({ maxLength: 2000 }),   // 先截断长工具输出
+    new SlidingWindowProcessor({ reservedMessageCount: 1 }),  // 再做滑动窗口
+  ],
 }
 ```
+
+通过 `createContextManager()` 工厂函数创建，根据 `strategy` 字段自动选择实现。
 
 ### 调用时机
 
@@ -372,7 +402,57 @@ const recallTool = tool({
 
 ---
 
-## 三个子系统的集成点
+## 循环检测
+
+### 解决什么问题？
+
+Agent 有时会陷入死循环 — 反复调用同一个工具（参数一模一样），或者 LLM 反复输出相同内容。`maxIterations` 是最后的安全阀，但循环检测能更早发现问题，给 LLM 一个自我纠正的机会。
+
+### 类比：导航的"你似乎在绕圈"
+
+开车跟着导航走，如果连续三次经过同一个路口，导航会提醒你"你似乎在绕圈，要重新规划路线吗？"。循环检测做的就是这件事。
+
+### 两种探测器
+
+**1. ToolCallTracker — 检测重复工具调用**
+
+连续 N 次调用同一个工具、传同样的参数（按参数哈希判断，参数顺序无关），判定为循环。
+
+```
+call_1: grep({ query: "error", path: "/logs" })
+call_2: grep({ query: "error", path: "/logs" })  ← 第 2 次
+call_3: grep({ query: "error", path: "/logs" })  ← 第 3 次，触发！
+```
+
+当 LLM 输出纯文本时计数器重置 — 说明 LLM 在"思考"，不算重复。
+
+**2. ContentTracker — 检测内容重复模式**
+
+将 LLM 输出分成 50 字符的块，计算哈希。如果相同的哈希以近似周期出现（间隔方差 < 平均间隔的 30%），判定为内容重复。代码块会被忽略，避免误报。
+
+### 升级策略
+
+检测到循环后不会立刻中止，而是分两步：
+
+1. **第一次检测** → 向消息中注入**警告提示**，给 LLM 一个自我纠正的机会
+2. **超过 `maxWarnings` 次** → 抛 `LoopDetectedError`，中止 Agent
+
+### 配置
+
+```typescript
+loopDetection: {
+  enabled: true,                       // 默认关闭
+  maxConsecutiveIdenticalCalls: 3,     // 连续相同调用次数阈值
+  contentRepetitionThreshold: 5,       // 内容重复模式次数阈值
+  maxWarnings: 1,                      // 警告后再犯几次就中止
+}
+```
+
+和其他子系统一样，不配置就完全不存在 — 零开销。
+
+---
+
+## 四个子系统的集成点
 
 它们在 BaseAgent 中的嵌入位置：
 
@@ -382,6 +462,9 @@ Agent.run()
 ├─ 每轮 LLM 调用前
 │   └─ contextManager.prepare(messages)     ← 上下文管理
 │
+├─ 每轮 LLM 响应后
+│   └─ loopDetector.check(response)         ← 循环检测
+│
 ├─ 每次工具执行前
 │   ├─ requiresApproval(tool, policy)?      ← 审批检查
 │   └─ yield approval_request / 等待决定
@@ -390,9 +473,9 @@ Agent.run()
     └─ conversationStore.save(sessionId, messages)  ← 持久化
 ```
 
-三者互不依赖，可以任意组合：
+四者互不依赖，可以任意组合：
 - 只要审批，不要持久化 ✓
-- 只要上下文管理，不要审批 ✓
+- 只要上下文管理 + 循环检测 ✓
 - 全部启用 ✓
 - 全部不启用 ✓
 

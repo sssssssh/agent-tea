@@ -72,6 +72,26 @@ const agent = new Agent({
 
 **Extension 的价值**：复用。你写一次 `webExtension`，可以给 10 个不同的 Agent 用。团队 A 的 Agent 装 web + code，团队 B 的 Agent 只装 code。
 
+### builtinTools — 框架自带的 Extension
+
+框架预置了一个 `builtinTools` 扩展，打包了 6 个常用工具（readFile、writeFile、listDirectory、executeShell、grep、webFetch）和配套的使用说明：
+
+```typescript
+import { Agent, builtinTools } from '@t-agent/sdk';
+
+const agent = new Agent({
+  provider,
+  model: 'gpt-4o',
+  tools: [...builtinTools.tools],
+  systemPrompt: [
+    '你是一个编程助手。',
+    builtinTools.instructions,
+  ].join('\n\n'),
+});
+```
+
+不需要自己定义文件操作工具 — 一行 `builtinTools` 就能让 Agent 读写文件、执行命令、搜索代码。详见 [工具系统 — 内置工具](./04-tool-system.md#内置工具)。
+
 ## Skill — 任务配方
 
 ### 类比：菜谱

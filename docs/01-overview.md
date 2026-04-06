@@ -180,11 +180,13 @@ graph TD
 
     subgraph 执行层
         REG[tools/registry 工具注册表]
+        BUILTIN[tools/builtin 内置工具<br/>readFile/writeFile/grep/...]
         EXEC[scheduler/executor 单工具执行]
-        SCHED[scheduler/scheduler 多工具编排]
+        SCHED[scheduler/scheduler 多工具编排<br/>并行+顺序]
         APR[approval/ 审批]
         CTX[context/ 上下文管理]
         MEM[memory/ 持久化]
+        LOOP[agent/loop-detection 循环检测]
     end
 
     subgraph Agent 层
@@ -198,19 +200,21 @@ graph TD
     LLM --> BASE
     TOOL_T --> REG
     TOOL_T --> EXEC
+    TOOL_T --> BUILTIN
     REG --> SCHED
     EXEC --> SCHED
     SCHED --> BASE
     APR --> BASE
     CTX --> BASE
     MEM --> BASE
+    LOOP --> BASE
     BASE --> REACT
     BASE --> PLAN
 ```
 
 **从下往上看**：
 1. **错误处理**和**类型定义**在最底层，不依赖任何人
-2. **工具注册表、执行器、调度器**组成执行层
+2. **工具注册表、执行器、调度器、内置工具**组成执行层，**循环检测器**也在这层
 3. **BaseAgent** 把所有模块串起来
 4. **ReActAgent / PlanAndExecuteAgent** 只需实现自己的循环逻辑
 

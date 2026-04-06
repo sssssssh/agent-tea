@@ -239,24 +239,64 @@ class Scheduler {
 }
 ```
 
-**当前策略：顺序执行。** 一个一个来，简单可靠。
+**调度策略：并行为主，标签控制顺序。**
 
-为什么不并行？因为：
-- 工具之间可能有隐式依赖
-- 顺序执行更容易调试
-- 并行的收益在大多数场景下不大
+Scheduler 将工具调用请求分成两类：
+- **无 `sequential` 标签的工具** → 放入同一组，用 `Promise.all` 并行执行
+- **有 `sequential` 标签的工具** → 独立成组，按顺序执行
 
-**但 Scheduler 和 Executor 分离的好处是**：未来想改成并行执行，只需要改 Scheduler 的实现，ToolExecutor 和 Agent 层完全不动。这就是分层的价值。
+分组逻辑是贪心的：连续出现的非 sequential 工具被打包为一组并行执行，遇到 sequential 工具就单独执行，结果通过 AsyncGenerator 逐个 yield。
+
+```
+工具调用:  [search(并行), grep(并行), writeFile(顺序), readFile(并行)]
+分组:     [search + grep](并行) → [writeFile](顺序) → [readFile](并行)
+```
+
+**为什么这样设计？**
+- 大多数只读工具（搜索、读文件）天然无依赖，并行加速明显
+- 写操作（`writeFile`、`executeShell`）可能有副作用，用 `sequential` 标签保证执行顺序
+- Scheduler 和 ToolExecutor 分离 — 调度策略可以随时调整，不影响工具执行逻辑
 
 ## 内置工具
 
-框架提供两个内置工具，用于 ReActAgent 的 Plan Mode：
+### 实用工具（6 个）
+
+框架在 `packages/core/src/tools/builtin/` 提供了 6 个开箱即用的工具，覆盖文件操作、Shell 执行、代码搜索和网页抓取：
+
+| 工具 | 名称 | 标签 | 用途 |
+|------|------|------|------|
+| **readFile** | `read_file` | `readonly` | 读取文件内容，支持行号范围（startLine/endLine），超过 2000 行自动截断 |
+| **writeFile** | `write_file` | `write`, `sequential` | 创建或覆盖文件，自动创建父目录 |
+| **listDirectory** | `list_directory` | `readonly` | 列出目录内容，显示文件大小和类型 |
+| **executeShell** | `execute_shell` | `sequential` | 执行 Shell 命令，捕获 stdout/stderr，支持超时保护 |
+| **grep** | `grep` | `readonly` | 正则搜索文件内容，自动跳过 node_modules/.git/dist 等，返回 `文件:行号: 匹配内容` |
+| **webFetch** | `web_fetch` | `readonly` | 抓取网页，HTML 转纯文本返回 |
+
+通过 SDK 的 `builtinTools` 扩展一行引入所有实用工具：
+
+```typescript
+import { Agent, builtinTools } from '@t-agent/sdk';
+
+const agent = new Agent({
+  provider,
+  model: 'gpt-4o',
+  tools: [...builtinTools.tools],
+  systemPrompt: [
+    '你是一个编程助手。',
+    builtinTools.instructions,  // 自带使用说明
+  ].join('\n\n'),
+});
+```
+
+### 内部工具（Plan Mode）
+
+另有两个内部工具，用于 ReActAgent 的 Plan Mode（`allowPlanMode: true` 时自动注入）：
 
 ```
 enter_plan_mode
 ├── tags: ['readonly', 'internal']
 ├── 参数：无
-└── 效果：通知 Agent 进入计划模式（实际通过 onBeforeToolCall 钩子拦截实现）
+└── 效果：通知 Agent 进入计划模式
 
 exit_plan_mode
 ├── tags: ['internal']
