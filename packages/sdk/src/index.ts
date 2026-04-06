@@ -43,6 +43,15 @@ export {
   PlanStore,
   tool,
   ToolRegistry,
+  // 审批
+  requiresApproval,
+  // 上下文
+  SlidingWindowContextManager,
+  createContextManager,
+  // 记忆
+  FileConversationStore,
+  FileMemoryStore,
+  // 错误
   AgentTeaError,
   ProviderError,
   ToolExecutionError,
@@ -73,6 +82,7 @@ export type {
   UsageEvent,
   ErrorEvent,
   StateChangeEvent,
+  ApprovalRequestEvent,
   PlanCreatedEvent,
   StepStartEvent,
   StepCompleteEvent,
@@ -90,6 +100,14 @@ export type {
   CollectedResponse,
   ToolCallInfo,
   AgentConfig,
+  ApprovalPolicy,
+  ApprovalDecision,
+  ContextManager,
+  ContextManagerConfig,
+  ConversationStore,
+  ConversationMetadata,
+  MemoryStore,
+  MemoryEntry,
   RetryOptions,
 } from '@agent-tea/core';
 

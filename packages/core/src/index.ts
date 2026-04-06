@@ -65,6 +65,7 @@ export type {
   UsageEvent,
   ErrorEvent,
   StateChangeEvent,
+  ApprovalRequestEvent,
   PlanCreatedEvent,
   StepStartEvent,
   StepCompleteEvent,
@@ -85,6 +86,36 @@ export type {
 
 // ---- 配置 ----
 export type { AgentConfig } from './config/types.js';
+
+// ---- 审批系统 ----
+export type {
+  ApprovalPolicy,
+  ApprovalDecision,
+} from './approval/types.js';
+
+export { requiresApproval } from './approval/policy.js';
+
+// ---- 上下文管理 ----
+export type {
+  ContextManager,
+  ContextManagerConfig,
+} from './context/types.js';
+
+export {
+  SlidingWindowContextManager,
+  createContextManager,
+} from './context/sliding-window.js';
+
+// ---- 记忆持久化 ----
+export type {
+  ConversationStore,
+  ConversationMetadata,
+  MemoryStore,
+  MemoryEntry,
+} from './memory/types.js';
+
+export { FileConversationStore } from './memory/file-conversation-store.js';
+export { FileMemoryStore } from './memory/file-memory-store.js';
 
 // ---- 错误处理 ----
 export {

@@ -53,4 +53,26 @@ export class Scheduler {
       yield await this.executor.execute(request, context);
     }
   }
+
+  /**
+   * 执行单个工具调用。
+   * 当审批系统逐个处理工具调用时使用，避免批量执行的 AsyncGenerator 复杂性。
+   */
+  async executeSingle(
+    request: ToolCallRequest,
+    context: ToolContext,
+  ): Promise<ToolCallResult> {
+    if (context.signal.aborted) {
+      return {
+        id: request.id,
+        name: request.name,
+        result: {
+          content: 'Tool execution cancelled',
+          isError: true,
+        },
+      };
+    }
+
+    return this.executor.execute(request, context);
+  }
 }

@@ -190,6 +190,39 @@ export interface StateChangeEvent {
 }
 
 // ============================================================
+// 审批事件
+// ============================================================
+
+/**
+ * 工具调用审批请求事件。
+ *
+ * Agent 遇到需要审批的工具调用时 yield 此事件并暂停执行。
+ * 消费者收到后展示给用户，用户决策后调用 agent.resolveApproval() 恢复。
+ *
+ * 使用方式：
+ * ```ts
+ * for await (const event of agent.run(input)) {
+ *   if (event.type === 'approval_request') {
+ *     const approved = await askUser(`执行 ${event.toolName}？`);
+ *     agent.resolveApproval(event.requestId, { approved });
+ *   }
+ * }
+ * ```
+ */
+export interface ApprovalRequestEvent {
+  type: 'approval_request';
+  /** 唯一请求 ID，用于关联 resolveApproval 调用 */
+  requestId: string;
+  /** 工具名称 */
+  toolName: string;
+  /** 工具参数，展示给用户审阅 */
+  args: Record<string, unknown>;
+  /** 工具描述，帮助用户理解工具用途 */
+  toolDescription: string;
+  agentId?: string;
+}
+
+// ============================================================
 // Plan 执行事件
 // ============================================================
 
@@ -236,6 +269,7 @@ export type AgentEvent =
   | UsageEvent
   | ErrorEvent
   | StateChangeEvent
+  | ApprovalRequestEvent
   | PlanCreatedEvent
   | StepStartEvent
   | StepCompleteEvent

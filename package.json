@@ -11,7 +11,8 @@
     "test:watch": "vitest",
     "typecheck": "pnpm -r run typecheck",
     "example": "node --env-file=.env --import tsx examples/basic-agent.ts",
-    "example:subagent": "node --env-file=.env --import tsx examples/sub-agent.ts"
+    "example:subagent": "node --env-file=.env --import tsx examples/sub-agent.ts",
+    "example:approval": "node --env-file=.env --import tsx examples/approval-and-memory.ts"
   },
   "devDependencies": {
     "@types/node": "^25.5.2",

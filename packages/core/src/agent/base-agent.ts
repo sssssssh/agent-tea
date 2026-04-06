@@ -38,6 +38,10 @@ import type {
   ToolCallDecision,
   ToolCallInfo,
 } from './types.js';
+import type { ApprovalDecision } from '../approval/types.js';
+import type { ContextManager } from '../context/types.js';
+import { requiresApproval } from '../approval/policy.js';
+import { createContextManager } from '../context/sliding-window.js';
 import { ToolRegistry } from '../tools/registry.js';
 import { Scheduler } from '../scheduler/scheduler.js';
 import { AgentStateMachine } from './state-machine.js';
@@ -52,6 +56,19 @@ export abstract class BaseAgent {
   protected readonly stateMachine: AgentStateMachine;
   protected readonly agentId: string;
 
+  /** 上下文管理器，在发 LLM 前裁剪消息列表 */
+  protected readonly contextManager?: ContextManager;
+
+  /**
+   * 待处理的审批请求 —— key 是 requestId，value 是 resolve 回调。
+   * 当消费者调用 resolveApproval() 时，对应的 Promise 被 resolve，
+   * executeToolCalls 中的 await 随之恢复。
+   */
+  private pendingApprovals = new Map<
+    string,
+    (decision: ApprovalDecision) => void
+  >();
+
   constructor(config: AgentConfig) {
     this.config = config;
     this.agentId = config.agentId ?? crypto.randomUUID();
@@ -64,6 +81,11 @@ export abstract class BaseAgent {
 
     this.scheduler = new Scheduler(this.registry);
     this.stateMachine = new AgentStateMachine(this.defineTransitions());
+
+    // 初始化上下文管理器
+    if (config.contextManager) {
+      this.contextManager = createContextManager(config.contextManager);
+    }
   }
 
   // ============================================================
@@ -130,6 +152,23 @@ export abstract class BaseAgent {
   // ============================================================
 
   /**
+   * 响应审批请求。
+   *
+   * 当消费者收到 'approval_request' 事件后，调用此方法提交用户决定。
+   * Agent 循环会据此恢复执行或跳过该工具调用。
+   *
+   * @param requestId - 对应 ApprovalRequestEvent.requestId
+   * @param decision  - 用户的审批决定
+   */
+  resolveApproval(requestId: string, decision: ApprovalDecision): void {
+    const resolver = this.pendingApprovals.get(requestId);
+    if (resolver) {
+      resolver(decision);
+      this.pendingApprovals.delete(requestId);
+    }
+  }
+
+  /**
    * 运行 Agent 处理用户输入。
    *
    * 负责顶层关注点：sessionId、signal 桥接、agent_start/end 事件、异常兜底。
@@ -158,6 +197,13 @@ export abstract class BaseAgent {
         : [{ role: 'user', content: input }];
 
       yield* this.executeLoop(messages, sessionId, abortController);
+
+      // 会话持久化：保存完整对话历史
+      if (this.config.conversationStore) {
+        await this.config.conversationStore.save(sessionId, messages, {
+          model: this.config.model,
+        });
+      }
 
       // executeLoop 正常结束，根据状态机当前状态决定结束原因
       const state = this.stateMachine.current;
@@ -221,6 +267,8 @@ export abstract class BaseAgent {
    *
    * 将 ChatSession 的流式 AsyncGenerator 聚合为结构化结果，
    * 这样子类循环可以整体处理一轮 LLM 响应，简化主循环逻辑。
+   *
+   * 如果配置了 ContextManager，会在发送前自动裁剪消息列表。
    */
   protected async collectResponse(
     chatSession: ChatSession,
@@ -231,7 +279,12 @@ export abstract class BaseAgent {
     const toolCalls: ToolCallInfo[] = [];
     let usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
 
-    for await (const event of chatSession.sendMessage(messages, signal)) {
+    // 上下文裁剪：发送给 LLM 的是裁剪后的消息，原始 messages 不受影响
+    const messagesToSend = this.contextManager
+      ? this.contextManager.prepare(messages)
+      : messages;
+
+    for await (const event of chatSession.sendMessage(messagesToSend, signal)) {
       switch (event.type) {
         case 'text':
           text += event.text;
@@ -270,7 +323,7 @@ export abstract class BaseAgent {
     const toolCallRequests: ToolCallRequest[] = [];
     const rejectedCalls = new Map<string, string>(); // id -> rejection reason
 
-    // 先检查所有工具调用的权限
+    // 先检查所有工具调用的权限（hook 层）
     for (const tc of toolCalls) {
       const decision = await this.onBeforeToolCall(tc.name, tc.args);
       if (decision.allow) {
@@ -314,7 +367,7 @@ export abstract class BaseAgent {
       }
     }
 
-    // 通过 Scheduler 执行被允许的工具调用
+    // 审批检查 + 执行
     if (toolCallRequests.length > 0) {
       const toolContext = {
         sessionId,
@@ -323,7 +376,83 @@ export abstract class BaseAgent {
         signal: abortSignal,
       };
 
-      for await (const result of this.scheduler.execute(toolCallRequests, toolContext)) {
+      // 逐个处理：先审批检查，通过后再执行
+      for (const request of toolCallRequests) {
+        // 审批检查：根据 ApprovalPolicy 判断是否需要用户确认
+        const tool = this.registry.get(request.name);
+        if (tool && requiresApproval(tool, this.config.approvalPolicy)) {
+          const requestId = crypto.randomUUID();
+
+          // 创建一个 Promise，消费者调用 resolveApproval() 后才会 resolve
+          const approvalPromise = new Promise<ApprovalDecision>(
+            (resolve) => {
+              this.pendingApprovals.set(requestId, resolve);
+            },
+          );
+
+          // yield 审批请求事件，Agent 循环在此暂停
+          yield {
+            type: 'approval_request',
+            requestId,
+            toolName: request.name,
+            args: request.args,
+            toolDescription: tool.description,
+            agentId: this.agentId,
+          };
+
+          // 等待用户决定（消费者在收到 approval_request 后调用 resolveApproval）
+          const decision = await approvalPromise;
+
+          if (!decision.approved) {
+            // 用户拒绝，将拒绝原因返回给 LLM
+            const reason =
+              decision.reason ?? `Tool "${request.name}" was denied by user`;
+
+            yield {
+              type: 'tool_request',
+              requestId: request.id,
+              toolName: request.name,
+              args: request.args,
+              agentId: this.agentId,
+            };
+
+            yield {
+              type: 'tool_response',
+              requestId: request.id,
+              toolName: request.name,
+              content: reason,
+              isError: true,
+              agentId: this.agentId,
+            };
+
+            toolResults.push({
+              type: 'tool_result',
+              toolCallId: request.id,
+              content: reason,
+              isError: true,
+            });
+
+            continue;
+          }
+
+          // 用户可能修改了参数
+          if (decision.modifiedArgs) {
+            request.args = decision.modifiedArgs;
+          }
+        }
+
+        // 执行工具（已通过审批或不需要审批）
+        if (abortSignal.aborted) {
+          toolResults.push({
+            type: 'tool_result',
+            toolCallId: request.id,
+            content: 'Tool execution cancelled',
+            isError: true,
+          });
+          continue;
+        }
+
+        const result = await this.scheduler.executeSingle(request, toolContext);
         const originalTc = toolCalls.find((tc) => tc.id === result.id);
 
         yield {
@@ -350,7 +479,6 @@ export abstract class BaseAgent {
           isError: result.result.isError,
         });
 
-        // 工具执行完成后调用 onAfterToolCall 钩子
         await this.onAfterToolCall(result.name, result.result);
       }
     }

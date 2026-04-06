@@ -9,6 +9,9 @@
 
 import type { LLMProvider } from '../llm/provider.js';
 import type { Tool } from '../tools/types.js';
+import type { ApprovalPolicy } from '../approval/types.js';
+import type { ContextManagerConfig } from '../context/types.js';
+import type { ConversationStore, MemoryStore } from '../memory/types.js';
 
 /**
  * 创建 Agent 的配置项。
@@ -45,4 +48,24 @@ export interface AgentConfig {
   allowPlanMode?: boolean;
   /** Plan 文件存储目录，默认 '.agent-tea/plans' */
   planStoreDir?: string;
+
+  // ---- 审批系统 ----
+
+  /**
+   * 工具调用审批策略。
+   * 不设置时全部自动通过（等同于 mode: 'never'）。
+   */
+  approvalPolicy?: ApprovalPolicy;
+
+  // ---- 上下文管理 ----
+
+  /** 上下文窗口管理配置，不设置时不做裁剪 */
+  contextManager?: ContextManagerConfig;
+
+  // ---- 记忆持久化 ----
+
+  /** 会话历史存储，不设置时不保存会话 */
+  conversationStore?: ConversationStore;
+  /** 跨会话记忆存储，不设置时无持久记忆 */
+  memoryStore?: MemoryStore;
 }

@@ -7,3 +7,5 @@ dist/
 
 # Third-party agent references
 3th-agents/
+
+.agent-tea/
