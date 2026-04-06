@@ -13,6 +13,8 @@
  */
 
 import type { Message } from '../llm/types.js';
+import { PipelineContextManager } from './pipeline.js';
+import { SlidingWindowProcessor } from './processors/sliding-window.js';
 import type { ContextManager, ContextManagerConfig } from './types.js';
 
 /**
@@ -40,6 +42,10 @@ function estimateTokens(message: Message): number {
   return Math.ceil(totalChars / 4);
 }
 
+/**
+ * @deprecated 使用 PipelineContextManager + SlidingWindowProcessor 替代。
+ * 保留此类仅为向后兼容，新代码应使用 createContextManager() 或直接使用 PipelineContextManager。
+ */
 export class SlidingWindowContextManager implements ContextManager {
   private readonly maxTokens: number;
   private readonly reservedCount: number;
@@ -115,10 +121,26 @@ export class SlidingWindowContextManager implements ContextManager {
 
 /**
  * 根据配置创建 ContextManager 实例。
+ *
+ * - strategy: 'pipeline' + processors: 使用自定义处理器管道
+ * - 默认（sliding_window）: 内部用 PipelineContextManager + SlidingWindowProcessor 实现
  */
 export function createContextManager(
   config: ContextManagerConfig,
 ): ContextManager {
-  // 目前只有滑动窗口策略，未来可扩展
-  return new SlidingWindowContextManager(config);
+  if (config.strategy === 'pipeline' && config.processors) {
+    return new PipelineContextManager(config.processors, {
+      maxTokens: config.maxTokens,
+    });
+  }
+
+  // 默认 sliding_window（向后兼容），内部统一用 Pipeline 实现
+  return new PipelineContextManager(
+    [
+      new SlidingWindowProcessor({
+        reservedMessageCount: config.reservedMessageCount,
+      }),
+    ],
+    { maxTokens: config.maxTokens },
+  );
 }

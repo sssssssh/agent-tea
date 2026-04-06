@@ -74,3 +74,11 @@ export class MaxIterationsError extends AgentTeaError {
     this.name = 'MaxIterationsError';
   }
 }
+
+/** Agent 检测到循环行为（重复工具调用或重复内容输出） */
+export class LoopDetectedError extends AgentTeaError {
+  constructor(public readonly loopType: 'tool_call' | 'content') {
+    super(`Loop detected: repeated ${loopType === 'tool_call' ? 'tool calls' : 'content output'}`);
+    this.name = 'LoopDetectedError';
+  }
+}

@@ -12,6 +12,7 @@ import type { Tool } from '../tools/types.js';
 import type { ApprovalPolicy } from '../approval/types.js';
 import type { ContextManagerConfig } from '../context/types.js';
 import type { ConversationStore, MemoryStore } from '../memory/types.js';
+import type { LoopDetectionConfig } from '../agent/loop-detection.js';
 
 /**
  * 创建 Agent 的配置项。
@@ -56,6 +57,11 @@ export interface AgentConfig {
    * 不设置时全部自动通过（等同于 mode: 'never'）。
    */
   approvalPolicy?: ApprovalPolicy;
+
+  // ---- 循环检测 ----
+
+  /** 循环检测配置，默认开启 */
+  loopDetection?: Partial<LoopDetectionConfig>;
 
   // ---- 上下文管理 ----
 

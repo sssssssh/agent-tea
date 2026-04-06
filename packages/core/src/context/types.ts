@@ -42,8 +42,9 @@ export interface ContextManagerConfig {
   /**
    * 裁剪策略：
    * - 'sliding_window': 保留最近的消息，丢弃最早的（默认）
+   * - 'pipeline': 按 processors 列表依次处理消息
    */
-  strategy?: 'sliding_window';
+  strategy?: 'sliding_window' | 'pipeline';
 
   /**
    * 始终保留的消息数（从列表头部开始计数）。
@@ -51,4 +52,31 @@ export interface ContextManagerConfig {
    * 默认为 1（保留第一条用户消息）。
    */
   reservedMessageCount?: number;
+
+  /**
+   * 当 strategy 为 'pipeline' 时使用的处理器列表。
+   * 消息会按顺序经过每个处理器，前一个的输出作为后一个的输入。
+   */
+  processors?: ContextProcessor[];
+}
+
+/**
+ * Token 预算信息，传递给每个 ContextProcessor。
+ * 包含最大 token 数和估算函数，让处理器可以做预算感知的裁剪决策。
+ */
+export interface TokenBudget {
+  maxTokens: number;
+  estimateTokens(messages: Message[]): number;
+}
+
+/**
+ * 上下文处理器接口。
+ * 每个 processor 是管道中的一个处理步骤，接收消息列表和 token 预算，返回处理后的消息。
+ * 处理器应该是非破坏性的——返回新数组，不修改输入。
+ */
+export interface ContextProcessor {
+  /** 处理器名称，用于日志和调试 */
+  name: string;
+  /** 处理消息列表，返回处理后的新数组 */
+  process(messages: Message[], budget: TokenBudget): Message[];
 }

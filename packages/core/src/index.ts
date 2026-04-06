@@ -47,6 +47,16 @@ export type {
 export { tool } from './tools/builder.js';
 export { ToolRegistry } from './tools/registry.js';
 
+// ---- 内置工具 ----
+export {
+  readFile,
+  writeFile,
+  listDirectory,
+  executeShell,
+  grep,
+  webFetch,
+} from './tools/builtin/index.js';
+
 // ---- Agent 核心 ----
 export { Agent } from './agent/agent.js';
 export { BaseAgent } from './agent/base-agent.js';
@@ -99,12 +109,19 @@ export { requiresApproval } from './approval/policy.js';
 export type {
   ContextManager,
   ContextManagerConfig,
+  ContextProcessor,
+  TokenBudget,
 } from './context/types.js';
 
 export {
   SlidingWindowContextManager,
   createContextManager,
 } from './context/sliding-window.js';
+
+export { PipelineContextManager } from './context/pipeline.js';
+export { SlidingWindowProcessor } from './context/processors/sliding-window.js';
+export { ToolOutputTruncator } from './context/processors/tool-output-truncator.js';
+export { MessageCompressor } from './context/processors/message-compressor.js';
 
 // ---- 记忆持久化 ----
 export type {
@@ -117,6 +134,10 @@ export type {
 export { FileConversationStore } from './memory/file-conversation-store.js';
 export { FileMemoryStore } from './memory/file-memory-store.js';
 
+// ---- 循环检测 ----
+export { LoopDetector, DEFAULT_LOOP_DETECTION_CONFIG } from './agent/loop-detection.js';
+export type { LoopDetectionConfig, LoopCheckResult } from './agent/loop-detection.js';
+
 // ---- 错误处理 ----
 export {
   AgentTeaError,
@@ -124,6 +145,7 @@ export {
   ToolExecutionError,
   ToolValidationError,
   MaxIterationsError,
+  LoopDetectedError,
 } from './errors/errors.js';
 
 export { retryWithBackoff } from './errors/retry.js';

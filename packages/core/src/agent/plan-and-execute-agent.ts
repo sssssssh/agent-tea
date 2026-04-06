@@ -22,6 +22,7 @@ import type {
   StepResult,
 } from './types.js';
 import { BaseAgent } from './base-agent.js';
+import { LoopDetectedError } from '../errors/errors.js';
 import { PlanStore } from './plan-store.js';
 
 /** 单步执行的最大 ReAct 迭代次数 */
@@ -159,6 +160,7 @@ export class PlanAndExecuteAgent extends BaseAgent {
 
       if (text) {
         yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
+        this.loopDetector.trackContent(text);
       }
 
       // 没有工具调用 → LLM 输出了最终计划文本
@@ -205,6 +207,22 @@ export class PlanAndExecuteAgent extends BaseAgent {
       const toolResults = genResult.value;
 
       messages.push({ role: 'tool', content: toolResults });
+
+      // 循环检测：追踪工具调用并检查是否陷入循环
+      for (const tc of toolCalls) {
+        this.loopDetector.trackToolCall(tc.name, tc.args);
+      }
+
+      const loopCheck = this.loopDetector.check();
+      if (loopCheck.looping) {
+        if (loopCheck.action === 'abort') {
+          throw new LoopDetectedError(loopCheck.type!);
+        }
+        messages.push({
+          role: 'user',
+          content: '你似乎在重复相同的操作且没有进展。请分析当前策略为什么失败，然后尝试完全不同的方法。如果任务无法完成，请直接告知用户。',
+        });
+      }
 
       await this.onAfterIteration({
         iteration,
@@ -463,6 +481,7 @@ export class PlanAndExecuteAgent extends BaseAgent {
       if (text) {
         lastText = text;
         yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
+        this.loopDetector.trackContent(text);
       }
 
       // 没有工具调用 → 步骤完成
@@ -507,6 +526,22 @@ export class PlanAndExecuteAgent extends BaseAgent {
       const toolResults = genResult.value;
 
       stepMessages.push({ role: 'tool', content: toolResults });
+
+      // 循环检测：追踪工具调用并检查是否陷入循环
+      for (const tc of toolCalls) {
+        this.loopDetector.trackToolCall(tc.name, tc.args);
+      }
+
+      const loopCheck = this.loopDetector.check();
+      if (loopCheck.looping) {
+        if (loopCheck.action === 'abort') {
+          throw new LoopDetectedError(loopCheck.type!);
+        }
+        stepMessages.push({
+          role: 'user',
+          content: '你似乎在重复相同的操作且没有进展。请分析当前策略为什么失败，然后尝试完全不同的方法。如果任务无法完成，请直接告知用户。',
+        });
+      }
     }
 
     // 超过步骤最大迭代次数

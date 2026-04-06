@@ -48,15 +48,30 @@ export {
   // 上下文
   SlidingWindowContextManager,
   createContextManager,
+  PipelineContextManager,
+  SlidingWindowProcessor,
+  ToolOutputTruncator,
+  MessageCompressor,
   // 记忆
   FileConversationStore,
   FileMemoryStore,
+  // 循环检测
+  LoopDetector,
+  DEFAULT_LOOP_DETECTION_CONFIG,
+  // 内置工具
+  readFile,
+  writeFile,
+  listDirectory,
+  executeShell,
+  grep,
+  webFetch,
   // 错误
   AgentTeaError,
   ProviderError,
   ToolExecutionError,
   ToolValidationError,
   MaxIterationsError,
+  LoopDetectedError,
   retryWithBackoff,
 } from '@t-agent/core';
 
@@ -104,11 +119,15 @@ export type {
   ApprovalDecision,
   ContextManager,
   ContextManagerConfig,
+  ContextProcessor,
+  TokenBudget,
   ConversationStore,
   ConversationMetadata,
   MemoryStore,
   MemoryEntry,
   RetryOptions,
+  LoopDetectionConfig,
+  LoopCheckResult,
 } from '@t-agent/core';
 
 // ---- SDK 独有的高级抽象 ----
@@ -120,3 +139,5 @@ export type { Skill } from './skill.js';
 
 export { subAgent } from './sub-agent.js';
 export type { SubAgentConfig } from './sub-agent.js';
+
+export { builtinTools } from './extensions/builtin-tools.js';

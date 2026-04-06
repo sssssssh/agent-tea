@@ -18,6 +18,7 @@ import type {
 import type { AgentConfig } from '../config/types.js';
 import type { AgentEvent, StateTransition } from './types.js';
 import { BaseAgent } from './base-agent.js';
+import { LoopDetectedError } from '../errors/errors.js';
 import { enterPlanModeTool } from '../tools/internal/enter-plan-mode.js';
 import { exitPlanModeTool } from '../tools/internal/exit-plan-mode.js';
 
@@ -112,6 +113,7 @@ export class ReActAgent extends BaseAgent {
 
       if (text) {
         yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
+        this.loopDetector.trackContent(text);
       }
 
       // 没有工具调用 -> LLM 认为任务已完成，退出循环
@@ -170,6 +172,23 @@ export class ReActAgent extends BaseAgent {
 
       // 将工具结果追加到消息历史，下次循环时 LLM 会看到这些结果
       messages.push({ role: 'tool', content: toolResults });
+
+      // 循环检测：追踪工具调用并检查是否陷入循环
+      for (const tc of toolCalls) {
+        this.loopDetector.trackToolCall(tc.name, tc.args);
+      }
+
+      const loopCheck = this.loopDetector.check();
+      if (loopCheck.looping) {
+        if (loopCheck.action === 'abort') {
+          throw new LoopDetectedError(loopCheck.type!);
+        }
+        // action === 'warn'：注入提示，给 LLM 一次自我纠正的机会
+        messages.push({
+          role: 'user',
+          content: '你似乎在重复相同的操作且没有进展。请分析当前策略为什么失败，然后尝试完全不同的方法。如果任务无法完成，请直接告知用户。',
+        });
+      }
 
       // 迭代后钩子
       await this.onAfterIteration({

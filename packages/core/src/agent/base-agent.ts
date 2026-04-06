@@ -40,11 +40,13 @@ import type {
 } from './types.js';
 import type { ApprovalDecision } from '../approval/types.js';
 import type { ContextManager } from '../context/types.js';
+import type { LoopDetectionConfig } from './loop-detection.js';
 import { requiresApproval } from '../approval/policy.js';
 import { createContextManager } from '../context/sliding-window.js';
 import { ToolRegistry } from '../tools/registry.js';
 import { Scheduler } from '../scheduler/scheduler.js';
 import { AgentStateMachine } from './state-machine.js';
+import { LoopDetector, DEFAULT_LOOP_DETECTION_CONFIG } from './loop-detection.js';
 
 /** 默认最大迭代次数，防止 Agent 陷入无限循环 */
 const DEFAULT_MAX_ITERATIONS = 20;
@@ -58,6 +60,9 @@ export abstract class BaseAgent {
 
   /** 上下文管理器，在发 LLM 前裁剪消息列表 */
   protected readonly contextManager?: ContextManager;
+
+  /** 循环检测器，检测重复工具调用和重复内容输出 */
+  protected readonly loopDetector: LoopDetector;
 
   /**
    * 待处理的审批请求 —— key 是 requestId，value 是 resolve 回调。
@@ -86,6 +91,13 @@ export abstract class BaseAgent {
     if (config.contextManager) {
       this.contextManager = createContextManager(config.contextManager);
     }
+
+    // 初始化循环检测器
+    const loopConfig: LoopDetectionConfig = {
+      ...DEFAULT_LOOP_DETECTION_CONFIG,
+      ...config.loopDetection,
+    };
+    this.loopDetector = new LoopDetector(loopConfig);
   }
 
   // ============================================================
