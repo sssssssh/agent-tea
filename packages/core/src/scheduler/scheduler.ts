@@ -44,6 +44,7 @@ export class Scheduler {
   async *execute(
     requests: ToolCallRequest[],
     context: ToolContext,
+    globalTimeout?: number,
   ): AsyncGenerator<ToolCallResult> {
     const groups = this.groupRequests(requests);
 
@@ -59,7 +60,7 @@ export class Scheduler {
       if (group.parallel && group.requests.length > 1) {
         // 并行执行：无 sequential 标签的连续工具可安全并发
         const results = await Promise.all(
-          group.requests.map((req) => this.executor.execute(req, context)),
+          group.requests.map((req) => this.executor.execute(req, context, globalTimeout)),
         );
         for (const result of results) yield result;
       } else {
@@ -69,7 +70,7 @@ export class Scheduler {
             yield this.createAbortedResult(req);
             continue;
           }
-          yield await this.executor.execute(req, context);
+          yield await this.executor.execute(req, context, globalTimeout);
         }
       }
     }
@@ -82,12 +83,13 @@ export class Scheduler {
   async executeSingle(
     request: ToolCallRequest,
     context: ToolContext,
+    globalTimeout?: number,
   ): Promise<ToolCallResult> {
     if (context.signal.aborted) {
       return this.createAbortedResult(request);
     }
 
-    return this.executor.execute(request, context);
+    return this.executor.execute(request, context, globalTimeout);
   }
 
   /**

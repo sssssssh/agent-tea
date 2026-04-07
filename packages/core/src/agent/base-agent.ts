@@ -47,9 +47,31 @@ import { ToolRegistry } from '../tools/registry.js';
 import { Scheduler } from '../scheduler/scheduler.js';
 import { AgentStateMachine } from './state-machine.js';
 import { LoopDetector, DEFAULT_LOOP_DETECTION_CONFIG } from './loop-detection.js';
+import { TimeoutError } from '../errors/errors.js';
+import { retryWithBackoff } from '../errors/retry.js';
+import { withStreamTimeout, type StreamTimeoutConfig } from '../utils/stream-timeout.js';
 
 /** 默认最大迭代次数，防止 Agent 陷入无限循环 */
 const DEFAULT_MAX_ITERATIONS = 20;
+
+/** LLM 连接超时默认值（毫秒）：等待首个事件 */
+const DEFAULT_LLM_CONNECTION_TIMEOUT = 60_000;
+/** LLM 流停滞超时默认值（毫秒）：两个事件之间 */
+const DEFAULT_LLM_STREAM_STALL_TIMEOUT = 30_000;
+
+/** 连接超时重试配置 */
+const CONNECTION_RETRY_OPTIONS = {
+  maxAttempts: 3,
+  initialDelayMs: 5000,
+  maxDelayMs: 30000,
+};
+
+/** 流中超时重试配置 */
+const STREAM_STALL_RETRY_OPTIONS = {
+  maxAttempts: 2,
+  initialDelayMs: 1000,
+  maxDelayMs: 5000,
+};
 
 export abstract class BaseAgent {
   protected readonly config: AgentConfig;
@@ -287,32 +309,57 @@ export abstract class BaseAgent {
     messages: Message[],
     signal: AbortSignal,
   ): Promise<CollectedResponse> {
-    let text = '';
-    const toolCalls: ToolCallInfo[] = [];
-    let usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
-
     // 上下文裁剪：发送给 LLM 的是裁剪后的消息，原始 messages 不受影响
     const messagesToSend = this.contextManager
       ? this.contextManager.prepare(messages)
       : messages;
 
-    for await (const event of chatSession.sendMessage(messagesToSend, signal)) {
-      switch (event.type) {
-        case 'text':
-          text += event.text;
-          break;
-        case 'tool_call':
-          toolCalls.push({ id: event.id, name: event.name, args: event.args });
-          break;
-        case 'finish':
-          usage = event.usage;
-          break;
-        case 'error':
-          throw event.error;
-      }
-    }
+    const streamTimeoutConfig: StreamTimeoutConfig = {
+      connectionMs: this.config.llmTimeout?.connectionMs ?? DEFAULT_LLM_CONNECTION_TIMEOUT,
+      streamStallMs: this.config.llmTimeout?.streamStallMs ?? DEFAULT_LLM_STREAM_STALL_TIMEOUT,
+    };
 
-    return { text, toolCalls, usage };
+    // 根据超时 phase 选择不同的重试策略
+    const retryOptions = {
+      ...CONNECTION_RETRY_OPTIONS,
+      signal,
+      isRetryable: (error: unknown) => error instanceof TimeoutError,
+      onRetry: (_attempt: number, error: unknown, _delayMs: number) => {
+        // 流中超时用更快的重试策略
+        if (error instanceof TimeoutError && error.phase === 'llm_stream') {
+          retryOptions.maxAttempts = STREAM_STALL_RETRY_OPTIONS.maxAttempts;
+          retryOptions.initialDelayMs = STREAM_STALL_RETRY_OPTIONS.initialDelayMs;
+          retryOptions.maxDelayMs = STREAM_STALL_RETRY_OPTIONS.maxDelayMs;
+        }
+      },
+    };
+
+    return retryWithBackoff(async () => {
+      let text = '';
+      const toolCalls: ToolCallInfo[] = [];
+      let usage: { inputTokens?: number; outputTokens?: number; totalTokens?: number } | undefined;
+
+      const rawStream = chatSession.sendMessage(messagesToSend, signal);
+      const stream = withStreamTimeout(rawStream, streamTimeoutConfig);
+
+      for await (const event of stream) {
+        switch (event.type) {
+          case 'text':
+            text += event.text;
+            break;
+          case 'tool_call':
+            toolCalls.push({ id: event.id, name: event.name, args: event.args });
+            break;
+          case 'finish':
+            usage = event.usage;
+            break;
+          case 'error':
+            throw event.error;
+        }
+      }
+
+      return { text, toolCalls, usage };
+    }, retryOptions);
   }
 
   /**
@@ -464,7 +511,11 @@ export abstract class BaseAgent {
           continue;
         }
 
-        const result = await this.scheduler.executeSingle(request, toolContext);
+        const result = await this.scheduler.executeSingle(
+          request,
+          toolContext,
+          this.config.toolTimeout,
+        );
         const originalTc = toolCalls.find((tc) => tc.id === result.id);
 
         yield {
