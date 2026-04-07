@@ -17,16 +17,18 @@ TypeScript AI Agent 框架，实现 ReAct（推理 + 行动）模式。厂商无
 - **记忆持久化** — 会话级对话存储 + 知识级跨会话记忆
 - **错误恢复** — 工具永不抛异常 + 指数退避重试 + 结构化错误层级
 - **多 Agent 协作** — SubAgent 将 Agent 包装为 Tool，实现层级化委派
+- **终端 UI** — 基于 Ink 的 TUI 框架，开箱即用的 Agent 交互界面，组件可替换、布局可定制
 
 ## 架构
 
 ```
-SDK 层     Extension / Skill / SubAgent    开发者 API
+TUI 层     AgentTUI / Components / Hooks    终端交互
+SDK 层     Extension / Skill / SubAgent     开发者 API
 Core 层    Agent 循环 / 工具系统 / 事件流     框架核心
 Provider   OpenAI / Anthropic / Gemini      LLM 适配
 ```
 
-详细架构文档见 [docs/](docs/README.md)（8 篇专题，从概念到实现逐层深入）。
+详细架构文档见 [docs/](docs/README.md)。
 
 ## 快速开始
 
@@ -103,17 +105,26 @@ pnpm example:12         # 循环检测 — LoopDetector
 pnpm example:13         # 错误恢复 — 重试/迭代上限/工具异常
 pnpm example:14         # 知识问答 — 综合：内置工具+记忆+审批
 pnpm example:15         # 研发助手 — 全功能综合
+pnpm example:16         # 自动发现 — 文件系统 Skill/Agent 加载
+pnpm example:17         # EventCollector — 事件流聚合为状态快照
+pnpm example:18         # 批量运行 — 多 Agent 并行
+pnpm example:19         # SDK SubAgent — 带事件收集的子 Agent
+pnpm example:20         # TUI 最小示例 — 一行启动终端 UI
+pnpm example:21         # TUI 自定义组件 — 替换默认 UI 组件
+pnpm example:22         # TUI 自定义布局 — 完全控制界面排版
+pnpm example:23         # TUI Plan-Execute — 终端中的规划-执行流
 ```
 
 ## 包结构
 
 | 包                              | 说明                                            |
 | ------------------------------- | ----------------------------------------------- |
-| `@agent-tea/core`               | 框架核心 — Agent 循环、工具系统、事件流、状态机 |
-| `@agent-tea/sdk`                | 开发者 API — Extension、Skill、SubAgent 抽象    |
-| `@agent-tea/provider-openai`    | OpenAI / 兼容 API 适配器                        |
-| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器                         |
-| `@agent-tea/provider-gemini`    | Google Gemini 适配器                            |
+| `@agent-tea/core`               | 框架核心 — Agent 循环、工具系统、事件流、状态机   |
+| `@agent-tea/sdk`                | 开发者 API — Extension、Skill、SubAgent 抽象     |
+| `@agent-tea/tui`                | 终端 UI — 基于 Ink 的 Agent 交互界面              |
+| `@agent-tea/provider-openai`    | OpenAI / 兼容 API 适配器                         |
+| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器                          |
+| `@agent-tea/provider-gemini`    | Google Gemini 适配器                             |
 
 ## 要求
 
