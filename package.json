@@ -26,6 +26,9 @@
         "example:14": "node --env-file=.env --import tsx examples/14-knowledge-qa.ts",
         "example:15": "node --env-file=.env --import tsx examples/15-dev-assistant.ts",
         "example:16": "node --env-file=.env --import tsx examples/16-discovery.ts",
+        "example:17": "node --env-file=.env --import tsx examples/17-event-collector.ts",
+        "example:18": "node --env-file=.env --import tsx examples/18-batch-run.ts",
+        "example:19": "node --env-file=.env --import tsx examples/19-sdk-subagent-collector.ts",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "publish:all": "pnpm build && pnpm -r publish --no-git-checks"
