@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-本文件为 Claude Code (claude.ai/code) 在本仓库中工作时提供指引。
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 项目概述
 
@@ -35,6 +35,17 @@ pnpm example:13           # 错误恢复 — 重试/迭代上限/工具异常
 pnpm example:14           # 知识问答 — 综合：内置工具+记忆+审批
 pnpm example:15           # 研发助手 — 全功能综合
 pnpm example:16           # 自动发现 — 文件系统 Skill/Agent 加载
+pnpm example:17           # EventCollector — 快照式事件适配
+pnpm example:18           # BatchRun — 批量执行
+pnpm example:19           # SDK SubAgent + EventCollector 集成
+pnpm example:20           # TUI 最小示例 — 5 行代码
+pnpm example:21           # TUI 自定义组件 — 替换 ToolCallCard
+pnpm example:22           # TUI 自定义布局 — 双面板
+pnpm example:23           # TUI PlanAndExecute — 计划执行可视化
+
+# 格式化
+pnpm format               # Prettier 格式化全部文件
+pnpm format:check         # 检查格式（CI 用）
 
 # 发布
 pnpm publish:all          # 构建 + 发布所有包到 npm
@@ -47,11 +58,12 @@ pnpm publish:all          # 构建 + 发布所有包到 npm
 ```
 packages/
   core/                 # 框架核心 — Agent 循环、工具系统、LLM 接口
-  sdk/                  # 上层 API — Extension、Skill、SubAgent 抽象
+  sdk/                  # 上层 API — Extension、Skill、SubAgent、EventCollector 抽象
+  tui/                  # 终端 UI — 基于 Ink 的 React 组件库 + 运行器
   provider-openai/      # OpenAI 适配器
   provider-anthropic/   # Anthropic Claude 适配器
   provider-gemini/      # Google Gemini 适配器
-examples/               # 使用示例
+examples/               # 使用示例（01-16 核心/SDK，17-19 EventCollector，20-23 TUI）
 3th-agents/             # 第三方 Agent 实现参考（codex、gemini-cli）
 docs/                   # 设计文档和实施计划
 .agent-tea/             # 运行时产物（会话、记忆、计划）— 已 gitignore
@@ -59,7 +71,7 @@ docs/                   # 设计文档和实施计划
 
 ### 核心概念
 
-**三层架构**：Core（框架）→ Provider（LLM 适配器）→ SDK（开发者 API）
+**四层架构**：Core（框架）→ Provider（LLM 适配器）→ SDK（开发者 API）→ TUI（终端 UI）
 
 **Provider + ChatSession 模式**：`LLMProvider` 是工厂，创建 `ChatSession` 实例。一个 provider 可创建多个不同配置的 session。每个 session 的 `sendMessage()` 返回 `AsyncGenerator<ChatStreamEvent>`。
 
@@ -118,6 +130,16 @@ docs/                   # 设计文档和实施计划
 - `Skill` — 任务特定的提示词 + 工具，带触发条件
 - `SubAgent` — 将 ReActAgent 包装为 Tool；父 Agent 通过工具调用发起，收集 assistant 消息作为结果。支持层级化多 Agent 协作。
 - `discover()` — 文件系统自动发现（`packages/sdk/src/discovery/`）。扫描 `~/.agent-tea/`（全局）和 `.agent-tea/`（项目级）目录下的 `skills/` 和 `agents/` 子目录。Skill 用 `SKILL.md`（YAML frontmatter + markdown 指令，兼容 Claude Code 格式），Agent 用 `AGENT.md`（frontmatter + systemPrompt）。项目级同名覆盖全局。返回 `{ skills, agents, tools, instructions }` 可直接合并到 AgentConfig。
+- `ToolResolver`（`packages/sdk/src/discovery/tool-resolver.ts`）— 将 SKILL.md/AGENT.md 中的工具名字符串解析为实际 Tool 实例，内置 read_file/write_file/list_directory/execute_shell/grep/web_fetch 映射。
+- `builtinTools`（`packages/sdk/src/extensions/builtin-tools.ts`）— 预配置的内置工具 Extension，打包所有核心工具。
+
+**TUI 终端 UI**（`packages/tui/`）：基于 Ink（React for terminal）的四层架构，提供完整的终端 Agent 交互界面：
+
+- **适配层**（`src/adapter/`）：`EventCollector` 将 Agent 事件流转为不可变 `AgentSnapshot`。7 种状态：idle → thinking → tool_executing → waiting_approval → completed/error/aborted。流式文本在 `streaming` 属性中累积，工具调用/审批时 flush 到 history。
+- **Hooks 层**（`src/hooks/`）：`useAgentEvents` 将 EventCollector 包装为 React 状态（snapshot + run + abort）；`useApproval` 提供审批回调（approve/reject/modifyAndApprove）。
+- **组件层**（`src/components/`）：8 个 Ink 组件 — UserMessage、AgentMessage、ToolCallCard、ApprovalDialog、PlanView、ErrorMessage、StatusBar、History。通过 `ComponentProvider` + Context 支持整体替换。
+- **运行器层**（`src/runner/`）：`AgentTUI` 主组件整合全部层，`DefaultLayout` 提供 StatusBar + History + ApprovalDialog + Composer 的标准布局。支持自定义布局组件和键盘快捷键（Ctrl+C 中止，Y/N 审批）。
+- TUI 包重导出全部 SDK 类型，单一 import 即可使用完整功能栈。
 
 ### 核心数据流
 
