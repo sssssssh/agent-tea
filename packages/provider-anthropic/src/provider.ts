@@ -1,7 +1,7 @@
 /**
  * Anthropic LLM Provider 实现
  *
- * 将 t-agent 的 LLMProvider 接口适配到 Anthropic Messages API。
+ * 将 agent-tea 的 LLMProvider 接口适配到 Anthropic Messages API。
  *
  * Anthropic 的流式事件模型与 OpenAI 不同：
  * - 基于 content block 生命周期（start → delta → stop）
@@ -19,7 +19,7 @@ import type {
   ChatOptions,
   Message,
   ChatStreamEvent,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 import { toAnthropicMessages, toAnthropicTools } from './adapter.js';
 
 export interface AnthropicProviderOptions {

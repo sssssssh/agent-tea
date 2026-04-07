@@ -1,11 +1,11 @@
-# t-agent 框架增强设计：并行执行、上下文压缩、内置工具、循环检测
+# agent-tea 框架增强设计：并行执行、上下文压缩、内置工具、循环检测
 
 > 日期：2026-04-06
 > 状态：已批准，待实施
 
 ## 背景
 
-对比 gemini-cli，t-agent 在四个方面存在明显缺口：工具只能串行执行、上下文管理过于粗暴、缺少开箱即用的基础工具、循环检测仅靠 maxIterations 硬截断。本设计解决这四个问题。
+对比 gemini-cli，agent-tea 在四个方面存在明显缺口：工具只能串行执行、上下文管理过于粗暴、缺少开箱即用的基础工具、循环检测仅靠 maxIterations 硬截断。本设计解决这四个问题。
 
 ## 设计决策总结
 
@@ -386,7 +386,7 @@ z.object({
 // packages/sdk/src/extensions/builtin-tools.ts
 import { Extension } from '../extension';
 import { readFile, writeFile, listDirectory, executeShell, grep, webFetch }
-  from '@t-agent/core';
+  from '@agent-tea/core';
 
 export const builtinTools = new Extension({
   name: 'builtin-tools',
@@ -402,7 +402,7 @@ export { readFile, writeFile, listDirectory, executeShell, grep, webFetch };
 
 开发者使用：
 ```typescript
-import { builtinTools } from '@t-agent/sdk';
+import { builtinTools } from '@agent-tea/sdk';
 
 const agent = new Agent({
   provider,
@@ -410,7 +410,7 @@ const agent = new Agent({
 });
 
 // 或按需挑选
-import { readFile, grep } from '@t-agent/sdk';
+import { readFile, grep } from '@agent-tea/sdk';
 const agent = new Agent({
   provider,
   tools: [readFile, grep],

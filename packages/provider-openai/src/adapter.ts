@@ -1,5 +1,5 @@
 /**
- * OpenAI 消息格式适配器：t-agent 归一化格式 ↔ OpenAI API 格式
+ * OpenAI 消息格式适配器：agent-tea 归一化格式 ↔ OpenAI API 格式
  *
  * OpenAI 的消息格式特点：
  * - assistant 消息的 tool_calls 是独立字段（不在 content 中）
@@ -14,13 +14,13 @@ import type {
   Message,
   ToolDefinition,
   ContentPart,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 import type OpenAI from 'openai';
 
 type OaiMessage = OpenAI.ChatCompletionMessageParam;
 type OaiTool = OpenAI.ChatCompletionTool;
 
-/** 将 t-agent 归一化消息转为 OpenAI 消息格式 */
+/** 将 agent-tea 归一化消息转为 OpenAI 消息格式 */
 export function toOpenAIMessages(messages: Message[]): OaiMessage[] {
   const result: OaiMessage[] = [];
 
@@ -84,7 +84,7 @@ export function toOpenAIMessages(messages: Message[]): OaiMessage[] {
   return result;
 }
 
-/** 将 t-agent ToolDefinition 转为 OpenAI 的 function calling 格式 */
+/** 将 agent-tea ToolDefinition 转为 OpenAI 的 function calling 格式 */
 export function toOpenAITools(tools: ToolDefinition[]): OaiTool[] {
   return tools.map((tool) => ({
     type: 'function' as const,

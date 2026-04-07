@@ -1,7 +1,7 @@
 /**
  * Google Gemini LLM Provider 实现
  *
- * 将 t-agent 的 LLMProvider 接口适配到 Google Gemini generateContent API。
+ * 将 agent-tea 的 LLMProvider 接口适配到 Google Gemini generateContent API。
  *
  * Gemini 的流式模型与 OpenAI/Anthropic 的区别：
  * - 工具调用在单个 chunk 中完整到达（不像 OpenAI/Anthropic 需要跨 chunk 拼接）
@@ -20,7 +20,7 @@ import type {
   Message,
   ChatStreamEvent,
   FinishReason,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 import { toGeminiContents, toGeminiTools } from './adapter.js';
 
 export interface GeminiProviderOptions {

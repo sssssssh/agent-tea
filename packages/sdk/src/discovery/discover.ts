@@ -1,7 +1,7 @@
 /**
  * discover() —— Skill/Agent 文件系统自动发现主函数
  *
- * 扫描全局（~/.t-agent/）和项目级（.t-agent/）目录，
+ * 扫描全局（~/.agent-tea/）和项目级（.agent-tea/）目录，
  * 加载 SKILL.md 和 AGENT.md，解析工具引用，
  * 将 Agent 定义包装为 SubAgent Tool，返回可直接消费的结果。
  *
@@ -23,7 +23,7 @@ import { ToolResolver } from './tool-resolver.js';
 import { scanSkillDirs, scanAgentDirs, mergeByName } from './loader.js';
 import type { DiscoveryConfig, DiscoveredAssets } from './types.js';
 import type { Skill } from '../skill.js';
-import type { Tool } from '@t-agent/core';
+import type { Tool } from '@agent-tea/core';
 
 /**
  * 从文件系统自动发现 Skill 和 Agent 定义。
@@ -32,8 +32,8 @@ import type { Tool } from '@t-agent/core';
  * Agent 定义中未指定 provider/model 的，使用配置中提供的默认值。
  */
 export async function discover(config: DiscoveryConfig): Promise<DiscoveredAssets> {
-  const globalBase = config.globalDir ?? join(homedir(), '.t-agent');
-  const projectBase = config.projectDir ?? join(process.cwd(), '.t-agent');
+  const globalBase = config.globalDir ?? join(homedir(), '.agent-tea');
+  const projectBase = config.projectDir ?? join(process.cwd(), '.agent-tea');
 
   const resolver = new ToolResolver(config.extraTools);
 

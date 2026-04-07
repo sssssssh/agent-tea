@@ -48,9 +48,9 @@ import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 /**
  * FileMemoryStore —— 基于文件的知识记忆。
  * 每条记忆是一个 key-value 对，可以带标签用于搜索。
- * 存储在 .t-agent/memory/ 目录下的 JSON 文件中。
+ * 存储在 .agent-tea/memory/ 目录下的 JSON 文件中。
  */
-const memoryStore = new FileMemoryStore('.t-agent/memory');
+const memoryStore = new FileMemoryStore('.agent-tea/memory');
 
 // ============================================================
 // 自定义工具：remember 和 recall
@@ -303,7 +303,7 @@ async function main() {
     }
   }
 
-  console.log('\n  记忆文件保存在: .t-agent/memory/');
+  console.log('\n  记忆文件保存在: .agent-tea/memory/');
 }
 
 main().catch(console.error);

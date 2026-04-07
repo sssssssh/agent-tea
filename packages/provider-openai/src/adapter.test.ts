@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { toOpenAIMessages, toOpenAITools } from './adapter.js';
-import type { Message, ToolDefinition } from '@t-agent/core';
+import type { Message, ToolDefinition } from '@agent-tea/core';
 
 describe('toOpenAIMessages', () => {
   it('converts a simple user message', () => {

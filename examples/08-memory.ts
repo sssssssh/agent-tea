@@ -15,7 +15,7 @@
  *   OPENAI_API_KEY=sk-xxx npx tsx examples/08-memory.ts
  *   OPENAI_API_KEY=sk-xxx OPENAI_BASE_URL=https://your-api.com/v1 MODEL=your-model npx tsx examples/08-memory.ts
  *
- * 运行后会在 .t-agent/ 目录下生成持久化文件，可多次运行观察会话累积效果。
+ * 运行后会在 .agent-tea/ 目录下生成持久化文件，可多次运行观察会话累积效果。
  */
 
 import {
@@ -31,11 +31,11 @@ import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 // 初始化两个存储实例
 // ============================================================
 
-// 会话存储 —— 保存完整对话记录到 .t-agent/conversations/
-const conversationStore = new FileConversationStore('.t-agent/conversations');
+// 会话存储 —— 保存完整对话记录到 .agent-tea/conversations/
+const conversationStore = new FileConversationStore('.agent-tea/conversations');
 
-// 知识存储 —— 保存跨会话知识到 .t-agent/memory/
-const memoryStore = new FileMemoryStore('.t-agent/memory');
+// 知识存储 —— 保存跨会话知识到 .agent-tea/memory/
+const memoryStore = new FileMemoryStore('.agent-tea/memory');
 
 // ============================================================
 // 将 MemoryStore 封装为工具，让 Agent 可以读写知识
@@ -238,7 +238,7 @@ async function main() {
   }
 
   console.log('\n提示: 再次运行此示例，Agent 会从记忆中找到之前保存的信息');
-  console.log('存储位置: .t-agent/conversations/ 和 .t-agent/memory/');
+  console.log('存储位置: .agent-tea/conversations/ 和 .agent-tea/memory/');
 }
 
 main().catch(console.error);

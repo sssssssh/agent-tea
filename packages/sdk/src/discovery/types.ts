@@ -4,7 +4,7 @@
  * 定义文件系统自动发现 Skill/Agent 的配置和结果类型。
  */
 
-import type { LLMProvider, Tool } from '@t-agent/core';
+import type { LLMProvider, Tool } from '@agent-tea/core';
 import type { Skill } from '../skill.js';
 
 // ---- SKILL.md frontmatter 字段 ----
@@ -74,7 +74,7 @@ export interface ParsedAgent {
 export interface DiscoveryConfig {
   /** 项目根目录，默认 process.cwd() */
   projectDir?: string;
-  /** 全局配置目录，默认 ~/.t-agent */
+  /** 全局配置目录，默认 ~/.agent-tea */
   globalDir?: string;
   /** LLM Provider，用于创建 SubAgent */
   provider: LLMProvider;

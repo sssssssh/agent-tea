@@ -1,5 +1,5 @@
 /**
- * Anthropic 消息格式适配器：t-agent 归一化格式 ↔ Anthropic API 格式
+ * Anthropic 消息格式适配器：agent-tea 归一化格式 ↔ Anthropic API 格式
  *
  * Anthropic API 与 OpenAI 的关键差异：
  * - 工具结果放在 `user` 消息的 `tool_result` 内容块中（而非独立的 tool role）
@@ -14,14 +14,14 @@ import type {
   Message,
   ToolDefinition,
   ContentPart,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 import type Anthropic from '@anthropic-ai/sdk';
 
 type AnthropicMessage = Anthropic.MessageParam;
 type AnthropicTool = Anthropic.Tool;
 type AnthropicContentBlock = Anthropic.ContentBlockParam;
 
-/** 将 t-agent 归一化消息转为 Anthropic 消息格式 */
+/** 将 agent-tea 归一化消息转为 Anthropic 消息格式 */
 export function toAnthropicMessages(messages: Message[]): AnthropicMessage[] {
   const result: AnthropicMessage[] = [];
 
@@ -80,7 +80,7 @@ export function toAnthropicMessages(messages: Message[]): AnthropicMessage[] {
   return result;
 }
 
-/** 将 t-agent ToolDefinition 转为 Anthropic 工具格式 */
+/** 将 agent-tea ToolDefinition 转为 Anthropic 工具格式 */
 export function toAnthropicTools(tools: ToolDefinition[]): AnthropicTool[] {
   return tools.map((tool) => ({
     name: tool.name,

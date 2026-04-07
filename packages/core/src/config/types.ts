@@ -28,9 +28,9 @@ export interface AgentConfig {
   /** 系统提示词，定义 Agent 的角色和行为规范 */
   systemPrompt?: string;
   /**
-   * Agent 循环最大迭代次数（默认 20）。
-   * 这是一个安全阀，防止 LLM 陷入无限工具调用循环。
-   * Sub-Agent 通常可以设置更小的值（如 10）。
+   * Agent 循环最大迭代次数（默认 500）。
+   * 这是最后的安全网，正常终止应依赖上下文管理和循环检测。
+   * Sub-Agent 通常可以设置更小的值（如 30）。
    */
   maxIterations?: number;
   /** LLM 生成温度（0-2），越低越确定性 */
@@ -47,7 +47,7 @@ export interface AgentConfig {
    * strategy 为 'plan-and-execute' 时始终从 Plan 阶段开始，无需此选项。
    */
   allowPlanMode?: boolean;
-  /** Plan 文件存储目录，默认 '.t-agent/plans' */
+  /** Plan 文件存储目录，默认 '.agent-tea/plans' */
   planStoreDir?: string;
 
   // ---- 审批系统 ----

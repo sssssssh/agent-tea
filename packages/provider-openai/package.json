@@ -1,5 +1,5 @@
 {
-  "name": "@t-agent/provider-openai",
+  "name": "@agent-tea/provider-openai",
   "version": "0.1.0",
   "type": "module",
   "files": ["dist"],
@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@t-agent/core": "workspace:*",
+    "@agent-tea/core": "workspace:*",
     "openai": "^4.80.0"
   },
   "devDependencies": {

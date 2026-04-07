@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为 t-agent 引入 BaseAgent 抽象类体系，支持 ReAct 和 Plan-and-Execute 两种策略，及运行时策略切换。
+**Goal:** 为 agent-tea 引入 BaseAgent 抽象类体系，支持 ReAct 和 Plan-and-Execute 两种策略，及运行时策略切换。
 
 **Architecture:** 将现有 `Agent` 重构为 `BaseAgent`（含完整生命周期钩子）+ `ReActAgent`（现有逻辑迁移）+ `PlanAndExecuteAgent`（新增）。引入 `AgentStateMachine` 管理阶段状态。Plan 阶段只允许只读工具，计划存文件，审批后逐步执行。
 
@@ -1101,7 +1101,7 @@ export type {
 
 - [ ] **Step 7: 更新 SDK index.ts**
 
-在 `packages/sdk/src/index.ts` 中，更新从 `@t-agent/core` 的导出，添加：
+在 `packages/sdk/src/index.ts` 中，更新从 `@agent-tea/core` 的导出，添加：
 
 ```typescript
 export {
@@ -1112,7 +1112,7 @@ export {
   tool,
   ToolRegistry,
   // ... 保留原有错误类导出 ...
-} from '@t-agent/core';
+} from '@agent-tea/core';
 ```
 
 在 `export type` 中添加所有新类型。
@@ -1236,7 +1236,7 @@ import * as path from 'node:path';
 import type { Plan, PlanStep } from './types.js';
 
 export class PlanStore {
-  constructor(private readonly baseDir: string = '.t-agent/plans') {}
+  constructor(private readonly baseDir: string = '.agent-tea/plans') {}
 
   /** 保存计划到文件，返回文件路径 */
   async save(plan: Plan, sessionId: string): Promise<string> {
@@ -1586,7 +1586,7 @@ Expected: FAIL
 在 `packages/core/src/config/types.ts` 的 `AgentConfig` 末尾添加：
 
 ```typescript
-/** Plan 文件存储目录，默认 '.t-agent/plans' */
+/** Plan 文件存储目录，默认 '.agent-tea/plans' */
 planStoreDir?: string;
 ```
 
@@ -2013,7 +2013,7 @@ export { PlanStore } from './agent/plan-store.js';
 在 `packages/sdk/src/index.ts` 中添加：
 
 ```typescript
-export { PlanAndExecuteAgent, PlanStore } from '@t-agent/core';
+export { PlanAndExecuteAgent, PlanStore } from '@agent-tea/core';
 ```
 
 - [ ] **Step 6: 运行测试**
@@ -2141,7 +2141,7 @@ git commit -m "feat: add allowPlanMode to ReActAgent for runtime plan mode switc
 
 ```typescript
 import { z } from 'zod';
-import { ReActAgent, tool, type LLMProvider, type Tool } from '@t-agent/core';
+import { ReActAgent, tool, type LLMProvider, type Tool } from '@agent-tea/core';
 
 // ... SubAgentConfig 不变 ...
 

@@ -77,7 +77,7 @@ const agent = new Agent({
 框架预置了一个 `builtinTools` 扩展，打包了 6 个常用工具（readFile、writeFile、listDirectory、executeShell、grep、webFetch）和配套的使用说明：
 
 ```typescript
-import { Agent, builtinTools } from '@t-agent/sdk';
+import { Agent, builtinTools } from '@agent-tea/sdk';
 
 const agent = new Agent({
   provider,
@@ -203,7 +203,7 @@ sequenceDiagram
 ### 代码实现
 
 ```typescript
-import { subAgent } from '@t-agent/sdk';
+import { subAgent } from '@agent-tea/sdk';
 
 const researcher = subAgent({
   name: 'researcher',
@@ -301,8 +301,8 @@ CEO Agent (gpt-4o)
 把所有 SDK 概念组合起来：
 
 ```typescript
-import { Agent, extension, skill, subAgent, tool } from '@t-agent/sdk';
-import { OpenAIProvider } from '@t-agent/provider-openai';
+import { Agent, extension, skill, subAgent, tool } from '@agent-tea/sdk';
+import { OpenAIProvider } from '@agent-tea/provider-openai';
 import { z } from 'zod';
 
 // === 工具定义 ===
@@ -363,4 +363,4 @@ for await (const event of agent.run('服务 user-api 响应时间突增，请诊
 
 ---
 
-以上就是 t-agent 框架的完整架构文档。回到 [文档索引](./README.md) 查看所有章节。
+以上就是 agent-tea 框架的完整架构文档。回到 [文档索引](./README.md) 查看所有章节。

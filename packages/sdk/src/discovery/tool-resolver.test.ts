@@ -2,7 +2,7 @@
 import { describe, it, expect } from 'vitest';
 import { z } from 'zod';
 import { ToolResolver } from './tool-resolver.js';
-import { readFile, grep, webFetch, tool } from '@t-agent/core';
+import { readFile, grep, webFetch, tool } from '@agent-tea/core';
 
 describe('ToolResolver', () => {
   it('resolves built-in tool names', () => {

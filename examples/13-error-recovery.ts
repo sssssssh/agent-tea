@@ -342,7 +342,7 @@ async function scenario3_toolError() {
 
 async function main() {
   console.log();
-  console.log('本示例演示 t-agent 框架的三层错误处理策略:');
+  console.log('本示例演示 agent-tea 框架的三层错误处理策略:');
   console.log('  1. retryWithBackoff —— Provider 层的自动重试');
   console.log('  2. maxIterations    —— Agent 层的安全阀');
   console.log('  3. 工具错误包装    —— Tool 层的异常隔离');

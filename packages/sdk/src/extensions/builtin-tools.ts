@@ -10,7 +10,7 @@ import {
   executeShell,
   grep,
   webFetch,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 
 export const builtinTools = extension({
   name: 'builtin-tools',

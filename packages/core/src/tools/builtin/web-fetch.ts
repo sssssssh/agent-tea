@@ -38,7 +38,7 @@ export const webFetch = tool(
     try {
       const response = await fetch(url, {
         signal: controller.signal,
-        headers: { 'User-Agent': 't-agent/1.0' },
+        headers: { 'User-Agent': 'agent-tea/1.0' },
       });
 
       if (!response.ok) {

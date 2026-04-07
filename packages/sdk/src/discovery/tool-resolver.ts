@@ -5,7 +5,7 @@
  * 解析为实际的 Tool 实例。优先查找内置工具，再查找用户注册的额外工具。
  */
 
-import type { Tool } from '@t-agent/core';
+import type { Tool } from '@agent-tea/core';
 import {
   readFile,
   writeFile,
@@ -13,7 +13,7 @@ import {
   executeShell,
   grep,
   webFetch,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 
 /** 内置工具名称 → Tool 实例 */
 const BUILTIN_TOOLS: ReadonlyMap<string, Tool> = new Map<string, Tool>([

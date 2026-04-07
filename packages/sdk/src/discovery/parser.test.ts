@@ -41,6 +41,7 @@ description: 翻译助手
     expect(result.skill.name).toBe('translator');
     expect(result.skill.trigger).toBeUndefined();
     expect(result.skill.instructions).toContain('将用户输入翻译为目标语言');
+    expect(result.toolNames).toEqual([]);
   });
 
   it('throws on missing name', () => {
@@ -120,6 +121,17 @@ description: 编码员
     expect(result.maxIterations).toBeUndefined();
     expect(result.systemPrompt).toContain('你是编码专家');
     expect(result.scope).toBe('project');
+    expect(result.toolNames).toEqual([]);
+  });
+
+  it('throws on missing description', () => {
+    const content = `---
+name: no-desc-agent
+---
+
+内容`;
+
+    expect(() => parseAgentFile(content, '/path', 'global')).toThrow('description');
   });
 
   it('throws on missing name', () => {

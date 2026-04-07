@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-t-agent 是一个 TypeScript AI Agent 框架，实现 ReAct（推理 + 行动）模式。提供厂商无关的 Agent 循环，编排 LLM ↔ Tool 交互，流式优先、类型安全。
+agent-tea 是一个 TypeScript AI Agent 框架，实现 ReAct（推理 + 行动）模式。提供厂商无关的 Agent 循环，编排 LLM ↔ Tool 交互，流式优先、类型安全。
 
 ## 常用命令
 
@@ -19,8 +19,25 @@ pnpm typecheck            # 类型检查所有包 (tsc --noEmit)
 pnpm vitest run packages/core/src/agent/agent.test.ts
 
 # 运行示例（需要 .env 配置 API Key）
-pnpm example              # 基础 Agent 示例
-pnpm example:subagent     # 多 Agent 示例
+pnpm example:01           # 最小 Agent — tool + 事件消费
+pnpm example:02           # 内置工具 — readFile/grep/listDirectory
+pnpm example:03           # 完整事件流 — 所有 AgentEvent 类型
+pnpm example:04           # 钩子系统 — 生命周期拦截
+pnpm example:05           # 多 Provider — OpenAI/Anthropic/Gemini 切换
+pnpm example:06           # 上下文管理 — Pipeline + Processor
+pnpm example:07           # 审批系统 — 工具标签 + 交互确认
+pnpm example:08           # 记忆持久化 — 会话存储 + 知识库
+pnpm example:09           # Extension & Skill — 能力打包
+pnpm example:10           # SubAgent — 多 Agent 协作
+pnpm example:11           # PlanAndExecute — 规划-审批-执行
+pnpm example:12           # 循环检测 — LoopDetector
+pnpm example:13           # 错误恢复 — 重试/迭代上限/工具异常
+pnpm example:14           # 知识问答 — 综合：内置工具+记忆+审批
+pnpm example:15           # 研发助手 — 全功能综合
+pnpm example:16           # 自动发现 — 文件系统 Skill/Agent 加载
+
+# 发布
+pnpm publish:all          # 构建 + 发布所有包到 npm
 ```
 
 ## 架构
@@ -37,7 +54,7 @@ packages/
 examples/               # 使用示例
 3th-agents/             # 第三方 Agent 实现参考（codex、gemini-cli）
 docs/                   # 设计文档和实施计划
-.t-agent/             # 运行时产物（会话、记忆、计划）— 已 gitignore
+.agent-tea/             # 运行时产物（会话、记忆、计划）— 已 gitignore
 ```
 
 ### 核心概念
@@ -59,15 +76,22 @@ docs/                   # 设计文档和实施计划
 
 **内置工具**（`packages/core/src/tools/internal/`）：如 `enter_plan_mode` 和 `exit_plan_mode`，在 ReActAgent 设置 `allowPlanMode` 时动态启用计划模式切换。
 
-**PlanStore**（`packages/core/src/agent/plan-store.ts`）：基于文件的计划持久化（JSON）。保存到 `planStoreDir`（默认 `.t-agent/plans/`），跟踪步骤状态，支持恢复和审计。
+**PlanStore**（`packages/core/src/agent/plan-store.ts`）：基于文件的计划持久化（JSON）。保存到 `planStoreDir`（默认 `.agent-tea/plans/`），跟踪步骤状态，支持恢复和审计。
 
 **审批系统**（`packages/core/src/approval/`）：工具调用审批/拒绝工作流。通过 `AgentConfig` 中的 `ApprovalPolicy` 控制，三种模式：`'always'`（所有工具）、`'tagged'`（仅指定标签的工具，推荐）、`'never'`（默认）。复用现有 `Tool.tags` 标记。在 `executeToolCalls()` 中，Agent 产出 `approval_request` 事件并等待 `resolveApproval()` 调用 — 非阻塞异步模式，适用于 CLI/UI。`ApprovalDecision` 支持 `modifiedArgs` 在执行前修改参数。
 
-**上下文管理**（`packages/core/src/context/`）：Token 感知的消息裁剪。`ContextManager` 接口，`prepare(messages): Message[]` 方法。默认 `SlidingWindowContextManager` 用 `字符数/4` 估算 token，保留前 N 条保留消息 + 最新消息，中间插入截断标记。在 `collectResponse()` 中每次 LLM 调用前自动应用。通过 `AgentConfig` 中的 `contextManager: { maxTokens, strategy?, reservedMessageCount? }` 配置。
+**上下文管理**（`packages/core/src/context/`）：Token 感知的消息裁剪。`ContextManager` 接口，`prepare(messages): Message[]` 方法。两种策略：
+- `SlidingWindowContextManager`（旧，已 @deprecated）— 用 `字符数/4` 估算 token，保留前 N 条保留消息 + 最新消息，中间插入截断标记。
+- `PipelineContextManager`（推荐）— 管道式组合多个 `ContextProcessor`，内置处理器：`SlidingWindowProcessor`（滑动窗口裁剪）、`ToolOutputTruncator`（截断过长工具输出）、`MessageCompressor`（占位，待异步支持）。
+- 通过 `createContextManager()` 工厂创建，支持 `'sliding_window'` 和 `'pipeline'` 两种 strategy。在 `collectResponse()` 中每次 LLM 调用前自动应用。
 
 **记忆/持久化**（`packages/core/src/memory/`）：两个独立存储层，均为可选：
-- `ConversationStore` — 会话级：保存/加载/列举/删除完整消息历史。`FileConversationStore` 以 JSON 存储在 `.t-agent/conversations/`。
-- `MemoryStore` — 知识级：带标签的键值条目，用于跨会话知识。`FileMemoryStore` 存储在 `.t-agent/memory/`，通过 index.json 支持快速标签搜索。
+- `ConversationStore` — 会话级：保存/加载/列举/删除完整消息历史。`FileConversationStore` 以 JSON 存储在 `.agent-tea/conversations/`。
+- `MemoryStore` — 知识级：带标签的键值条目，用于跨会话知识。`FileMemoryStore` 存储在 `.agent-tea/memory/`，通过 index.json 支持快速标签搜索。
+
+**循环检测**（`packages/core/src/agent/loop-detection.ts`）：`LoopDetector` 检测 Agent 陷入重复行为。两种探测器：`ToolCallTracker` 检测连续相同工具调用（按工具名+参数哈希），`ContentTracker` 检测内容重复模式。首次检测发出警告注入提示，超过 `maxWarnings` 后中止。通过 `AgentConfig` 中的 `loopDetection: { enabled, maxConsecutiveIdenticalCalls, contentRepetitionThreshold, maxWarnings }` 配置。
+
+**并行调度器**（`packages/core/src/scheduler/`）：`Scheduler` 管理工具并发执行。默认所有工具并行执行（`Promise.all`），带 `sequential` 标签的工具按顺序执行。连续非 sequential 工具分组并行，结果通过 AsyncGenerator 逐个 yield。`ToolExecutor` 负责 Zod 验证 + 执行 + 错误包装。
 
 **钩子系统**：BaseAgent 暴露扩展点，无需子类化即可定制行为：
 - `onBeforeIteration` / `onAfterIteration` — 迭代生命周期
@@ -82,6 +106,7 @@ docs/                   # 设计文档和实施计划
 - `Extension` — 可复用能力包（打包工具 + 指令）
 - `Skill` — 任务特定的提示词 + 工具，带触发条件
 - `SubAgent` — 将 ReActAgent 包装为 Tool；父 Agent 通过工具调用发起，收集 assistant 消息作为结果。支持层级化多 Agent 协作。
+- `discover()` — 文件系统自动发现（`packages/sdk/src/discovery/`）。扫描 `~/.agent-tea/`（全局）和 `.agent-tea/`（项目级）目录下的 `skills/` 和 `agents/` 子目录。Skill 用 `SKILL.md`（YAML frontmatter + markdown 指令，兼容 Claude Code 格式），Agent 用 `AGENT.md`（frontmatter + systemPrompt）。项目级同名覆盖全局。返回 `{ skills, agents, tools, instructions }` 可直接合并到 AgentConfig。
 
 ### 核心数据流
 
@@ -120,5 +145,6 @@ Agent.run(input)
 - 源代码注释使用中文；代码标识符和 API 使用英文。
 - 需要 Node.js >= 20.0.0。
 - 每个包用 `tsup` 构建，用 `tsc --noEmit` 类型检查。
-- 测试使用 Vitest，`globals: true`。测试模式：用预编排的响应序列 mock LLM provider。
+- 测试使用 Vitest，`globals: true`，测试文件与源码同目录。测试 Agent 时用预编排响应序列 mock LLM provider：构造 `ChatStreamEvent[][]`（每个内层数组对应一次 LLM 调用的流式事件），通过 `mockProvider()` 工厂创建 `LLMProvider`。参考 `react-agent.test.ts`。
 - Provider 适配器遵循统一模式：实现 `LLMProvider` 接口 + 厂商特定的消息/工具格式适配器（`toXxxMessages()`、`toXxxTools()`）。
+- npm 包名 scope 为 `@agent-tea`，每个子包配置 `files: ["dist"]` 只发布构建产物。

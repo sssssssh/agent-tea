@@ -12,7 +12,7 @@ import * as path from 'node:path';
 import type { Plan, PlanStep } from './types.js';
 
 export class PlanStore {
-  constructor(private readonly baseDir: string = '.t-agent/plans') {}
+  constructor(private readonly baseDir: string = '.agent-tea/plans') {}
 
   async save(plan: Plan, sessionId: string): Promise<string> {
     await fs.mkdir(this.baseDir, { recursive: true });

@@ -1,5 +1,5 @@
 {
-  "name": "@t-agent/sdk",
+  "name": "@agent-tea/sdk",
   "version": "0.1.0",
   "type": "module",
   "files": [
@@ -21,7 +21,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@t-agent/core": "workspace:*",
+    "@agent-tea/core": "workspace:*",
     "gray-matter": "^4.0.3",
     "zod": "^3.24.0"
   },

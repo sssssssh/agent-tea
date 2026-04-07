@@ -54,7 +54,7 @@ flowchart LR
 ## 定义一个工具
 
 ```typescript
-import { tool } from '@t-agent/core';
+import { tool } from '@agent-tea/core';
 import { z } from 'zod';
 
 const searchCode = tool(
@@ -275,7 +275,7 @@ Scheduler 将工具调用请求分成两类：
 通过 SDK 的 `builtinTools` 扩展一行引入所有实用工具：
 
 ```typescript
-import { Agent, builtinTools } from '@t-agent/sdk';
+import { Agent, builtinTools } from '@agent-tea/sdk';
 
 const agent = new Agent({
   provider,

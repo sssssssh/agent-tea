@@ -1,16 +1,16 @@
 /**
- * @t-agent/sdk —— 面向开发者的统一入口
+ * @agent-tea/sdk —— 面向开发者的统一入口
  *
- * 这是使用 t-agent 框架时推荐的导入包。它做了两件事：
- * 1. 重新导出 @t-agent/core 的公共 API（免去开发者同时引用两个包）
+ * 这是使用 agent-tea 框架时推荐的导入包。它做了两件事：
+ * 1. 重新导出 @agent-tea/core 的公共 API（免去开发者同时引用两个包）
  * 2. 提供 SDK 独有的高级抽象：Extension、Skill、SubAgent
  *
  * 同时重新导出 zod 的 z，这样开发者定义工具参数时不需要单独安装 zod。
  *
  * @example
  * ```typescript
- * import { Agent, tool, extension, subAgent, z } from '@t-agent/sdk';
- * import { OpenAIProvider } from '@t-agent/provider-openai';
+ * import { Agent, tool, extension, subAgent, z } from '@agent-tea/sdk';
+ * import { OpenAIProvider } from '@agent-tea/provider-openai';
  *
  * const myTool = tool({
  *   name: 'greet',
@@ -33,7 +33,7 @@
 // 重新导出 zod 的 z，方便开发者定义工具参数 Schema
 export { z } from 'zod';
 
-// ---- 从 @t-agent/core 重新导出 ----
+// ---- 从 @agent-tea/core 重新导出 ----
 export {
   Agent,
   BaseAgent,
@@ -73,7 +73,7 @@ export {
   MaxIterationsError,
   LoopDetectedError,
   retryWithBackoff,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 
 export type {
   LLMProvider,
@@ -128,7 +128,7 @@ export type {
   RetryOptions,
   LoopDetectionConfig,
   LoopCheckResult,
-} from '@t-agent/core';
+} from '@agent-tea/core';
 
 // ---- SDK 独有的高级抽象 ----
 export { extension } from './extension.js';

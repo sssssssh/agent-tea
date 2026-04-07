@@ -9,7 +9,7 @@ describe('scanSkillDirs', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 't-agent-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'agent-tea-test-'));
   });
 
   afterEach(async () => {
@@ -75,7 +75,7 @@ describe('scanAgentDirs', () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 't-agent-test-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'agent-tea-test-'));
   });
 
   afterEach(async () => {

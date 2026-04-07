@@ -32,7 +32,7 @@ export class FileMemoryStore implements MemoryStore {
   private readonly indexPath: string;
 
   constructor(
-    private readonly baseDir: string = '.t-agent/memory',
+    private readonly baseDir: string = '.agent-tea/memory',
   ) {
     this.entriesDir = path.join(baseDir, 'entries');
     this.indexPath = path.join(baseDir, 'index.json');

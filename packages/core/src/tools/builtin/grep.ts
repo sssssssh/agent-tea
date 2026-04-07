@@ -18,7 +18,7 @@ const SKIP_DIRS = new Set([
   'dist',
   'build',
   'coverage',
-  '.t-agent',
+  '.agent-tea',
   '__pycache__',
   '.cache',
 ]);

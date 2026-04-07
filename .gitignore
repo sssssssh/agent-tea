@@ -8,6 +8,6 @@ dist/
 # Third-party agent references
 3th-agents/
 
-.t-agent/
+.agent-tea/
 
 .claude/settings.local.json

@@ -366,7 +366,7 @@ ${fileInstructions}
 
 用中文输出。`,
 
-  planStoreDir: '.t-agent/plans',
+  planStoreDir: '.agent-tea/plans',
   maxIterations: 15,
 
   // 审批策略：带 'write' 标签的工具需确认
@@ -509,7 +509,7 @@ async function main() {
   console.log('  审查完成');
   console.log('='.repeat(60));
   console.log('  如果生成了审查报告，请查看对应的 .md 文件。');
-  console.log('  计划文件保存在: .t-agent/plans/');
+  console.log('  计划文件保存在: .agent-tea/plans/');
 }
 
 main().catch(console.error);

@@ -245,7 +245,7 @@ class DeployAssistant extends PlanAndExecuteAgent {
 // 创建 Agent 实例
 // ============================================================
 
-const planStore = new PlanStore('.t-agent/plans');
+const planStore = new PlanStore('.agent-tea/plans');
 
 const agent = new DeployAssistant({
   provider: new OpenAIProvider({
@@ -263,7 +263,7 @@ const agent = new DeployAssistant({
 - 规划阶段只能使用 check_service_status 和 get_deploy_config
 - 每个步骤描述要清晰具体，包含服务名和操作
 - 部署完成后要通知团队`,
-  planStoreDir: '.t-agent/plans',
+  planStoreDir: '.agent-tea/plans',
   maxIterations: 15,
 });
 

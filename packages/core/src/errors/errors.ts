@@ -13,7 +13,7 @@
 
 /**
  * 框架基础错误类。
- * 所有 t-agent 的错误都继承自此类，
+ * 所有 agent-tea 的错误都继承自此类，
  * 使用方可以用 `instanceof AgentTeaError` 区分框架错误和其他错误。
  */
 export class AgentTeaError extends Error {

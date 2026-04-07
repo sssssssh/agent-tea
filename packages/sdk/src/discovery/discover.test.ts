@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile as fsWriteFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { discover } from './discover.js';
-import type { LLMProvider, ChatSession } from '@t-agent/core';
+import type { LLMProvider, ChatSession } from '@agent-tea/core';
 
 /** 创建一个最小 mock provider（discover 只用它构建 SubAgent，不实际调用 LLM） */
 function mockProvider(): LLMProvider {
@@ -22,7 +22,7 @@ describe('discover', () => {
   let projectDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 't-agent-discover-'));
+    tempDir = await mkdtemp(join(tmpdir(), 'agent-tea-discover-'));
     globalDir = join(tempDir, 'global');
     projectDir = join(tempDir, 'project');
   });
@@ -120,6 +120,31 @@ describe('discover', () => {
     expect(result.tools.length).toBeGreaterThanOrEqual(2);
     expect(result.tools.some((t) => t.name === 'read_file')).toBe(true);
     expect(result.tools.some((t) => t.name === 'a1')).toBe(true);
+  });
+
+  it('project agents override global agents with same name', async () => {
+    await mkdir(join(globalDir, 'agents', 'helper'), { recursive: true });
+    await fsWriteFile(
+      join(globalDir, 'agents', 'helper', 'AGENT.md'),
+      `---\nname: helper\ndescription: Global helper\n---\n\nGlobal prompt.`,
+    );
+
+    await mkdir(join(projectDir, 'agents', 'helper'), { recursive: true });
+    await fsWriteFile(
+      join(projectDir, 'agents', 'helper', 'AGENT.md'),
+      `---\nname: helper\ndescription: Project helper\n---\n\nProject prompt.`,
+    );
+
+    const result = await discover({
+      provider: mockProvider(),
+      model: 'test-model',
+      globalDir,
+      projectDir,
+    });
+
+    expect(result.agents).toHaveLength(1);
+    expect(result.agents[0].name).toBe('helper');
+    expect(result.agents[0].description).toBe('Project helper');
   });
 
   it('returns empty result when no files exist', async () => {

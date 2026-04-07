@@ -51,8 +51,8 @@ import { TimeoutError } from '../errors/errors.js';
 import { retryWithBackoff } from '../errors/retry.js';
 import { withStreamTimeout, type StreamTimeoutConfig } from '../utils/stream-timeout.js';
 
-/** 默认最大迭代次数，防止 Agent 陷入无限循环 */
-const DEFAULT_MAX_ITERATIONS = 20;
+/** 默认最大迭代次数，作为最后的安全网防止无限循环。正常终止应依赖上下文管理和循环检测，而非此上限。 */
+const DEFAULT_MAX_ITERATIONS = 500;
 
 /** LLM 连接超时默认值（毫秒）：等待首个事件 */
 const DEFAULT_LLM_CONNECTION_TIMEOUT = 60_000;

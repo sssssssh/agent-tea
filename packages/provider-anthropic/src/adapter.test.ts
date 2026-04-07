@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { toAnthropicMessages, toAnthropicTools } from './adapter.js';
-import type { Message, ToolDefinition } from '@t-agent/core';
+import type { Message, ToolDefinition } from '@agent-tea/core';
 
 describe('toAnthropicMessages', () => {
   it('converts a simple user message', () => {

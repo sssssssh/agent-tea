@@ -1,4 +1,4 @@
-# T-Agent
+# Agent-Tea
 
 TypeScript AI Agent 框架，实现 ReAct（推理 + 行动）模式。厂商无关的 Agent 循环，编排 LLM ↔ Tool 交互，流式优先、类型安全。
 
@@ -39,8 +39,8 @@ pnpm install
 ### 定义工具 + 启动 Agent
 
 ```typescript
-import { Agent, tool } from '@t-agent/sdk';
-import { OpenAIProvider } from '@t-agent/provider-openai';
+import { Agent, tool } from '@agent-tea/sdk';
+import { OpenAIProvider } from '@agent-tea/provider-openai';
 import { z } from 'zod';
 
 // 定义工具
@@ -109,11 +109,11 @@ pnpm example:15         # 研发助手 — 全功能综合
 
 | 包 | 说明 |
 |---|------|
-| `@t-agent/core` | 框架核心 — Agent 循环、工具系统、事件流、状态机 |
-| `@t-agent/sdk` | 开发者 API — Extension、Skill、SubAgent 抽象 |
-| `@t-agent/provider-openai` | OpenAI / 兼容 API 适配器 |
-| `@t-agent/provider-anthropic` | Anthropic Claude 适配器 |
-| `@t-agent/provider-gemini` | Google Gemini 适配器 |
+| `@agent-tea/core` | 框架核心 — Agent 循环、工具系统、事件流、状态机 |
+| `@agent-tea/sdk` | 开发者 API — Extension、Skill、SubAgent 抽象 |
+| `@agent-tea/provider-openai` | OpenAI / 兼容 API 适配器 |
+| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器 |
+| `@agent-tea/provider-gemini` | Google Gemini 适配器 |
 
 ## 要求
 

@@ -1,5 +1,5 @@
 /**
- * @t-agent/core 公共 API 导出
+ * @agent-tea/core 公共 API 导出
  *
  * 这是 core 包的唯一出口，严格控制哪些类型和实现暴露给外部。
  * 内部模块（如 Scheduler、Executor）不在此导出，属于实现细节。

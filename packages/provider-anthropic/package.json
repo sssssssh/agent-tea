@@ -1,5 +1,5 @@
 {
-  "name": "@t-agent/provider-anthropic",
+  "name": "@agent-tea/provider-anthropic",
   "version": "0.1.0",
   "type": "module",
   "files": ["dist"],
@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@t-agent/core": "workspace:*",
+    "@agent-tea/core": "workspace:*",
     "@anthropic-ai/sdk": "^0.52.0"
   },
   "devDependencies": {
