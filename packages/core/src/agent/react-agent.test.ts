@@ -385,6 +385,95 @@ describe('ReActAgent', () => {
     expect(stateChanges[0]).toMatchObject({ from: 'idle', to: 'reacting' });
     expect(stateChanges[1]).toMatchObject({ from: 'reacting', to: 'error' });
   });
+
+  describe('timeout', () => {
+    it('returns tool timeout error to LLM and continues', async () => {
+      const slowTool = tool(
+        {
+          name: 'slow_tool',
+          description: 'A tool that takes too long',
+          parameters: z.object({}),
+          timeout: 50,
+        },
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          return 'done';
+        },
+      );
+
+      const provider = mockProvider([
+        [
+          { type: 'tool_call', id: 'tc1', name: 'slow_tool', args: {} },
+          { type: 'finish', reason: 'tool_calls' as const },
+        ],
+        [
+          { type: 'text', text: 'The tool timed out, sorry.' },
+          { type: 'finish', reason: 'stop' as const },
+        ],
+      ]);
+
+      const agent = new ReActAgent({
+        provider,
+        model: 'test',
+        tools: [slowTool],
+      });
+
+      const events = await collectEvents(agent, 'Do something slow');
+
+      const toolResponse = events.find(
+        (e) => e.type === 'tool_response' && (e as any).toolName === 'slow_tool',
+      );
+      expect(toolResponse).toBeDefined();
+      expect((toolResponse as any).isError).toBe(true);
+      expect((toolResponse as any).content).toContain('timed out');
+
+      expect(events[events.length - 1]).toMatchObject({
+        type: 'agent_end',
+        reason: 'complete',
+      });
+    });
+
+    it('respects AgentConfig.toolTimeout as default', async () => {
+      const slowTool = tool(
+        {
+          name: 'slow_tool',
+          description: 'A tool without its own timeout',
+          parameters: z.object({}),
+        },
+        async () => {
+          await new Promise((resolve) => setTimeout(resolve, 5000));
+          return 'done';
+        },
+      );
+
+      const provider = mockProvider([
+        [
+          { type: 'tool_call', id: 'tc1', name: 'slow_tool', args: {} },
+          { type: 'finish', reason: 'tool_calls' as const },
+        ],
+        [
+          { type: 'text', text: 'Timed out.' },
+          { type: 'finish', reason: 'stop' as const },
+        ],
+      ]);
+
+      const agent = new ReActAgent({
+        provider,
+        model: 'test',
+        tools: [slowTool],
+        toolTimeout: 50,
+      });
+
+      const events = await collectEvents(agent, 'Do something');
+
+      const toolResponse = events.find(
+        (e) => e.type === 'tool_response' && (e as any).toolName === 'slow_tool',
+      );
+      expect(toolResponse).toBeDefined();
+      expect((toolResponse as any).isError).toBe(true);
+      expect((toolResponse as any).content).toContain('timed out');
+    });
+  });
 });
 
 describe('ReActAgent with allowPlanMode', () => {
