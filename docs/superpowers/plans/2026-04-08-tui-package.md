@@ -1706,6 +1706,7 @@ export function AgentTUI({
     initialQuery,
     components: customComponents,
     layout: Layout = DefaultLayout,
+    onApproval,
     onComplete,
 }: AgentTUIProps) {
     const mergedComponents: ComponentMap = { ...DEFAULT_COMPONENTS, ...customComponents };
@@ -1721,13 +1722,13 @@ export function AgentTUI({
         [run],
     );
 
-    // Ctrl+C 优雅中止
+    // Ctrl+C 优雅中止 + 审批快捷键
     useInput((input, key) => {
         if (key.ctrl && input === 'c') {
             abort();
         }
-        // 审批快捷键
-        if (snapshot.pendingApproval) {
+        if (snapshot.pendingApproval && !onApproval) {
+            // 仅在没有自定义审批处理时使用内置快捷键
             if (input === 'y' || input === 'Y') {
                 approve(snapshot.pendingApproval.requestId);
             }
@@ -1736,6 +1737,15 @@ export function AgentTUI({
             }
         }
     });
+
+    // 自定义审批处理
+    React.useEffect(() => {
+        if (snapshot.pendingApproval && onApproval) {
+            onApproval(snapshot.pendingApproval).then((decision) => {
+                agent.resolveApproval(snapshot.pendingApproval!.requestId, decision);
+            });
+        }
+    }, [snapshot.pendingApproval]);
 
     // 完成回调
     React.useEffect(() => {
