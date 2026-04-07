@@ -11,18 +11,18 @@ import { parseSkillFile, parseAgentFile } from './parser.js';
 import type { ParsedSkill, ParsedAgent } from './types.js';
 
 interface ScanSource {
-  dir: string;
-  scope: 'global' | 'project';
+    dir: string;
+    scope: 'global' | 'project';
 }
 
 /** 检查目录是否存在 */
 async function dirExists(path: string): Promise<boolean> {
-  try {
-    await access(path);
-    return true;
-  } catch {
-    return false;
-  }
+    try {
+        await access(path);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 /**
@@ -31,83 +31,89 @@ async function dirExists(path: string): Promise<boolean> {
  * 加载失败的文件会打印警告并跳过，不影响其他文件。
  */
 export async function scanSkillDirs(
-  sources: ScanSource[],
+    sources: ScanSource[],
 ): Promise<(ParsedSkill & { toolNames: string[] })[]> {
-  const results: (ParsedSkill & { toolNames: string[] })[] = [];
+    const results: (ParsedSkill & { toolNames: string[] })[] = [];
 
-  for (const { dir, scope } of sources) {
-    if (!(await dirExists(dir))) continue;
+    for (const { dir, scope } of sources) {
+        if (!(await dirExists(dir))) continue;
 
-    const entries = await readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+        const entries = await readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
 
-      const skillMdPath = join(dir, entry.name, 'SKILL.md');
-      try {
-        const raw = await readFile(skillMdPath, 'utf-8');
-        const parsed = parseSkillFile(raw, skillMdPath, scope);
-        results.push(parsed);
-      } catch (err) {
-        // ENOENT 表示该子目录没有 SKILL.md，静默跳过
-        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-          console.warn(`[discovery] 加载 skill 失败: ${skillMdPath}`, (err as Error).message);
+            const skillMdPath = join(dir, entry.name, 'SKILL.md');
+            try {
+                const raw = await readFile(skillMdPath, 'utf-8');
+                const parsed = parseSkillFile(raw, skillMdPath, scope);
+                results.push(parsed);
+            } catch (err) {
+                // ENOENT 表示该子目录没有 SKILL.md，静默跳过
+                if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+                    console.warn(
+                        `[discovery] 加载 skill 失败: ${skillMdPath}`,
+                        (err as Error).message,
+                    );
+                }
+            }
         }
-      }
     }
-  }
 
-  return results;
+    return results;
 }
 
 /**
  * 扫描多个 agents 目录，返回所有解析成功的 Agent 定义。
  */
 export async function scanAgentDirs(
-  sources: ScanSource[],
+    sources: ScanSource[],
 ): Promise<(Omit<ParsedAgent, 'tools'> & { toolNames: string[] })[]> {
-  const results: (Omit<ParsedAgent, 'tools'> & { toolNames: string[] })[] = [];
+    const results: (Omit<ParsedAgent, 'tools'> & { toolNames: string[] })[] = [];
 
-  for (const { dir, scope } of sources) {
-    if (!(await dirExists(dir))) continue;
+    for (const { dir, scope } of sources) {
+        if (!(await dirExists(dir))) continue;
 
-    const entries = await readdir(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      if (!entry.isDirectory()) continue;
+        const entries = await readdir(dir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (!entry.isDirectory()) continue;
 
-      const agentMdPath = join(dir, entry.name, 'AGENT.md');
-      try {
-        const raw = await readFile(agentMdPath, 'utf-8');
-        const parsed = parseAgentFile(raw, agentMdPath, scope);
-        results.push(parsed);
-      } catch (err) {
-        // ENOENT 表示该子目录没有 AGENT.md，静默跳过
-        if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
-          console.warn(`[discovery] 加载 agent 失败: ${agentMdPath}`, (err as Error).message);
+            const agentMdPath = join(dir, entry.name, 'AGENT.md');
+            try {
+                const raw = await readFile(agentMdPath, 'utf-8');
+                const parsed = parseAgentFile(raw, agentMdPath, scope);
+                results.push(parsed);
+            } catch (err) {
+                // ENOENT 表示该子目录没有 AGENT.md，静默跳过
+                if ((err as NodeJS.ErrnoException).code !== 'ENOENT') {
+                    console.warn(
+                        `[discovery] 加载 agent 失败: ${agentMdPath}`,
+                        (err as Error).message,
+                    );
+                }
+            }
         }
-      }
     }
-  }
 
-  return results;
+    return results;
 }
 
 /**
  * 按名称合并列表，project 作用域的条目覆盖 global 同名条目。
  */
 export function mergeByName<T>(
-  items: T[],
-  getName: (item: T) => string,
-  getScope: (item: T) => 'global' | 'project',
+    items: T[],
+    getName: (item: T) => string,
+    getScope: (item: T) => 'global' | 'project',
 ): T[] {
-  const map = new Map<string, T>();
+    const map = new Map<string, T>();
 
-  for (const item of items) {
-    const name = getName(item);
-    const existing = map.get(name);
-    if (!existing || getScope(item) === 'project') {
-      map.set(name, item);
+    for (const item of items) {
+        const name = getName(item);
+        const existing = map.get(name);
+        if (!existing || getScope(item) === 'project') {
+            map.set(name, item);
+        }
     }
-  }
 
-  return Array.from(map.values());
+    return Array.from(map.values());
 }

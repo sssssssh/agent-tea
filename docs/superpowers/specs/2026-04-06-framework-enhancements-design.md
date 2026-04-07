@@ -9,12 +9,12 @@
 
 ## 设计决策总结
 
-| 特性 | 方案 |
-|------|------|
+| 特性         | 方案                                                   |
+| ------------ | ------------------------------------------------------ |
 | 并行工具执行 | 默认并行，按 `sequential` 标签 opt-out，审批时降级顺序 |
-| 上下文压缩 | 可组合的 ContextProcessor 管道 |
-| 内置工具集 | 4 类 6 个工具，通过 Extension 打包 |
-| 循环检测 | 工具调用重复 + 内容重复，注入提示后仍循环才终止 |
+| 上下文压缩   | 可组合的 ContextProcessor 管道                         |
+| 内置工具集   | 4 类 6 个工具，通过 Extension 打包                     |
+| 循环检测     | 工具调用重复 + 内容重复，注入提示后仍循环才终止        |
 
 ---
 
@@ -49,66 +49,66 @@ Group 3 (parallel):   [read_d, read_e]
 
 ```typescript
 interface ExecutionGroup {
-  requests: ToolCallRequest[];
-  parallel: boolean;
+    requests: ToolCallRequest[];
+    parallel: boolean;
 }
 
 class Scheduler {
-  private groupRequests(requests: ToolCallRequest[]): ExecutionGroup[] {
-    const groups: ExecutionGroup[] = [];
-    let currentGroup: ToolCallRequest[] = [];
-    let currentParallel = true;
+    private groupRequests(requests: ToolCallRequest[]): ExecutionGroup[] {
+        const groups: ExecutionGroup[] = [];
+        let currentGroup: ToolCallRequest[] = [];
+        let currentParallel = true;
 
-    for (const req of requests) {
-      const isSequential = this.isSequential(req);
-      if (isSequential) {
-        // 先 flush 当前并行组
+        for (const req of requests) {
+            const isSequential = this.isSequential(req);
+            if (isSequential) {
+                // 先 flush 当前并行组
+                if (currentGroup.length > 0) {
+                    groups.push({ requests: currentGroup, parallel: currentParallel });
+                    currentGroup = [];
+                }
+                groups.push({ requests: [req], parallel: false });
+                currentParallel = true;
+            } else {
+                currentGroup.push(req);
+            }
+        }
         if (currentGroup.length > 0) {
-          groups.push({ requests: currentGroup, parallel: currentParallel });
-          currentGroup = [];
+            groups.push({ requests: currentGroup, parallel: true });
         }
-        groups.push({ requests: [req], parallel: false });
-        currentParallel = true;
-      } else {
-        currentGroup.push(req);
-      }
+        return groups;
     }
-    if (currentGroup.length > 0) {
-      groups.push({ requests: currentGroup, parallel: true });
-    }
-    return groups;
-  }
 
-  private isSequential(req: ToolCallRequest): boolean {
-    const tool = this.registry.get(req.name);
-    return tool?.tags?.includes('sequential') ?? false;
-  }
-
-  async *execute(requests, context): AsyncGenerator<ToolCallResult> {
-    const groups = this.groupRequests(requests);
-    for (const group of groups) {
-      if (context.signal?.aborted) {
-        for (const req of group.requests) {
-          yield this.abortedResult(req);
-        }
-        continue;
-      }
-      if (group.parallel && group.requests.length > 1) {
-        const results = await Promise.all(
-          group.requests.map(req => this.executor.execute(req, context))
-        );
-        for (const result of results) yield result;
-      } else {
-        for (const req of group.requests) {
-          if (context.signal?.aborted) {
-            yield this.abortedResult(req);
-            continue;
-          }
-          yield await this.executor.execute(req, context);
-        }
-      }
+    private isSequential(req: ToolCallRequest): boolean {
+        const tool = this.registry.get(req.name);
+        return tool?.tags?.includes('sequential') ?? false;
     }
-  }
+
+    async *execute(requests, context): AsyncGenerator<ToolCallResult> {
+        const groups = this.groupRequests(requests);
+        for (const group of groups) {
+            if (context.signal?.aborted) {
+                for (const req of group.requests) {
+                    yield this.abortedResult(req);
+                }
+                continue;
+            }
+            if (group.parallel && group.requests.length > 1) {
+                const results = await Promise.all(
+                    group.requests.map((req) => this.executor.execute(req, context)),
+                );
+                for (const result of results) yield result;
+            } else {
+                for (const req of group.requests) {
+                    if (context.signal?.aborted) {
+                        yield this.abortedResult(req);
+                        continue;
+                    }
+                    yield await this.executor.execute(req, context);
+                }
+            }
+        }
+    }
 }
 ```
 
@@ -122,10 +122,10 @@ class Scheduler {
 
 ```typescript
 class Scheduler {
-  constructor(
-    private executor: ToolExecutor,
-    private registry: ToolRegistry,  // 新增
-  ) {}
+    constructor(
+        private executor: ToolExecutor,
+        private registry: ToolRegistry, // 新增
+    ) {}
 }
 ```
 
@@ -159,13 +159,13 @@ class Scheduler {
 
 ```typescript
 interface ContextProcessor {
-  name: string;
-  process(messages: Message[], budget: TokenBudget): Message[];
+    name: string;
+    process(messages: Message[], budget: TokenBudget): Message[];
 }
 
 interface TokenBudget {
-  maxTokens: number;
-  estimateTokens(messages: Message[]): number;
+    maxTokens: number;
+    estimateTokens(messages: Message[]): number;
 }
 ```
 
@@ -173,26 +173,26 @@ interface TokenBudget {
 
 ```typescript
 class PipelineContextManager implements ContextManager {
-  constructor(
-    private processors: ContextProcessor[],
-    private config: { maxTokens: number },
-  ) {}
+    constructor(
+        private processors: ContextProcessor[],
+        private config: { maxTokens: number },
+    ) {}
 
-  prepare(messages: Message[]): Message[] {
-    const budget: TokenBudget = {
-      maxTokens: this.config.maxTokens,
-      estimateTokens: this.estimateTokens.bind(this),
-    };
-    let result = messages;
-    for (const processor of this.processors) {
-      result = processor.process(result, budget);
+    prepare(messages: Message[]): Message[] {
+        const budget: TokenBudget = {
+            maxTokens: this.config.maxTokens,
+            estimateTokens: this.estimateTokens.bind(this),
+        };
+        let result = messages;
+        for (const processor of this.processors) {
+            result = processor.process(result, budget);
+        }
+        return result;
     }
-    return result;
-  }
 
-  private estimateTokens(messages: Message[]): number {
-    // char / 4 估算，复用现有逻辑
-  }
+    private estimateTokens(messages: Message[]): number {
+        // char / 4 估算，复用现有逻辑
+    }
 }
 ```
 
@@ -204,19 +204,20 @@ class PipelineContextManager implements ContextManager {
 
 ```typescript
 interface ToolOutputTruncatorConfig {
-  maxOutputLength: number;   // 单个工具输出最大字符数，默认 10000
-  headRatio: number;         // 保留头部比例，默认 0.3
-  tailRatio: number;         // 保留尾部比例，默认 0.3
-  protectedTurns: number;    // 最近 N 轮工具输出不截断，默认 2
+    maxOutputLength: number; // 单个工具输出最大字符数，默认 10000
+    headRatio: number; // 保留头部比例，默认 0.3
+    tailRatio: number; // 保留尾部比例，默认 0.3
+    protectedTurns: number; // 最近 N 轮工具输出不截断，默认 2
 }
 ```
 
 处理逻辑：
+
 1. 从消息尾部往前数 `protectedTurns` 轮，这些消息不动
 2. 对其余消息中的 `ToolResultPart`，若 `content` 长度 > `maxOutputLength`：
-   - 保留前 `maxOutputLength * headRatio` 字符
-   - 保留后 `maxOutputLength * tailRatio` 字符
-   - 中间替换为 `[... 已截断 X 字符 ...]`
+    - 保留前 `maxOutputLength * headRatio` 字符
+    - 保留后 `maxOutputLength * tailRatio` 字符
+    - 中间替换为 `[... 已截断 X 字符 ...]`
 
 **SlidingWindowProcessor**（第 2 步：删旧消息）
 
@@ -224,7 +225,7 @@ interface ToolOutputTruncatorConfig {
 
 ```typescript
 interface SlidingWindowProcessorConfig {
-  reservedMessageCount: number;  // 默认 1
+    reservedMessageCount: number; // 默认 1
 }
 ```
 
@@ -234,9 +235,9 @@ interface SlidingWindowProcessorConfig {
 
 ```typescript
 interface MessageCompressorConfig {
-  summarize: (messages: Message[]) => Promise<string>;
-  triggerThreshold: number;   // 消息数超过此值才触发，默认 30
-  protectedTurns: number;     // 最近 N 轮不压缩，默认 5
+    summarize: (messages: Message[]) => Promise<string>;
+    triggerThreshold: number; // 消息数超过此值才触发，默认 30
+    protectedTurns: number; // 最近 N 轮不压缩，默认 5
 }
 ```
 
@@ -248,19 +249,18 @@ interface MessageCompressorConfig {
 // 旧用法，不变
 createContextManager({ maxTokens: 100000, strategy: 'sliding_window' });
 // 内部等价于：
-new PipelineContextManager(
-  [new SlidingWindowProcessor({ reservedMessageCount: 1 })],
-  { maxTokens: 100000 },
-);
+new PipelineContextManager([new SlidingWindowProcessor({ reservedMessageCount: 1 })], {
+    maxTokens: 100000,
+});
 
 // 新用法
 createContextManager({
-  maxTokens: 100000,
-  strategy: 'pipeline',
-  processors: [
-    new ToolOutputTruncator({ maxOutputLength: 10000 }),
-    new SlidingWindowProcessor({ reservedMessageCount: 1 }),
-  ],
+    maxTokens: 100000,
+    strategy: 'pipeline',
+    processors: [
+        new ToolOutputTruncator({ maxOutputLength: 10000 }),
+        new SlidingWindowProcessor({ reservedMessageCount: 1 }),
+    ],
 });
 ```
 
@@ -296,83 +296,94 @@ packages/core/src/context/
 
 #### 工具清单
 
-| 工具名 | 参数 | 标签 | 说明 |
-|--------|------|------|------|
-| `read_file` | `path`, `startLine?`, `endLine?` | `readonly` | 读取文件，支持行范围，带行号输出 |
-| `write_file` | `path`, `content`, `createDirectories?` | `sequential` | 写入/覆盖文件 |
-| `list_directory` | `path`, `recursive?`, `maxDepth?` | `readonly` | 列出目录内容，树形输出 |
-| `execute_shell` | `command`, `cwd?`, `timeout?` | `sequential` | 执行 shell 命令，超时+输出截断 |
-| `grep` | `pattern`, `path`, `include?`, `maxResults?` | `readonly` | 正则搜索文件内容 |
-| `web_fetch` | `url`, `maxLength?` | `readonly` | 获取 URL 文本内容（仅 GET） |
+| 工具名           | 参数                                         | 标签         | 说明                             |
+| ---------------- | -------------------------------------------- | ------------ | -------------------------------- |
+| `read_file`      | `path`, `startLine?`, `endLine?`             | `readonly`   | 读取文件，支持行范围，带行号输出 |
+| `write_file`     | `path`, `content`, `createDirectories?`      | `sequential` | 写入/覆盖文件                    |
+| `list_directory` | `path`, `recursive?`, `maxDepth?`            | `readonly`   | 列出目录内容，树形输出           |
+| `execute_shell`  | `command`, `cwd?`, `timeout?`                | `sequential` | 执行 shell 命令，超时+输出截断   |
+| `grep`           | `pattern`, `path`, `include?`, `maxResults?` | `readonly`   | 正则搜索文件内容                 |
+| `web_fetch`      | `url`, `maxLength?`                          | `readonly`   | 获取 URL 文本内容（仅 GET）      |
 
 #### 参数定义
 
 **read_file**
+
 ```typescript
 z.object({
-  path: z.string().describe('文件路径（绝对或相对于 cwd）'),
-  startLine: z.number().int().positive().optional().describe('起始行号（从 1 开始）'),
-  endLine: z.number().int().positive().optional().describe('结束行号（含）'),
-})
+    path: z.string().describe('文件路径（绝对或相对于 cwd）'),
+    startLine: z.number().int().positive().optional().describe('起始行号（从 1 开始）'),
+    endLine: z.number().int().positive().optional().describe('结束行号（含）'),
+});
 ```
+
 - 输出带行号前缀（`  1 | const x = 1`）
 - 超过 2000 行自动截断并提示使用行范围参数
 - 相对路径基于 `ToolContext.cwd` 解析
 
 **write_file**
+
 ```typescript
 z.object({
-  path: z.string().describe('文件路径'),
-  content: z.string().describe('写入内容'),
-  createDirectories: z.boolean().optional().default(false)
-    .describe('自动创建不存在的父目录'),
-})
+    path: z.string().describe('文件路径'),
+    content: z.string().describe('写入内容'),
+    createDirectories: z.boolean().optional().default(false).describe('自动创建不存在的父目录'),
+});
 ```
+
 - 返回写入的字节数和路径确认
 
 **list_directory**
+
 ```typescript
 z.object({
-  path: z.string().describe('目录路径'),
-  recursive: z.boolean().optional().default(false),
-  maxDepth: z.number().int().min(1).max(10).optional().default(3),
-})
+    path: z.string().describe('目录路径'),
+    recursive: z.boolean().optional().default(false),
+    maxDepth: z.number().int().min(1).max(10).optional().default(3),
+});
 ```
+
 - 返回树形结构文本
 - 限制最大条目数（默认 500）防止超大目录爆输出
 
 **execute_shell**
+
 ```typescript
 z.object({
-  command: z.string().describe('要执行的 shell 命令'),
-  cwd: z.string().optional().describe('工作目录'),
-  timeout: z.number().optional().default(30000).describe('超时毫秒数'),
-})
+    command: z.string().describe('要执行的 shell 命令'),
+    cwd: z.string().optional().describe('工作目录'),
+    timeout: z.number().optional().default(30000).describe('超时毫秒数'),
+});
 ```
+
 - 返回 `{ stdout, stderr, exitCode }`
 - stdout/stderr 各自截断上限 50000 字符
 - 超时自动 kill 子进程并返回错误
 
 **grep**
+
 ```typescript
 z.object({
-  pattern: z.string().describe('正则表达式模式'),
-  path: z.string().describe('搜索路径（文件或目录）'),
-  include: z.string().optional().describe('文件名 glob 过滤，如 "*.ts"'),
-  maxResults: z.number().optional().default(50).describe('最大返回匹配数'),
-})
+    pattern: z.string().describe('正则表达式模式'),
+    path: z.string().describe('搜索路径（文件或目录）'),
+    include: z.string().optional().describe('文件名 glob 过滤，如 "*.ts"'),
+    maxResults: z.number().optional().default(50).describe('最大返回匹配数'),
+});
 ```
+
 - 返回格式：`file:line: content`
 - 递归搜索目录
 - 跳过二进制文件和 node_modules
 
 **web_fetch**
+
 ```typescript
 z.object({
-  url: z.string().url().describe('要获取的 URL'),
-  maxLength: z.number().optional().default(50000).describe('最大返回字符数'),
-})
+    url: z.string().url().describe('要获取的 URL'),
+    maxLength: z.number().optional().default(50000).describe('最大返回字符数'),
+});
 ```
+
 - 仅支持 GET 请求
 - 超时 10 秒
 - 尝试提取纯文本（HTML 时去标签）
@@ -385,15 +396,15 @@ z.object({
 ```typescript
 // packages/sdk/src/extensions/builtin-tools.ts
 import { Extension } from '../extension';
-import { readFile, writeFile, listDirectory, executeShell, grep, webFetch }
-  from '@agent-tea/core';
+import { readFile, writeFile, listDirectory, executeShell, grep, webFetch } from '@agent-tea/core';
 
 export const builtinTools = new Extension({
-  name: 'builtin-tools',
-  tools: [readFile, writeFile, listDirectory, executeShell, grep, webFetch],
-  instructions: '你有文件读写、shell 执行、代码搜索和网页获取能力。'
-    + '优先用 grep 搜索定位，再用 read_file 精读相关部分。'
-    + '写文件前先读取确认当前内容。',
+    name: 'builtin-tools',
+    tools: [readFile, writeFile, listDirectory, executeShell, grep, webFetch],
+    instructions:
+        '你有文件读写、shell 执行、代码搜索和网页获取能力。' +
+        '优先用 grep 搜索定位，再用 read_file 精读相关部分。' +
+        '写文件前先读取确认当前内容。',
 });
 
 // 也单独导出每个工具，供开发者按需使用
@@ -401,19 +412,20 @@ export { readFile, writeFile, listDirectory, executeShell, grep, webFetch };
 ```
 
 开发者使用：
+
 ```typescript
 import { builtinTools } from '@agent-tea/sdk';
 
 const agent = new Agent({
-  provider,
-  extensions: [builtinTools],  // 全部引入
+    provider,
+    extensions: [builtinTools], // 全部引入
 });
 
 // 或按需挑选
 import { readFile, grep } from '@agent-tea/sdk';
 const agent = new Agent({
-  provider,
-  tools: [readFile, grep],
+    provider,
+    tools: [readFile, grep],
 });
 ```
 
@@ -459,32 +471,32 @@ packages/sdk/src/
 
 ```typescript
 class ToolCallTracker {
-  private lastHash: string | null = null;
-  private consecutiveCount = 0;
+    private lastHash: string | null = null;
+    private consecutiveCount = 0;
 
-  track(toolName: string, args: unknown): void {
-    const hash = this.hash(toolName, args);
-    if (hash === this.lastHash) {
-      this.consecutiveCount++;
-    } else {
-      this.lastHash = hash;
-      this.consecutiveCount = 1;
+    track(toolName: string, args: unknown): void {
+        const hash = this.hash(toolName, args);
+        if (hash === this.lastHash) {
+            this.consecutiveCount++;
+        } else {
+            this.lastHash = hash;
+            this.consecutiveCount = 1;
+        }
     }
-  }
 
-  isLooping(threshold: number): boolean {
-    return this.consecutiveCount >= threshold;
-  }
+    isLooping(threshold: number): boolean {
+        return this.consecutiveCount >= threshold;
+    }
 
-  // LLM 产出纯文本时重置（说明它在正常思考）
-  reset(): void {
-    this.lastHash = null;
-    this.consecutiveCount = 0;
-  }
+    // LLM 产出纯文本时重置（说明它在正常思考）
+    reset(): void {
+        this.lastHash = null;
+        this.consecutiveCount = 0;
+    }
 
-  private hash(name: string, args: unknown): string {
-    return `${name}:${JSON.stringify(args, Object.keys(args as object).sort())}`;
-  }
+    private hash(name: string, args: unknown): string {
+        return `${name}:${JSON.stringify(args, Object.keys(args as object).sort())}`;
+    }
 }
 ```
 
@@ -492,97 +504,97 @@ class ToolCallTracker {
 
 LLM 输出文本出现周期性重复 → 触发。
 
-```typescript
+````typescript
 class ContentTracker {
-  private chunkSize = 50;
-  private chunks: Map<string, number[]> = new Map(); // hash → 出现位置列表
-  private position = 0;
+    private chunkSize = 50;
+    private chunks: Map<string, number[]> = new Map(); // hash → 出现位置列表
+    private position = 0;
 
-  track(content: string): void {
-    // 排除代码块
-    const text = this.stripCodeBlocks(content);
-    for (let i = 0; i <= text.length - this.chunkSize; i += this.chunkSize) {
-      const chunk = text.slice(i, i + this.chunkSize);
-      const hash = this.simpleHash(chunk);
-      const positions = this.chunks.get(hash) || [];
-      positions.push(this.position + i);
-      this.chunks.set(hash, positions);
+    track(content: string): void {
+        // 排除代码块
+        const text = this.stripCodeBlocks(content);
+        for (let i = 0; i <= text.length - this.chunkSize; i += this.chunkSize) {
+            const chunk = text.slice(i, i + this.chunkSize);
+            const hash = this.simpleHash(chunk);
+            const positions = this.chunks.get(hash) || [];
+            positions.push(this.position + i);
+            this.chunks.set(hash, positions);
+        }
+        this.position += content.length;
     }
-    this.position += content.length;
-  }
 
-  isLooping(threshold: number): boolean {
-    for (const [, positions] of this.chunks) {
-      if (positions.length < threshold) continue;
-      // 检查最近 threshold 次出现是否间距均匀（周期性重复）
-      const recent = positions.slice(-threshold);
-      const gaps = [];
-      for (let i = 1; i < recent.length; i++) {
-        gaps.push(recent[i] - recent[i - 1]);
-      }
-      const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
-      const isUniform = gaps.every(g => Math.abs(g - avgGap) < avgGap * 0.3);
-      if (isUniform && avgGap < this.chunkSize * 5) return true;
+    isLooping(threshold: number): boolean {
+        for (const [, positions] of this.chunks) {
+            if (positions.length < threshold) continue;
+            // 检查最近 threshold 次出现是否间距均匀（周期性重复）
+            const recent = positions.slice(-threshold);
+            const gaps = [];
+            for (let i = 1; i < recent.length; i++) {
+                gaps.push(recent[i] - recent[i - 1]);
+            }
+            const avgGap = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+            const isUniform = gaps.every((g) => Math.abs(g - avgGap) < avgGap * 0.3);
+            if (isUniform && avgGap < this.chunkSize * 5) return true;
+        }
+        return false;
     }
-    return false;
-  }
 
-  private stripCodeBlocks(text: string): string {
-    return text.replace(/```[\s\S]*?```/g, '');
-  }
-
-  private simpleHash(str: string): string {
-    // 简单字符串 hash，不需要密码学强度
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+    private stripCodeBlocks(text: string): string {
+        return text.replace(/```[\s\S]*?```/g, '');
     }
-    return hash.toString(36);
-  }
+
+    private simpleHash(str: string): string {
+        // 简单字符串 hash，不需要密码学强度
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            hash = ((hash << 5) - hash + str.charCodeAt(i)) | 0;
+        }
+        return hash.toString(36);
+    }
 }
-```
+````
 
 #### 整合：LoopDetector
 
 ```typescript
 class LoopDetector {
-  private toolTracker = new ToolCallTracker();
-  private contentTracker = new ContentTracker();
-  private warningCount = 0;
+    private toolTracker = new ToolCallTracker();
+    private contentTracker = new ContentTracker();
+    private warningCount = 0;
 
-  constructor(private config: LoopDetectionConfig) {}
+    constructor(private config: LoopDetectionConfig) {}
 
-  trackToolCall(name: string, args: unknown): void {
-    this.toolTracker.track(name, args);
-  }
-
-  trackContent(content: string): void {
-    this.contentTracker.track(content);
-    this.toolTracker.reset(); // 有文本输出说明在正常思考
-  }
-
-  check(): LoopCheckResult {
-    const toolLoop = this.toolTracker.isLooping(this.config.maxConsecutiveIdenticalCalls);
-    const contentLoop = this.contentTracker.isLooping(this.config.contentRepetitionThreshold);
-
-    if (!toolLoop && !contentLoop) {
-      return { looping: false };
+    trackToolCall(name: string, args: unknown): void {
+        this.toolTracker.track(name, args);
     }
 
-    this.warningCount++;
-    const type = toolLoop ? 'tool_call' : 'content';
-
-    if (this.warningCount > this.config.maxWarnings) {
-      return { looping: true, type, action: 'abort' };
+    trackContent(content: string): void {
+        this.contentTracker.track(content);
+        this.toolTracker.reset(); // 有文本输出说明在正常思考
     }
-    return { looping: true, type, action: 'warn' };
-  }
+
+    check(): LoopCheckResult {
+        const toolLoop = this.toolTracker.isLooping(this.config.maxConsecutiveIdenticalCalls);
+        const contentLoop = this.contentTracker.isLooping(this.config.contentRepetitionThreshold);
+
+        if (!toolLoop && !contentLoop) {
+            return { looping: false };
+        }
+
+        this.warningCount++;
+        const type = toolLoop ? 'tool_call' : 'content';
+
+        if (this.warningCount > this.config.maxWarnings) {
+            return { looping: true, type, action: 'abort' };
+        }
+        return { looping: true, type, action: 'warn' };
+    }
 }
 
 interface LoopCheckResult {
-  looping: boolean;
-  type?: 'tool_call' | 'content';
-  action?: 'warn' | 'abort';
+    looping: boolean;
+    type?: 'tool_call' | 'content';
+    action?: 'warn' | 'abort';
 }
 ```
 
@@ -596,27 +608,28 @@ interface LoopCheckResult {
 
 ```typescript
 interface LoopDetectionConfig {
-  enabled: boolean;                      // 默认 true
-  maxConsecutiveIdenticalCalls: number;  // 默认 3
-  contentRepetitionThreshold: number;    // 默认 5
-  maxWarnings: number;                   // 默认 1
+    enabled: boolean; // 默认 true
+    maxConsecutiveIdenticalCalls: number; // 默认 3
+    contentRepetitionThreshold: number; // 默认 5
+    maxWarnings: number; // 默认 1
 }
 ```
 
 通过 `AgentConfig` 配置：
+
 ```typescript
 const agent = new Agent({
-  provider,
-  loopDetection: {
-    enabled: true,
-    maxConsecutiveIdenticalCalls: 3,
-  },
+    provider,
+    loopDetection: {
+        enabled: true,
+        maxConsecutiveIdenticalCalls: 3,
+    },
 });
 
 // 关闭循环检测
 const agent = new Agent({
-  provider,
-  loopDetection: { enabled: false },
+    provider,
+    loopDetection: { enabled: false },
 });
 ```
 
@@ -624,9 +637,9 @@ const agent = new Agent({
 
 ```typescript
 class LoopDetectedError extends AgentTeaError {
-  constructor(public readonly loopType: 'tool_call' | 'content') {
-    super(`检测到循环：重复的${loopType === 'tool_call' ? '工具调用' : '输出内容'}`);
-  }
+    constructor(public readonly loopType: 'tool_call' | 'content') {
+        super(`检测到循环：重复的${loopType === 'tool_call' ? '工具调用' : '输出内容'}`);
+    }
 }
 ```
 

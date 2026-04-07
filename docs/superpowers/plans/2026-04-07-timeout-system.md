@@ -13,6 +13,7 @@
 ### Task 1: 新增 TimeoutError 类型
 
 **Files:**
+
 - Modify: `packages/core/src/errors/errors.ts`
 - Modify: `packages/core/src/index.ts`
 
@@ -23,16 +24,16 @@
 ```typescript
 /** 超时错误，区分超时阶段以支持不同的重试策略 */
 export class TimeoutError extends AgentTeaError {
-  constructor(
-    message: string,
-    /** 超时阈值（毫秒） */
-    public readonly timeoutMs: number,
-    /** 超时发生的阶段：工具执行、LLM 连接、LLM 流式传输 */
-    public readonly phase: 'tool' | 'llm_connection' | 'llm_stream',
-  ) {
-    super(message);
-    this.name = 'TimeoutError';
-  }
+    constructor(
+        message: string,
+        /** 超时阈值（毫秒） */
+        public readonly timeoutMs: number,
+        /** 超时发生的阶段：工具执行、LLM 连接、LLM 流式传输 */
+        public readonly phase: 'tool' | 'llm_connection' | 'llm_stream',
+    ) {
+        super(message);
+        this.name = 'TimeoutError';
+    }
 }
 ```
 
@@ -42,13 +43,13 @@ export class TimeoutError extends AgentTeaError {
 
 ```typescript
 export {
-  AgentTeaError,
-  ProviderError,
-  ToolExecutionError,
-  ToolValidationError,
-  MaxIterationsError,
-  LoopDetectedError,
-  TimeoutError,
+    AgentTeaError,
+    ProviderError,
+    ToolExecutionError,
+    ToolValidationError,
+    MaxIterationsError,
+    LoopDetectedError,
+    TimeoutError,
 } from './errors/errors.js';
 ```
 
@@ -69,6 +70,7 @@ git commit -m "feat(core): add TimeoutError type with phase discrimination"
 ### Task 2: Tool 接口和 AgentConfig 扩展
 
 **Files:**
+
 - Modify: `packages/core/src/tools/types.ts`
 - Modify: `packages/core/src/tools/builder.ts`
 - Modify: `packages/core/src/config/types.ts`
@@ -94,23 +96,23 @@ git commit -m "feat(core): add TimeoutError type with phase discrimination"
 
 ```typescript
 export function tool<T extends ZodType>(
-  config: ToolConfig<T>,
-  execute: ToolExecuteFn<z.infer<T>>,
+    config: ToolConfig<T>,
+    execute: ToolExecuteFn<z.infer<T>>,
 ): Tool<z.infer<T>> {
-  return {
-    name: config.name,
-    description: config.description,
-    parameters: config.parameters,
-    tags: config.tags,
-    timeout: config.timeout,
-    async execute(params, context) {
-      const result = await execute(params, context);
-      if (typeof result === 'string') {
-        return { content: result };
-      }
-      return result;
-    },
-  };
+    return {
+        name: config.name,
+        description: config.description,
+        parameters: config.parameters,
+        tags: config.tags,
+        timeout: config.timeout,
+        async execute(params, context) {
+            const result = await execute(params, context);
+            if (typeof result === 'string') {
+                return { content: result };
+            }
+            return result;
+        },
+    };
 }
 ```
 
@@ -157,6 +159,7 @@ git commit -m "feat(core): add timeout fields to Tool interface and AgentConfig"
 ### Task 3: 工具执行超时 — ToolExecutor 改动
 
 **Files:**
+
 - Modify: `packages/core/src/scheduler/executor.ts`
 - Create: `packages/core/src/scheduler/executor.test.ts`
 
@@ -173,124 +176,124 @@ import { tool } from '../tools/builder.js';
 import type { ToolContext } from '../tools/types.js';
 
 function createContext(overrides?: Partial<ToolContext>): ToolContext {
-  return {
-    sessionId: 'test-session',
-    cwd: '/tmp',
-    messages: [],
-    signal: new AbortController().signal,
-    ...overrides,
-  };
+    return {
+        sessionId: 'test-session',
+        cwd: '/tmp',
+        messages: [],
+        signal: new AbortController().signal,
+        ...overrides,
+    };
 }
 
 describe('ToolExecutor', () => {
-  describe('timeout', () => {
-    it('times out a slow tool with global timeout', async () => {
-      const slowTool = tool(
-        {
-          name: 'slow',
-          description: 'A slow tool',
-          parameters: z.object({}),
-        },
-        async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          return 'done';
-        },
-      );
+    describe('timeout', () => {
+        it('times out a slow tool with global timeout', async () => {
+            const slowTool = tool(
+                {
+                    name: 'slow',
+                    description: 'A slow tool',
+                    parameters: z.object({}),
+                },
+                async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
+                    return 'done';
+                },
+            );
 
-      const registry = new ToolRegistry();
-      registry.register(slowTool);
-      const executor = new ToolExecutor(registry);
+            const registry = new ToolRegistry();
+            registry.register(slowTool);
+            const executor = new ToolExecutor(registry);
 
-      const result = await executor.execute(
-        { id: '1', name: 'slow', args: {} },
-        createContext(),
-        100, // 100ms global timeout
-      );
+            const result = await executor.execute(
+                { id: '1', name: 'slow', args: {} },
+                createContext(),
+                100, // 100ms global timeout
+            );
 
-      expect(result.result.isError).toBe(true);
-      expect(result.result.content).toContain('timed out');
-      expect(result.result.content).toContain('100ms');
+            expect(result.result.isError).toBe(true);
+            expect(result.result.content).toContain('timed out');
+            expect(result.result.content).toContain('100ms');
+        });
+
+        it('uses tool-level timeout over global timeout', async () => {
+            const slowTool = tool(
+                {
+                    name: 'slow',
+                    description: 'A slow tool',
+                    parameters: z.object({}),
+                    timeout: 50, // tool declares 50ms timeout
+                },
+                async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 5000));
+                    return 'done';
+                },
+            );
+
+            const registry = new ToolRegistry();
+            registry.register(slowTool);
+            const executor = new ToolExecutor(registry);
+
+            const result = await executor.execute(
+                { id: '1', name: 'slow', args: {} },
+                createContext(),
+                10000, // global timeout 10s, but tool says 50ms
+            );
+
+            expect(result.result.isError).toBe(true);
+            expect(result.result.content).toContain('timed out');
+        });
+
+        it('does not timeout a fast tool', async () => {
+            const fastTool = tool(
+                {
+                    name: 'fast',
+                    description: 'A fast tool',
+                    parameters: z.object({}),
+                },
+                async () => 'quick result',
+            );
+
+            const registry = new ToolRegistry();
+            registry.register(fastTool);
+            const executor = new ToolExecutor(registry);
+
+            const result = await executor.execute(
+                { id: '1', name: 'fast', args: {} },
+                createContext(),
+                5000,
+            );
+
+            expect(result.result.isError).toBeUndefined();
+            expect(result.result.content).toBe('quick result');
+        });
+
+        it('skips timeout when globalTimeout is 0', async () => {
+            const slowTool = tool(
+                {
+                    name: 'slow',
+                    description: 'A slow tool',
+                    parameters: z.object({}),
+                },
+                async () => {
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    return 'done';
+                },
+            );
+
+            const registry = new ToolRegistry();
+            registry.register(slowTool);
+            const executor = new ToolExecutor(registry);
+
+            const result = await executor.execute(
+                { id: '1', name: 'slow', args: {} },
+                createContext(),
+                0, // disabled
+            );
+
+            expect(result.result.isError).toBeUndefined();
+            expect(result.result.content).toBe('done');
+        });
     });
-
-    it('uses tool-level timeout over global timeout', async () => {
-      const slowTool = tool(
-        {
-          name: 'slow',
-          description: 'A slow tool',
-          parameters: z.object({}),
-          timeout: 50, // tool declares 50ms timeout
-        },
-        async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          return 'done';
-        },
-      );
-
-      const registry = new ToolRegistry();
-      registry.register(slowTool);
-      const executor = new ToolExecutor(registry);
-
-      const result = await executor.execute(
-        { id: '1', name: 'slow', args: {} },
-        createContext(),
-        10000, // global timeout 10s, but tool says 50ms
-      );
-
-      expect(result.result.isError).toBe(true);
-      expect(result.result.content).toContain('timed out');
-    });
-
-    it('does not timeout a fast tool', async () => {
-      const fastTool = tool(
-        {
-          name: 'fast',
-          description: 'A fast tool',
-          parameters: z.object({}),
-        },
-        async () => 'quick result',
-      );
-
-      const registry = new ToolRegistry();
-      registry.register(fastTool);
-      const executor = new ToolExecutor(registry);
-
-      const result = await executor.execute(
-        { id: '1', name: 'fast', args: {} },
-        createContext(),
-        5000,
-      );
-
-      expect(result.result.isError).toBeUndefined();
-      expect(result.result.content).toBe('quick result');
-    });
-
-    it('skips timeout when globalTimeout is 0', async () => {
-      const slowTool = tool(
-        {
-          name: 'slow',
-          description: 'A slow tool',
-          parameters: z.object({}),
-        },
-        async () => {
-          await new Promise((resolve) => setTimeout(resolve, 50));
-          return 'done';
-        },
-      );
-
-      const registry = new ToolRegistry();
-      registry.register(slowTool);
-      const executor = new ToolExecutor(registry);
-
-      const result = await executor.execute(
-        { id: '1', name: 'slow', args: {} },
-        createContext(),
-        0, // disabled
-      );
-
-      expect(result.result.isError).toBeUndefined();
-      expect(result.result.content).toBe('done');
-    });
-  });
 });
 ```
 
@@ -314,136 +317,134 @@ const DEFAULT_TOOL_TIMEOUT = 30_000;
 
 /** 来自 LLM 的工具调用请求 */
 export interface ToolCallRequest {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
 }
 
 /** 工具执行结果（包含调用 ID，方便 Agent 循环匹配） */
 export interface ToolCallResult {
-  id: string;
-  name: string;
-  result: ToolResult;
+    id: string;
+    name: string;
+    result: ToolResult;
 }
 
 export class ToolExecutor {
-  constructor(private readonly registry: ToolRegistry) {}
+    constructor(private readonly registry: ToolRegistry) {}
 
-  /**
-   * 执行单个工具调用：查找工具 → Zod 校验参数 → 执行（带超时）→ 返回结果。
-   * 任何阶段的失败都会被优雅处理为错误结果（不抛异常）。
-   *
-   * @param globalTimeout - 全局超时（毫秒），来自 AgentConfig.toolTimeout。
-   *   工具自身的 timeout 优先级更高。0 或 Infinity 表示不限制。
-   */
-  async execute(
-    request: ToolCallRequest,
-    context: ToolContext,
-    globalTimeout?: number,
-  ): Promise<ToolCallResult> {
-    const tool = this.registry.get(request.name);
+    /**
+     * 执行单个工具调用：查找工具 → Zod 校验参数 → 执行（带超时）→ 返回结果。
+     * 任何阶段的失败都会被优雅处理为错误结果（不抛异常）。
+     *
+     * @param globalTimeout - 全局超时（毫秒），来自 AgentConfig.toolTimeout。
+     *   工具自身的 timeout 优先级更高。0 或 Infinity 表示不限制。
+     */
+    async execute(
+        request: ToolCallRequest,
+        context: ToolContext,
+        globalTimeout?: number,
+    ): Promise<ToolCallResult> {
+        const tool = this.registry.get(request.name);
 
-    if (!tool) {
-      return {
-        id: request.id,
-        name: request.name,
-        result: {
-          content: `Error: Tool "${request.name}" not found. Available tools: ${this.registry.getNames().join(', ')}`,
-          isError: true,
-        },
-      };
+        if (!tool) {
+            return {
+                id: request.id,
+                name: request.name,
+                result: {
+                    content: `Error: Tool "${request.name}" not found. Available tools: ${this.registry.getNames().join(', ')}`,
+                    isError: true,
+                },
+            };
+        }
+
+        const parseResult = tool.parameters.safeParse(request.args);
+        if (!parseResult.success) {
+            const errors = parseResult.error.errors.map((e) => `${e.path.join('.')}: ${e.message}`);
+            return {
+                id: request.id,
+                name: request.name,
+                result: {
+                    content: `Validation error for tool "${request.name}": ${errors.join('; ')}`,
+                    isError: true,
+                },
+            };
+        }
+
+        // 超时优先级：工具自声明 > 全局配置 > 框架默认
+        const timeout = tool.timeout ?? globalTimeout ?? DEFAULT_TOOL_TIMEOUT;
+        const useTimeout = timeout > 0 && isFinite(timeout);
+
+        try {
+            let rawResult: ToolResult | string;
+
+            if (useTimeout) {
+                rawResult = await this.executeWithTimeout(
+                    () => tool.execute(parseResult.data, context),
+                    timeout,
+                    request.name,
+                );
+            } else {
+                rawResult = await tool.execute(parseResult.data, context);
+            }
+
+            const result: ToolResult =
+                typeof rawResult === 'string' ? { content: rawResult } : rawResult;
+
+            return { id: request.id, name: request.name, result };
+        } catch (error) {
+            if (error instanceof TimeoutError) {
+                return {
+                    id: request.id,
+                    name: request.name,
+                    result: {
+                        content: `Tool "${request.name}" timed out after ${timeout}ms`,
+                        isError: true,
+                    },
+                };
+            }
+
+            const message = error instanceof Error ? error.message : String(error);
+            return {
+                id: request.id,
+                name: request.name,
+                result: {
+                    content: `Tool "${request.name}" execution error: ${message}`,
+                    isError: true,
+                },
+            };
+        }
     }
 
-    const parseResult = tool.parameters.safeParse(request.args);
-    if (!parseResult.success) {
-      const errors = parseResult.error.errors.map(
-        (e) => `${e.path.join('.')}: ${e.message}`,
-      );
-      return {
-        id: request.id,
-        name: request.name,
-        result: {
-          content: `Validation error for tool "${request.name}": ${errors.join('; ')}`,
-          isError: true,
-        },
-      };
+    /**
+     * 使用 Promise.race 实现工具执行超时。
+     * 超时时通过 context.signal 的方式不可行（signal 是只读的），
+     * 所以超时后只能让 Promise.race 提前返回，工具执行会在后台继续直到自然结束。
+     */
+    private async executeWithTimeout<T>(
+        fn: () => Promise<T>,
+        timeoutMs: number,
+        toolName: string,
+    ): Promise<T> {
+        let timer: NodeJS.Timeout;
+
+        const timeoutPromise = new Promise<never>((_resolve, reject) => {
+            timer = setTimeout(() => {
+                reject(
+                    new TimeoutError(
+                        `Tool "${toolName}" timed out after ${timeoutMs}ms`,
+                        timeoutMs,
+                        'tool',
+                    ),
+                );
+            }, timeoutMs);
+        });
+
+        try {
+            return await Promise.race([fn(), timeoutPromise]);
+        } finally {
+            clearTimeout(timer!);
+        }
     }
-
-    // 超时优先级：工具自声明 > 全局配置 > 框架默认
-    const timeout = tool.timeout ?? globalTimeout ?? DEFAULT_TOOL_TIMEOUT;
-    const useTimeout = timeout > 0 && isFinite(timeout);
-
-    try {
-      let rawResult: ToolResult | string;
-
-      if (useTimeout) {
-        rawResult = await this.executeWithTimeout(
-          () => tool.execute(parseResult.data, context),
-          timeout,
-          request.name,
-        );
-      } else {
-        rawResult = await tool.execute(parseResult.data, context);
-      }
-
-      const result: ToolResult =
-        typeof rawResult === 'string' ? { content: rawResult } : rawResult;
-
-      return { id: request.id, name: request.name, result };
-    } catch (error) {
-      if (error instanceof TimeoutError) {
-        return {
-          id: request.id,
-          name: request.name,
-          result: {
-            content: `Tool "${request.name}" timed out after ${timeout}ms`,
-            isError: true,
-          },
-        };
-      }
-
-      const message = error instanceof Error ? error.message : String(error);
-      return {
-        id: request.id,
-        name: request.name,
-        result: {
-          content: `Tool "${request.name}" execution error: ${message}`,
-          isError: true,
-        },
-      };
-    }
-  }
-
-  /**
-   * 使用 Promise.race 实现工具执行超时。
-   * 超时时通过 context.signal 的方式不可行（signal 是只读的），
-   * 所以超时后只能让 Promise.race 提前返回，工具执行会在后台继续直到自然结束。
-   */
-  private async executeWithTimeout<T>(
-    fn: () => Promise<T>,
-    timeoutMs: number,
-    toolName: string,
-  ): Promise<T> {
-    let timer: NodeJS.Timeout;
-
-    const timeoutPromise = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(() => {
-        reject(
-          new TimeoutError(
-            `Tool "${toolName}" timed out after ${timeoutMs}ms`,
-            timeoutMs,
-            'tool',
-          ),
-        );
-      }, timeoutMs);
-    });
-
-    try {
-      return await Promise.race([fn(), timeoutPromise]);
-    } finally {
-      clearTimeout(timer!);
-    }
-  }
 }
 ```
 
@@ -469,6 +470,7 @@ git commit -m "feat(core): add tool execution timeout with Promise.race in ToolE
 ### Task 4: Scheduler 透传 globalTimeout
 
 **Files:**
+
 - Modify: `packages/core/src/scheduler/scheduler.ts`
 
 - [ ] **Step 1: 修改 Scheduler 的 execute 和 executeSingle 签名**
@@ -538,6 +540,7 @@ git commit -m "feat(core): pass globalTimeout through Scheduler to ToolExecutor"
 ### Task 5: BaseAgent 集成工具超时
 
 **Files:**
+
 - Modify: `packages/core/src/agent/base-agent.ts`
 
 - [ ] **Step 1: 在 executeToolCalls 中透传 toolTimeout 给 Scheduler**
@@ -545,11 +548,7 @@ git commit -m "feat(core): pass globalTimeout through Scheduler to ToolExecutor"
 在 `packages/core/src/agent/base-agent.ts` 的 `executeToolCalls()` 方法中，找到调用 `this.scheduler.executeSingle(request, toolContext)` 的位置（约第 467 行），改为：
 
 ```typescript
-        const result = await this.scheduler.executeSingle(
-          request,
-          toolContext,
-          this.config.toolTimeout,
-        );
+const result = await this.scheduler.executeSingle(request, toolContext, this.config.toolTimeout);
 ```
 
 这是 `executeToolCalls` 中唯一调用 scheduler 的地方，因为审批模式下逐个执行。
@@ -571,6 +570,7 @@ git commit -m "feat(core): integrate toolTimeout from AgentConfig into executeTo
 ### Task 6: LLM 流超时 — withStreamTimeout 工具函数
 
 **Files:**
+
 - Create: `packages/core/src/utils/stream-timeout.ts`
 - Create: `packages/core/src/utils/stream-timeout.test.ts`
 
@@ -584,104 +584,102 @@ import { withStreamTimeout } from './stream-timeout.js';
 import { TimeoutError } from '../errors/errors.js';
 
 /** 创建一个按指定延迟产出事件的 async generator */
-async function* delayedStream<T>(
-  events: { value: T; delayMs: number }[],
-): AsyncGenerator<T> {
-  for (const event of events) {
-    await new Promise((resolve) => setTimeout(resolve, event.delayMs));
-    yield event.value;
-  }
+async function* delayedStream<T>(events: { value: T; delayMs: number }[]): AsyncGenerator<T> {
+    for (const event of events) {
+        await new Promise((resolve) => setTimeout(resolve, event.delayMs));
+        yield event.value;
+    }
 }
 
 /** 收集 async generator 的所有值 */
 async function collect<T>(gen: AsyncGenerator<T>): Promise<T[]> {
-  const results: T[] = [];
-  for await (const item of gen) {
-    results.push(item);
-  }
-  return results;
+    const results: T[] = [];
+    for await (const item of gen) {
+        results.push(item);
+    }
+    return results;
 }
 
 describe('withStreamTimeout', () => {
-  it('passes through events from a normal stream', async () => {
-    const stream = delayedStream([
-      { value: 'a', delayMs: 10 },
-      { value: 'b', delayMs: 10 },
-      { value: 'c', delayMs: 10 },
-    ]);
+    it('passes through events from a normal stream', async () => {
+        const stream = delayedStream([
+            { value: 'a', delayMs: 10 },
+            { value: 'b', delayMs: 10 },
+            { value: 'c', delayMs: 10 },
+        ]);
 
-    const wrapped = withStreamTimeout(stream, {
-      connectionMs: 1000,
-      streamStallMs: 1000,
+        const wrapped = withStreamTimeout(stream, {
+            connectionMs: 1000,
+            streamStallMs: 1000,
+        });
+
+        const results = await collect(wrapped);
+        expect(results).toEqual(['a', 'b', 'c']);
     });
 
-    const results = await collect(wrapped);
-    expect(results).toEqual(['a', 'b', 'c']);
-  });
+    it('throws TimeoutError with llm_connection phase when no event arrives', async () => {
+        const stream = delayedStream([
+            { value: 'a', delayMs: 5000 }, // 首个事件太慢
+        ]);
 
-  it('throws TimeoutError with llm_connection phase when no event arrives', async () => {
-    const stream = delayedStream([
-      { value: 'a', delayMs: 5000 }, // 首个事件太慢
-    ]);
+        const wrapped = withStreamTimeout(stream, {
+            connectionMs: 50,
+            streamStallMs: 1000,
+        });
 
-    const wrapped = withStreamTimeout(stream, {
-      connectionMs: 50,
-      streamStallMs: 1000,
+        await expect(collect(wrapped)).rejects.toThrow(TimeoutError);
+        await expect(
+            collect(
+                withStreamTimeout(delayedStream([{ value: 'a', delayMs: 5000 }]), {
+                    connectionMs: 50,
+                    streamStallMs: 1000,
+                }),
+            ),
+        ).rejects.toThrow(expect.objectContaining({ phase: 'llm_connection' }));
     });
 
-    await expect(collect(wrapped)).rejects.toThrow(TimeoutError);
-    await expect(collect(
-      withStreamTimeout(
-        delayedStream([{ value: 'a', delayMs: 5000 }]),
-        { connectionMs: 50, streamStallMs: 1000 },
-      ),
-    )).rejects.toThrow(
-      expect.objectContaining({ phase: 'llm_connection' }),
-    );
-  });
+    it('throws TimeoutError with llm_stream phase when stream stalls', async () => {
+        const stream = delayedStream([
+            { value: 'a', delayMs: 10 }, // 首个事件快
+            { value: 'b', delayMs: 5000 }, // 第二个太慢
+        ]);
 
-  it('throws TimeoutError with llm_stream phase when stream stalls', async () => {
-    const stream = delayedStream([
-      { value: 'a', delayMs: 10 },  // 首个事件快
-      { value: 'b', delayMs: 5000 }, // 第二个太慢
-    ]);
+        const wrapped = withStreamTimeout(stream, {
+            connectionMs: 1000,
+            streamStallMs: 50,
+        });
 
-    const wrapped = withStreamTimeout(stream, {
-      connectionMs: 1000,
-      streamStallMs: 50,
+        await expect(collect(wrapped)).rejects.toThrow(TimeoutError);
+        await expect(
+            collect(
+                withStreamTimeout(
+                    delayedStream([
+                        { value: 'a', delayMs: 10 },
+                        { value: 'b', delayMs: 5000 },
+                    ]),
+                    { connectionMs: 1000, streamStallMs: 50 },
+                ),
+            ),
+        ).rejects.toThrow(expect.objectContaining({ phase: 'llm_stream' }));
     });
 
-    await expect(collect(wrapped)).rejects.toThrow(TimeoutError);
-    await expect(collect(
-      withStreamTimeout(
-        delayedStream([
-          { value: 'a', delayMs: 10 },
-          { value: 'b', delayMs: 5000 },
-        ]),
-        { connectionMs: 1000, streamStallMs: 50 },
-      ),
-    )).rejects.toThrow(
-      expect.objectContaining({ phase: 'llm_stream' }),
-    );
-  });
+    it('resets stall timer on each event', async () => {
+        // 每个事件间隔 40ms，stall 超时 60ms — 不应该触发
+        const stream = delayedStream([
+            { value: 'a', delayMs: 10 },
+            { value: 'b', delayMs: 40 },
+            { value: 'c', delayMs: 40 },
+            { value: 'd', delayMs: 40 },
+        ]);
 
-  it('resets stall timer on each event', async () => {
-    // 每个事件间隔 40ms，stall 超时 60ms — 不应该触发
-    const stream = delayedStream([
-      { value: 'a', delayMs: 10 },
-      { value: 'b', delayMs: 40 },
-      { value: 'c', delayMs: 40 },
-      { value: 'd', delayMs: 40 },
-    ]);
+        const wrapped = withStreamTimeout(stream, {
+            connectionMs: 1000,
+            streamStallMs: 60,
+        });
 
-    const wrapped = withStreamTimeout(stream, {
-      connectionMs: 1000,
-      streamStallMs: 60,
+        const results = await collect(wrapped);
+        expect(results).toEqual(['a', 'b', 'c', 'd']);
     });
-
-    const results = await collect(wrapped);
-    expect(results).toEqual(['a', 'b', 'c', 'd']);
-  });
 });
 ```
 
@@ -709,10 +707,10 @@ import { TimeoutError } from '../errors/errors.js';
 
 /** 流超时配置 */
 export interface StreamTimeoutConfig {
-  /** 连接超时：等待首个事件的最大毫秒数 */
-  connectionMs: number;
-  /** 流停滞超时：两个连续事件的最大间隔毫秒数 */
-  streamStallMs: number;
+    /** 连接超时：等待首个事件的最大毫秒数 */
+    connectionMs: number;
+    /** 流停滞超时：两个连续事件的最大间隔毫秒数 */
+    streamStallMs: number;
 }
 
 /**
@@ -725,72 +723,69 @@ export interface StreamTimeoutConfig {
  * - 超时时通过 reject 传播 TimeoutError
  */
 export async function* withStreamTimeout<T>(
-  stream: AsyncGenerator<T>,
-  config: StreamTimeoutConfig,
+    stream: AsyncGenerator<T>,
+    config: StreamTimeoutConfig,
 ): AsyncGenerator<T> {
-  let firstEventReceived = false;
-  let timer: NodeJS.Timeout | undefined;
-  let rejectTimeout: ((error: TimeoutError) => void) | undefined;
+    let firstEventReceived = false;
+    let timer: NodeJS.Timeout | undefined;
+    let rejectTimeout: ((error: TimeoutError) => void) | undefined;
 
-  // 创建一个 Promise 用于超时竞速
-  const createTimeoutPromise = (): Promise<never> => {
-    return new Promise<never>((_resolve, reject) => {
-      rejectTimeout = reject;
-      const phase = firstEventReceived ? 'llm_stream' : 'llm_connection';
-      const ms = firstEventReceived ? config.streamStallMs : config.connectionMs;
-      timer = setTimeout(() => {
-        reject(
-          new TimeoutError(
-            `LLM ${phase === 'llm_connection' ? 'connection' : 'stream'} timed out after ${ms}ms`,
-            ms,
-            phase,
-          ),
-        );
-      }, ms);
-    });
-  };
+    // 创建一个 Promise 用于超时竞速
+    const createTimeoutPromise = (): Promise<never> => {
+        return new Promise<never>((_resolve, reject) => {
+            rejectTimeout = reject;
+            const phase = firstEventReceived ? 'llm_stream' : 'llm_connection';
+            const ms = firstEventReceived ? config.streamStallMs : config.connectionMs;
+            timer = setTimeout(() => {
+                reject(
+                    new TimeoutError(
+                        `LLM ${phase === 'llm_connection' ? 'connection' : 'stream'} timed out after ${ms}ms`,
+                        ms,
+                        phase,
+                    ),
+                );
+            }, ms);
+        });
+    };
 
-  const clearTimer = () => {
-    if (timer !== undefined) {
-      clearTimeout(timer);
-      timer = undefined;
+    const clearTimer = () => {
+        if (timer !== undefined) {
+            clearTimeout(timer);
+            timer = undefined;
+        }
+    };
+
+    try {
+        // 用 iterator protocol 手动驱动 stream，实现与超时 Promise 的竞速
+        const iterator = stream[Symbol.asyncIterator]();
+
+        while (true) {
+            let timeoutPromise = createTimeoutPromise();
+
+            let iterResult: IteratorResult<T>;
+            try {
+                iterResult = await Promise.race([iterator.next(), timeoutPromise]);
+            } catch (error) {
+                // 超时发生，尝试终止上游 generator
+                await iterator.return?.(undefined);
+                throw error;
+            }
+
+            clearTimer();
+
+            if (iterResult.done) {
+                return;
+            }
+
+            if (!firstEventReceived) {
+                firstEventReceived = true;
+            }
+
+            yield iterResult.value;
+        }
+    } finally {
+        clearTimer();
     }
-  };
-
-  try {
-    // 用 iterator protocol 手动驱动 stream，实现与超时 Promise 的竞速
-    const iterator = stream[Symbol.asyncIterator]();
-
-    while (true) {
-      let timeoutPromise = createTimeoutPromise();
-
-      let iterResult: IteratorResult<T>;
-      try {
-        iterResult = await Promise.race([
-          iterator.next(),
-          timeoutPromise,
-        ]);
-      } catch (error) {
-        // 超时发生，尝试终止上游 generator
-        await iterator.return?.(undefined);
-        throw error;
-      }
-
-      clearTimer();
-
-      if (iterResult.done) {
-        return;
-      }
-
-      if (!firstEventReceived) {
-        firstEventReceived = true;
-      }
-
-      yield iterResult.value;
-    }
-  } finally {
-    clearTimer();
-  }
 }
 ```
 
@@ -811,6 +806,7 @@ git commit -m "feat(core): add withStreamTimeout for two-phase LLM stream timeou
 ### Task 7: BaseAgent.collectResponse 集成流超时和重试
 
 **Files:**
+
 - Modify: `packages/core/src/agent/base-agent.ts`
 
 - [ ] **Step 1: 在 base-agent.ts 中导入依赖**
@@ -835,16 +831,16 @@ const DEFAULT_LLM_STREAM_STALL_TIMEOUT = 30_000;
 
 /** 连接超时重试配置 */
 const CONNECTION_RETRY_OPTIONS = {
-  maxAttempts: 3,
-  initialDelayMs: 5000,
-  maxDelayMs: 30000,
+    maxAttempts: 3,
+    initialDelayMs: 5000,
+    maxDelayMs: 30000,
 };
 
 /** 流中超时重试配置 */
 const STREAM_STALL_RETRY_OPTIONS = {
-  maxAttempts: 2,
-  initialDelayMs: 1000,
-  maxDelayMs: 5000,
+    maxAttempts: 2,
+    initialDelayMs: 1000,
+    maxDelayMs: 5000,
 };
 ```
 
@@ -934,6 +930,7 @@ git commit -m "feat(core): integrate LLM stream timeout with two-phase retry in 
 ### Task 8: 集成测试 — 超时场景端到端
 
 **Files:**
+
 - Modify: `packages/core/src/agent/react-agent.test.ts`
 
 - [ ] **Step 1: 在 react-agent.test.ts 添加超时相关测试**
@@ -941,98 +938,98 @@ git commit -m "feat(core): integrate LLM stream timeout with two-phase retry in 
 在 `packages/core/src/agent/react-agent.test.ts` 文件末尾，`describe('ReActAgent')` 块内追加：
 
 ```typescript
-  describe('timeout', () => {
+describe('timeout', () => {
     it('returns tool timeout error to LLM and continues', async () => {
-      const slowTool = tool(
-        {
-          name: 'slow_tool',
-          description: 'A tool that takes too long',
-          parameters: z.object({}),
-          timeout: 50, // 50ms timeout
-        },
-        async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          return 'done';
-        },
-      );
+        const slowTool = tool(
+            {
+                name: 'slow_tool',
+                description: 'A tool that takes too long',
+                parameters: z.object({}),
+                timeout: 50, // 50ms timeout
+            },
+            async () => {
+                await new Promise((resolve) => setTimeout(resolve, 5000));
+                return 'done';
+            },
+        );
 
-      const provider = mockProvider([
-        // 第一轮：LLM 调用 slow_tool
-        [
-          { type: 'tool_call', id: 'tc1', name: 'slow_tool', args: {} },
-          { type: 'finish', reason: 'tool_calls' as const },
-        ],
-        // 第二轮：LLM 收到超时错误后给出文本响应
-        [
-          { type: 'text', text: 'The tool timed out, sorry.' },
-          { type: 'finish', reason: 'stop' as const },
-        ],
-      ]);
+        const provider = mockProvider([
+            // 第一轮：LLM 调用 slow_tool
+            [
+                { type: 'tool_call', id: 'tc1', name: 'slow_tool', args: {} },
+                { type: 'finish', reason: 'tool_calls' as const },
+            ],
+            // 第二轮：LLM 收到超时错误后给出文本响应
+            [
+                { type: 'text', text: 'The tool timed out, sorry.' },
+                { type: 'finish', reason: 'stop' as const },
+            ],
+        ]);
 
-      const agent = new ReActAgent({
-        provider,
-        model: 'test',
-        tools: [slowTool],
-      });
+        const agent = new ReActAgent({
+            provider,
+            model: 'test',
+            tools: [slowTool],
+        });
 
-      const events = await collectEvents(agent, 'Do something slow');
+        const events = await collectEvents(agent, 'Do something slow');
 
-      // 验证有 tool_response 事件且标记为错误
-      const toolResponse = events.find(
-        (e) => e.type === 'tool_response' && e.toolName === 'slow_tool',
-      );
-      expect(toolResponse).toBeDefined();
-      expect((toolResponse as any).isError).toBe(true);
-      expect((toolResponse as any).content).toContain('timed out');
+        // 验证有 tool_response 事件且标记为错误
+        const toolResponse = events.find(
+            (e) => e.type === 'tool_response' && e.toolName === 'slow_tool',
+        );
+        expect(toolResponse).toBeDefined();
+        expect((toolResponse as any).isError).toBe(true);
+        expect((toolResponse as any).content).toContain('timed out');
 
-      // Agent 正常结束
-      expect(events[events.length - 1]).toMatchObject({
-        type: 'agent_end',
-        reason: 'complete',
-      });
+        // Agent 正常结束
+        expect(events[events.length - 1]).toMatchObject({
+            type: 'agent_end',
+            reason: 'complete',
+        });
     });
 
     it('respects AgentConfig.toolTimeout as default', async () => {
-      const slowTool = tool(
-        {
-          name: 'slow_tool',
-          description: 'A tool without its own timeout',
-          parameters: z.object({}),
-        },
-        async () => {
-          await new Promise((resolve) => setTimeout(resolve, 5000));
-          return 'done';
-        },
-      );
+        const slowTool = tool(
+            {
+                name: 'slow_tool',
+                description: 'A tool without its own timeout',
+                parameters: z.object({}),
+            },
+            async () => {
+                await new Promise((resolve) => setTimeout(resolve, 5000));
+                return 'done';
+            },
+        );
 
-      const provider = mockProvider([
-        [
-          { type: 'tool_call', id: 'tc1', name: 'slow_tool', args: {} },
-          { type: 'finish', reason: 'tool_calls' as const },
-        ],
-        [
-          { type: 'text', text: 'Timed out.' },
-          { type: 'finish', reason: 'stop' as const },
-        ],
-      ]);
+        const provider = mockProvider([
+            [
+                { type: 'tool_call', id: 'tc1', name: 'slow_tool', args: {} },
+                { type: 'finish', reason: 'tool_calls' as const },
+            ],
+            [
+                { type: 'text', text: 'Timed out.' },
+                { type: 'finish', reason: 'stop' as const },
+            ],
+        ]);
 
-      const agent = new ReActAgent({
-        provider,
-        model: 'test',
-        tools: [slowTool],
-        toolTimeout: 50, // global 50ms timeout
-      });
+        const agent = new ReActAgent({
+            provider,
+            model: 'test',
+            tools: [slowTool],
+            toolTimeout: 50, // global 50ms timeout
+        });
 
-      const events = await collectEvents(agent, 'Do something');
+        const events = await collectEvents(agent, 'Do something');
 
-      const toolResponse = events.find(
-        (e) => e.type === 'tool_response' && e.toolName === 'slow_tool',
-      );
-      expect(toolResponse).toBeDefined();
-      expect((toolResponse as any).isError).toBe(true);
-      expect((toolResponse as any).content).toContain('timed out');
+        const toolResponse = events.find(
+            (e) => e.type === 'tool_response' && e.toolName === 'slow_tool',
+        );
+        expect(toolResponse).toBeDefined();
+        expect((toolResponse as any).isError).toBe(true);
+        expect((toolResponse as any).content).toContain('timed out');
     });
-  });
+});
 ```
 
 确保文件顶部已导入 `tool`：

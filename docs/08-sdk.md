@@ -24,11 +24,11 @@ SubAgent         子代理 → 包装成 Tool  ReActAgent → tool()
 
 ```typescript
 interface Extension {
-  name: string
-  description?: string
-  instructions?: string    // 注入到系统提示词中
-  tools?: Tool[]           // 打包的工具
-  skills?: Skill[]         // 打包的技能
+    name: string;
+    description?: string;
+    instructions?: string; // 注入到系统提示词中
+    tools?: Tool[]; // 打包的工具
+    skills?: Skill[]; // 打包的技能
 }
 ```
 
@@ -36,18 +36,18 @@ interface Extension {
 
 ```typescript
 const webExtension = extension({
-  name: 'web-tools',
-  description: 'Web 搜索和内容抓取能力',
-  instructions: `你可以使用 web_search 搜索互联网信息，使用 web_fetch 抓取网页内容。
+    name: 'web-tools',
+    description: 'Web 搜索和内容抓取能力',
+    instructions: `你可以使用 web_search 搜索互联网信息，使用 web_fetch 抓取网页内容。
                  优先搜索最新信息，不要依赖训练数据中的过时信息。`,
-  tools: [webSearchTool, webFetchTool],
+    tools: [webSearchTool, webFetchTool],
 });
 
 const codeExtension = extension({
-  name: 'code-tools',
-  description: '代码读写能力',
-  instructions: '修改代码前先读取完整文件，理解上下文后再动手。',
-  tools: [readFileTool, writeFileTool, searchCodeTool],
+    name: 'code-tools',
+    description: '代码读写能力',
+    instructions: '修改代码前先读取完整文件，理解上下文后再动手。',
+    tools: [readFileTool, writeFileTool, searchCodeTool],
 });
 ```
 
@@ -56,17 +56,14 @@ const codeExtension = extension({
 ```typescript
 // 给 Agent 安装多个 Extension
 const agent = new Agent({
-  provider,
-  model: 'gpt-4o',
-  tools: [
-    ...webExtension.tools,
-    ...codeExtension.tools,
-  ],
-  systemPrompt: [
-    '你是一个全能助手。',
-    webExtension.instructions,
-    codeExtension.instructions,
-  ].join('\n\n'),
+    provider,
+    model: 'gpt-4o',
+    tools: [...webExtension.tools, ...codeExtension.tools],
+    systemPrompt: [
+        '你是一个全能助手。',
+        webExtension.instructions,
+        codeExtension.instructions,
+    ].join('\n\n'),
 });
 ```
 
@@ -80,13 +77,10 @@ const agent = new Agent({
 import { Agent, builtinTools } from '@agent-tea/sdk';
 
 const agent = new Agent({
-  provider,
-  model: 'gpt-4o',
-  tools: [...builtinTools.tools],
-  systemPrompt: [
-    '你是一个编程助手。',
-    builtinTools.instructions,
-  ].join('\n\n'),
+    provider,
+    model: 'gpt-4o',
+    tools: [...builtinTools.tools],
+    systemPrompt: ['你是一个编程助手。', builtinTools.instructions].join('\n\n'),
 });
 ```
 
@@ -104,11 +98,11 @@ Extension 是"一套厨具"（工具集），Skill 是"一份菜谱"（工具 + 
 
 ```typescript
 interface Skill {
-  name: string
-  description: string
-  instructions: string     // 任务特定的行为指令
-  tools?: Tool[]           // 任务需要的工具
-  trigger?: string         // 触发条件，如 '/review'
+    name: string;
+    description: string;
+    instructions: string; // 任务特定的行为指令
+    tools?: Tool[]; // 任务需要的工具
+    trigger?: string; // 触发条件，如 '/review'
 }
 ```
 
@@ -116,39 +110,39 @@ interface Skill {
 
 ```typescript
 const codeReviewSkill = skill({
-  name: 'code-review',
-  description: '审查代码变更，找出潜在问题',
-  trigger: '/review',
-  instructions: `执行代码审查时，请遵循以下流程：
+    name: 'code-review',
+    description: '审查代码变更，找出潜在问题',
+    trigger: '/review',
+    instructions: `执行代码审查时，请遵循以下流程：
     1. 先用 git_diff 获取变更内容
     2. 用 read_file 阅读变更文件的完整上下文
     3. 逐文件分析：安全性、性能、可维护性
     4. 输出结构化的审查报告`,
-  tools: [gitDiffTool, readFileTool, searchCodeTool],
+    tools: [gitDiffTool, readFileTool, searchCodeTool],
 });
 
 const logAnalysisSkill = skill({
-  name: 'log-analysis',
-  description: '分析日志，诊断错误根因',
-  trigger: '/analyze',
-  instructions: `日志分析流程：
+    name: 'log-analysis',
+    description: '分析日志，诊断错误根因',
+    trigger: '/analyze',
+    instructions: `日志分析流程：
     1. 先搜索错误级别日志
     2. 识别错误模式和时间线
     3. 关联相关代码
     4. 给出根因分析和修复建议`,
-  tools: [searchLogTool, readFileTool],
+    tools: [searchLogTool, readFileTool],
 });
 ```
 
 ### Skill vs Extension
 
-| 维度 | Extension | Skill |
-|------|-----------|-------|
-| 目的 | 打包可复用能力 | 定义任务执行方式 |
+| 维度       | Extension        | Skill              |
+| ---------- | ---------------- | ------------------ |
+| 目的       | 打包可复用能力   | 定义任务执行方式   |
 | 有行为指令 | 可选（通用性的） | 必填（任务特定的） |
-| 有触发条件 | 无 | 有（如 `/review`） |
-| 粒度 | 粗（一组能力） | 细（一个任务） |
-| 类比 | 工具箱 | 操作手册 |
+| 有触发条件 | 无               | 有（如 `/review`） |
+| 粒度       | 粗（一组能力）   | 细（一个任务）     |
+| 类比       | 工具箱           | 操作手册           |
 
 两者可以组合：一个 Extension 里可以包含多个 Skill。
 
@@ -206,21 +200,21 @@ sequenceDiagram
 import { subAgent } from '@agent-tea/sdk';
 
 const researcher = subAgent({
-  name: 'researcher',
-  description: '深度调研一个主题，返回结构化的调研报告',
-  provider: openaiProvider,        // 可以共享父 Agent 的 provider
-  model: 'gpt-4o-mini',           // 也可以用更便宜的模型
-  tools: [webSearchTool, summarizeTool],
-  systemPrompt: '你是一个调研分析师。给定主题后，搜索信息并产出结构化报告。',
-  maxIterations: 10,               // 比父 Agent 的 20 更保守
+    name: 'researcher',
+    description: '深度调研一个主题，返回结构化的调研报告',
+    provider: openaiProvider, // 可以共享父 Agent 的 provider
+    model: 'gpt-4o-mini', // 也可以用更便宜的模型
+    tools: [webSearchTool, summarizeTool],
+    systemPrompt: '你是一个调研分析师。给定主题后，搜索信息并产出结构化报告。',
+    maxIterations: 10, // 比父 Agent 的 20 更保守
 });
 
 // researcher 是一个 Tool，可以直接放进父 Agent 的工具列表
 const parentAgent = new Agent({
-  provider: openaiProvider,
-  model: 'gpt-4o',
-  tools: [researcher, calculatorTool, ...otherTools],
-  systemPrompt: '你是一个全能助手。需要深度调研时，使用 researcher 工具。',
+    provider: openaiProvider,
+    model: 'gpt-4o',
+    tools: [researcher, calculatorTool, ...otherTools],
+    systemPrompt: '你是一个全能助手。需要深度调研时，使用 researcher 工具。',
 });
 ```
 
@@ -230,41 +224,42 @@ const parentAgent = new Agent({
 
 ```typescript
 function subAgent(config: SubAgentConfig): Tool {
-  // 1. 创建一个 ReActAgent 实例（初始化时就创建，后续复用）
-  const agent = new ReActAgent({
-    provider: config.provider,
-    model: config.model,
-    tools: config.tools ?? [],
-    systemPrompt: config.systemPrompt,
-    maxIterations: config.maxIterations ?? 10,
-  });
+    // 1. 创建一个 ReActAgent 实例（初始化时就创建，后续复用）
+    const agent = new ReActAgent({
+        provider: config.provider,
+        model: config.model,
+        tools: config.tools ?? [],
+        systemPrompt: config.systemPrompt,
+        maxIterations: config.maxIterations ?? 10,
+    });
 
-  // 2. 包装成 Tool
-  return tool(
-    {
-      name: config.name,
-      description: config.description,
-      parameters: z.object({
-        task: z.string().describe('要委派给子代理的任务描述'),
-      }),
-    },
-    async ({ task }) => {
-      const messages: string[] = [];
+    // 2. 包装成 Tool
+    return tool(
+        {
+            name: config.name,
+            description: config.description,
+            parameters: z.object({
+                task: z.string().describe('要委派给子代理的任务描述'),
+            }),
+        },
+        async ({ task }) => {
+            const messages: string[] = [];
 
-      // 3. 运行子 Agent，收集所有 assistant 消息
-      for await (const event of agent.run(task)) {
-        if (event.type === 'message' && event.role === 'assistant') {
-          messages.push(event.content);
-        }
-      }
+            // 3. 运行子 Agent，收集所有 assistant 消息
+            for await (const event of agent.run(task)) {
+                if (event.type === 'message' && event.role === 'assistant') {
+                    messages.push(event.content);
+                }
+            }
 
-      return { content: messages.join('\n\n') };
-    }
-  );
+            return { content: messages.join('\n\n') };
+        },
+    );
 }
 ```
 
 关键点：
+
 - 子 Agent 的所有事件（tool_request、tool_response 等）**不会**冒泡到父 Agent — 父 Agent 只看到最终的文本结果
 - 子 Agent 用 `ReActAgent`，所以有完整的推理-行动循环能力
 - `maxIterations` 默认 10（比父 Agent 的 20 更保守），防止子任务失控
@@ -288,13 +283,13 @@ CEO Agent (gpt-4o)
 
 ### SubAgent 的优势
 
-| 优势 | 说明 |
-|------|------|
-| **专业化** | 子 Agent 有针对性的工具集和提示词 |
-| **成本优化** | 子 Agent 可以用更便宜的模型 |
-| **隔离性** | 子 Agent 失败不影响父 Agent（错误被包装为 ToolResult） |
-| **透明性** | 父 Agent 不需要知道子 Agent 的内部实现 |
-| **复用性** | 同一个 SubAgent 可以被多个父 Agent 使用 |
+| 优势         | 说明                                                   |
+| ------------ | ------------------------------------------------------ |
+| **专业化**   | 子 Agent 有针对性的工具集和提示词                      |
+| **成本优化** | 子 Agent 可以用更便宜的模型                            |
+| **隔离性**   | 子 Agent 失败不影响父 Agent（错误被包装为 ToolResult） |
+| **透明性**   | 父 Agent 不需要知道子 Agent 的内部实现                 |
+| **复用性**   | 同一个 SubAgent 可以被多个父 Agent 使用                |
 
 ## 完整示例：构建一个日志分析 Agent
 
@@ -356,6 +351,7 @@ for await (const event of agent.run('服务 user-api 响应时间突增，请诊
 ```
 
 **这个例子展示了**：
+
 - `extension()` 打包代码工具
 - `subAgent()` 创建专门的代码分析子代理
 - 审批系统保护写操作
@@ -399,14 +395,15 @@ for await (const event of agent.run('服务 user-api 响应时间突增，请诊
 ---
 name: code-review
 description: 审查代码变更，找出安全和性能问题
-version: "1.0.0"
+version: '1.0.0'
 trigger: /review
 tools:
-  - read_file
-  - grep
+    - read_file
+    - grep
 ---
 
 执行代码审查时，请遵循以下流程：
+
 1. 先获取变更文件列表
 2. 逐文件阅读完整上下文
 3. 分析安全性、性能、可维护性
@@ -427,8 +424,8 @@ description: 深度调研一个主题，返回结构化报告
 model: gpt-4o-mini
 maxIterations: 10
 tools:
-  - web_fetch
-  - read_file
+    - web_fetch
+    - read_file
 ---
 
 你是一个调研分析师。收到主题后，搜索信息并产出结构化报告。
@@ -447,22 +444,22 @@ const provider = new OpenAIProvider();
 
 // 一行扫描所有 Skill 和 Agent
 const found = await discover({
-  provider,
-  model: 'gpt-4o',
-  // projectDir: '.agent-tea',         // 可选，默认 process.cwd()/.agent-tea
-  // globalDir: '~/.agent-tea',        // 可选，默认 ~/.agent-tea
-  // extraTools: new Map([...]),        // 可选，注册自定义工具供 SKILL.md/AGENT.md 引用
+    provider,
+    model: 'gpt-4o',
+    // projectDir: '.agent-tea',         // 可选，默认 process.cwd()/.agent-tea
+    // globalDir: '~/.agent-tea',        // 可选，默认 ~/.agent-tea
+    // extraTools: new Map([...]),        // 可选，注册自定义工具供 SKILL.md/AGENT.md 引用
 });
 
 // 返回值直接合并到 AgentConfig
 const agent = new Agent({
-  provider,
-  model: 'gpt-4o',
-  tools: [...myTools, ...found.tools],  // 自动去重
-  systemPrompt: [
-    '你是一个全能助手。',
-    found.instructions,                  // 所有 Skill 指令拼接
-  ].join('\n\n'),
+    provider,
+    model: 'gpt-4o',
+    tools: [...myTools, ...found.tools], // 自动去重
+    systemPrompt: [
+        '你是一个全能助手。',
+        found.instructions, // 所有 Skill 指令拼接
+    ].join('\n\n'),
 });
 ```
 
@@ -470,10 +467,10 @@ const agent = new Agent({
 
 ```typescript
 interface DiscoveredAssets {
-  skills: Skill[]       // 解析后的 Skill 定义
-  agents: Tool[]        // SubAgent 包装后的 Tool
-  tools: Tool[]         // skills + agents 的所有工具，已去重
-  instructions: string  // 所有 Skill 的 instructions 拼接
+    skills: Skill[]; // 解析后的 Skill 定义
+    agents: Tool[]; // SubAgent 包装后的 Tool
+    tools: Tool[]; // skills + agents 的所有工具，已去重
+    instructions: string; // 所有 Skill 的 instructions 拼接
 }
 ```
 
@@ -481,15 +478,15 @@ interface DiscoveredAssets {
 
 SKILL.md 和 AGENT.md 中的 `tools` 字段写的是工具名称字符串。`ToolResolver` 负责将名称映射为实际的 Tool 实例：
 
-| 名称 | 映射到 | 来源 |
-|------|--------|------|
-| `read_file` | readFile | 内置工具 |
-| `write_file` | writeFile | 内置工具 |
-| `list_directory` | listDirectory | 内置工具 |
-| `execute_shell` | executeShell | 内置工具 |
-| `grep` | grep | 内置工具 |
-| `web_fetch` | webFetch | 内置工具 |
-| 自定义名称 | — | `extraTools` Map |
+| 名称             | 映射到        | 来源             |
+| ---------------- | ------------- | ---------------- |
+| `read_file`      | readFile      | 内置工具         |
+| `write_file`     | writeFile     | 内置工具         |
+| `list_directory` | listDirectory | 内置工具         |
+| `execute_shell`  | executeShell  | 内置工具         |
+| `grep`           | grep          | 内置工具         |
+| `web_fetch`      | webFetch      | 内置工具         |
+| 自定义名称       | —             | `extraTools` Map |
 
 未知的工具名会产生警告（不会中断加载），方便排查拼写错误。
 

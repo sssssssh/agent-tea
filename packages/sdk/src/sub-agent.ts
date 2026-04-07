@@ -33,20 +33,20 @@ import { z } from 'zod';
 import { ReActAgent, tool, type LLMProvider, type Tool } from '@agent-tea/core';
 
 export interface SubAgentConfig {
-  /** 工具名称（父 Agent 通过此名称调用子 Agent） */
-  name: string;
-  /** 子 Agent 的能力描述（发送给父 LLM，帮助其决定何时委派） */
-  description: string;
-  /** 子 Agent 使用的 LLM Provider（可以与父 Agent 不同） */
-  provider: LLMProvider;
-  /** 子 Agent 使用的模型（可以用更便宜的模型执行子任务） */
-  model: string;
-  /** 子 Agent 可用的工具 */
-  tools?: Tool[];
-  /** 子 Agent 的 system prompt */
-  systemPrompt?: string;
-  /** 子 Agent 循环最大迭代次数（默认 10，比主 Agent 的 20 更保守） */
-  maxIterations?: number;
+    /** 工具名称（父 Agent 通过此名称调用子 Agent） */
+    name: string;
+    /** 子 Agent 的能力描述（发送给父 LLM，帮助其决定何时委派） */
+    description: string;
+    /** 子 Agent 使用的 LLM Provider（可以与父 Agent 不同） */
+    provider: LLMProvider;
+    /** 子 Agent 使用的模型（可以用更便宜的模型执行子任务） */
+    model: string;
+    /** 子 Agent 可用的工具 */
+    tools?: Tool[];
+    /** 子 Agent 的 system prompt */
+    systemPrompt?: string;
+    /** 子 Agent 循环最大迭代次数（默认 10，比主 Agent 的 20 更保守） */
+    maxIterations?: number;
 }
 
 /**
@@ -55,39 +55,39 @@ export interface SubAgentConfig {
  * 收集所有 assistant 消息作为结果返回给父 Agent。
  */
 export function subAgent(config: SubAgentConfig): Tool {
-  // 在创建时就实例化 Agent，避免每次调用都重新创建
-  const agent = new ReActAgent({
-    provider: config.provider,
-    model: config.model,
-    tools: config.tools,
-    systemPrompt: config.systemPrompt,
-    maxIterations: config.maxIterations ?? 10,
-  });
+    // 在创建时就实例化 Agent，避免每次调用都重新创建
+    const agent = new ReActAgent({
+        provider: config.provider,
+        model: config.model,
+        tools: config.tools,
+        systemPrompt: config.systemPrompt,
+        maxIterations: config.maxIterations ?? 10,
+    });
 
-  return tool(
-    {
-      name: config.name,
-      description: config.description,
-      // 子 Agent 只接收一个 task 参数，由父 LLM 描述要完成的任务
-      parameters: z.object({
-        task: z.string().describe('The task for the sub-agent to complete'),
-      }),
-    },
-    async ({ task }) => {
-      let result = '';
+    return tool(
+        {
+            name: config.name,
+            description: config.description,
+            // 子 Agent 只接收一个 task 参数，由父 LLM 描述要完成的任务
+            parameters: z.object({
+                task: z.string().describe('The task for the sub-agent to complete'),
+            }),
+        },
+        async ({ task }) => {
+            let result = '';
 
-      // 运行子 Agent，收集所有 assistant 消息拼接为最终结果
-      for await (const event of agent.run(task)) {
-        if (event.type === 'message' && event.role === 'assistant') {
-          result += event.content;
-        }
-        // 致命错误时立即返回错误信息，不继续等待
-        if (event.type === 'error' && event.fatal) {
-          return { content: `Sub-agent error: ${event.message}`, isError: true };
-        }
-      }
+            // 运行子 Agent，收集所有 assistant 消息拼接为最终结果
+            for await (const event of agent.run(task)) {
+                if (event.type === 'message' && event.role === 'assistant') {
+                    result += event.content;
+                }
+                // 致命错误时立即返回错误信息，不继续等待
+                if (event.type === 'error' && event.fatal) {
+                    return { content: `Sub-agent error: ${event.message}`, isError: true };
+                }
+            }
 
-      return result || 'Sub-agent completed without output.';
-    },
-  );
+            return result || 'Sub-agent completed without output.';
+        },
+    );
 }

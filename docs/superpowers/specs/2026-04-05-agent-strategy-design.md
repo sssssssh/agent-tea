@@ -45,34 +45,34 @@
 
 ```typescript
 type AgentState =
-  | 'idle'
-  | 'reacting'
-  | 'planning'
-  | 'awaiting_approval'
-  | 'executing'
-  | 'step_failed'
-  | 'completed'
-  | 'error'
-  | 'aborted';
+    | 'idle'
+    | 'reacting'
+    | 'planning'
+    | 'awaiting_approval'
+    | 'executing'
+    | 'step_failed'
+    | 'completed'
+    | 'error'
+    | 'aborted';
 ```
 
 ### 实现
 
 ```typescript
 interface StateTransition {
-  from: AgentState | AgentState[];
-  to: AgentState;
-  guard?: () => boolean;
+    from: AgentState | AgentState[];
+    to: AgentState;
+    guard?: () => boolean;
 }
 
 class AgentStateMachine {
-  private state: AgentState = 'idle';
-  private readonly transitions: StateTransition[];
-  private readonly listeners: Array<(from: AgentState, to: AgentState) => void>;
+    private state: AgentState = 'idle';
+    private readonly transitions: StateTransition[];
+    private readonly listeners: Array<(from: AgentState, to: AgentState) => void>;
 
-  transition(to: AgentState): void;
-  get current(): AgentState;
-  onTransition(listener: (from: AgentState, to: AgentState) => void): () => void;
+    transition(to: AgentState): void;
+    get current(): AgentState;
+    onTransition(listener: (from: AgentState, to: AgentState) => void): () => void;
 }
 ```
 
@@ -80,10 +80,10 @@ class AgentStateMachine {
 
 ```typescript
 interface StateChangeEvent {
-  type: 'state_change';
-  from: AgentState;
-  to: AgentState;
-  agentId?: string;
+    type: 'state_change';
+    from: AgentState;
+    to: AgentState;
+    agentId?: string;
 }
 ```
 
@@ -97,42 +97,63 @@ interface StateChangeEvent {
 
 ```typescript
 abstract class BaseAgent {
-  protected readonly config: AgentConfig;
-  protected readonly registry: ToolRegistry;
-  protected readonly scheduler: Scheduler;
-  protected readonly stateMachine: AgentStateMachine;
+    protected readonly config: AgentConfig;
+    protected readonly registry: ToolRegistry;
+    protected readonly scheduler: Scheduler;
+    protected readonly stateMachine: AgentStateMachine;
 
-  constructor(config: AgentConfig);
+    constructor(config: AgentConfig);
 
-  // ---- 子类必须实现 ----
-  protected abstract defineTransitions(): StateTransition[];
-  protected abstract executeLoop(
-    messages: Message[],
-    chatSession: ChatSession,
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent>;
+    // ---- 子类必须实现 ----
+    protected abstract defineTransitions(): StateTransition[];
+    protected abstract executeLoop(
+        messages: Message[],
+        chatSession: ChatSession,
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent>;
 
-  // ---- 生命周期钩子（默认空实现）----
-  protected async onBeforeIteration(ctx: IterationContext): Promise<void>;
-  protected async onAfterIteration(ctx: IterationContext): Promise<void>;
-  protected onToolFilter(tools: Tool[]): Tool[];
-  protected async onPlanCreated(plan: Plan): Promise<PlanApproval>;
-  protected async onStepStart(step: PlanStep): Promise<void>;
-  protected async onStepComplete(step: PlanStep, result: StepResult): Promise<void>;
-  protected async onStepFailed(step: PlanStep, error: Error): Promise<StepFailureAction>;
-  protected async onBeforeToolCall(toolName: string, args: Record<string, unknown>): Promise<ToolCallDecision>;
-  protected async onAfterToolCall(toolName: string, result: ToolResult): Promise<void>;
+    // ---- 生命周期钩子（默认空实现）----
+    protected async onBeforeIteration(ctx: IterationContext): Promise<void>;
+    protected async onAfterIteration(ctx: IterationContext): Promise<void>;
+    protected onToolFilter(tools: Tool[]): Tool[];
+    protected async onPlanCreated(plan: Plan): Promise<PlanApproval>;
+    protected async onStepStart(step: PlanStep): Promise<void>;
+    protected async onStepComplete(step: PlanStep, result: StepResult): Promise<void>;
+    protected async onStepFailed(step: PlanStep, error: Error): Promise<StepFailureAction>;
+    protected async onBeforeToolCall(
+        toolName: string,
+        args: Record<string, unknown>,
+    ): Promise<ToolCallDecision>;
+    protected async onAfterToolCall(toolName: string, result: ToolResult): Promise<void>;
 
-  // ---- 共享基础设施 ----
-  async *run(input: string | Message[], signal?: AbortSignal): AsyncGenerator<AgentEvent>;
-  protected async collectResponse(chatSession: ChatSession, messages: Message[], signal: AbortSignal): Promise<CollectedResponse>;
-  protected async *executeToolCalls(toolCalls: ToolCallInfo[], messages: Message[], sessionId: string, signal: AbortSignal): AsyncGenerator<AgentEvent>;
-  protected createChatSession(): ChatSession;
+    // ---- 共享基础设施 ----
+    async *run(input: string | Message[], signal?: AbortSignal): AsyncGenerator<AgentEvent>;
+    protected async collectResponse(
+        chatSession: ChatSession,
+        messages: Message[],
+        signal: AbortSignal,
+    ): Promise<CollectedResponse>;
+    protected async *executeToolCalls(
+        toolCalls: ToolCallInfo[],
+        messages: Message[],
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent>;
+    protected createChatSession(): ChatSession;
 
-  // ---- Plan 相关共享逻辑（供 ReActAgent(allowPlanMode) 和 PlanAndExecuteAgent 复用）----
-  protected async *runPlanPhase(messages: Message[], sessionId: string, signal: AbortSignal): AsyncGenerator<AgentEvent>;
-  protected async *runExecutePhase(plan: Plan, messages: Message[], sessionId: string, signal: AbortSignal): AsyncGenerator<AgentEvent>;
+    // ---- Plan 相关共享逻辑（供 ReActAgent(allowPlanMode) 和 PlanAndExecuteAgent 复用）----
+    protected async *runPlanPhase(
+        messages: Message[],
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent>;
+    protected async *runExecutePhase(
+        plan: Plan,
+        messages: Message[],
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent>;
 }
 ```
 
@@ -140,32 +161,32 @@ abstract class BaseAgent {
 
 ```typescript
 interface IterationContext {
-  iteration: number;
-  messages: readonly Message[];
-  sessionId: string;
-  state: AgentState;
+    iteration: number;
+    messages: readonly Message[];
+    sessionId: string;
+    state: AgentState;
 }
 
 interface CollectedResponse {
-  text: string;
-  toolCalls: ToolCallInfo[];
-  usage?: UsageInfo;
+    text: string;
+    toolCalls: ToolCallInfo[];
+    usage?: UsageInfo;
 }
 
 interface ToolCallInfo {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
 }
 
 interface ToolCallDecision {
-  allow: boolean;
-  modifiedArgs?: Record<string, unknown>;
+    allow: boolean;
+    modifiedArgs?: Record<string, unknown>;
 }
 
 interface PlanApproval {
-  approved: boolean;
-  feedback?: string;
+    approved: boolean;
+    feedback?: string;
 }
 
 type StepFailureAction = 'pause' | 'skip' | 'replan' | 'abort';
@@ -175,18 +196,18 @@ type StepFailureAction = 'pause' | 'skip' | 'replan' | 'abort';
 
 ```typescript
 interface AgentConfig {
-  provider: LLMProvider;
-  model: string;
-  tools?: Tool[];
-  systemPrompt?: string;
-  maxIterations?: number;
-  temperature?: number;
-  maxTokens?: number;
+    provider: LLMProvider;
+    model: string;
+    tools?: Tool[];
+    systemPrompt?: string;
+    maxIterations?: number;
+    temperature?: number;
+    maxTokens?: number;
 
-  // 新增
-  agentId?: string;
-  strategy?: 'react' | 'plan-and-execute';
-  allowPlanMode?: boolean;
+    // 新增
+    agentId?: string;
+    strategy?: 'react' | 'plan-and-execute';
+    allowPlanMode?: boolean;
 }
 ```
 
@@ -194,11 +215,11 @@ interface AgentConfig {
 
 ```typescript
 interface Tool<TParams = Record<string, unknown>> {
-  readonly name: string;
-  readonly description: string;
-  readonly parameters: ZodType<TParams>;
-  readonly tags?: string[];  // 新增：如 ['readonly']、['destructive']
-  execute(params: TParams, context: ToolContext): Promise<ToolResult | string>;
+    readonly name: string;
+    readonly description: string;
+    readonly parameters: ZodType<TParams>;
+    readonly tags?: string[]; // 新增：如 ['readonly']、['destructive']
+    execute(params: TParams, context: ToolContext): Promise<ToolResult | string>;
 }
 ```
 
@@ -264,33 +285,33 @@ idle → planning → awaiting_approval → executing → completed
 4. 每步运行一个有限迭代的 ReAct 子循环
 5. 步骤完成 → 发出 `step_complete` 事件，更新计划文件
 6. 步骤失败 → 状态机转入 `step_failed`，调用 `onStepFailed` 钩子，由消费方决定：
-   - `pause`：发出 `execution_paused` 事件，停止执行
-   - `skip`：跳过此步骤，继续下一步
-   - `replan`：回到规划阶段重新规划
-   - `abort`：终止执行
+    - `pause`：发出 `execution_paused` 事件，停止执行
+    - `skip`：跳过此步骤，继续下一步
+    - `replan`：回到规划阶段重新规划
+    - `abort`：终止执行
 
 ### Plan 相关类型
 
 ```typescript
 interface Plan {
-  id: string;
-  filePath: string;
-  steps: PlanStep[];
-  rawContent: string;
-  createdAt: Date;
+    id: string;
+    filePath: string;
+    steps: PlanStep[];
+    rawContent: string;
+    createdAt: Date;
 }
 
 interface PlanStep {
-  index: number;
-  description: string;
-  status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
-  result?: StepResult;
+    index: number;
+    description: string;
+    status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
+    result?: StepResult;
 }
 
 interface StepResult {
-  summary: string;
-  toolCallCount: number;
-  events: AgentEvent[];
+    summary: string;
+    toolCallCount: number;
+    events: AgentEvent[];
 }
 ```
 
@@ -310,36 +331,36 @@ class PlanStore {
 
 ```typescript
 interface PlanCreatedEvent {
-  type: 'plan_created';
-  plan: Plan;
-  filePath: string;
-  agentId?: string;
+    type: 'plan_created';
+    plan: Plan;
+    filePath: string;
+    agentId?: string;
 }
 
 interface StepStartEvent {
-  type: 'step_start';
-  step: PlanStep;
-  agentId?: string;
+    type: 'step_start';
+    step: PlanStep;
+    agentId?: string;
 }
 
 interface StepCompleteEvent {
-  type: 'step_complete';
-  step: PlanStep;
-  agentId?: string;
+    type: 'step_complete';
+    step: PlanStep;
+    agentId?: string;
 }
 
 interface StepFailedEvent {
-  type: 'step_failed';
-  step: PlanStep;
-  error: unknown;
-  agentId?: string;
+    type: 'step_failed';
+    step: PlanStep;
+    error: unknown;
+    agentId?: string;
 }
 
 interface ExecutionPausedEvent {
-  type: 'execution_paused';
-  step: PlanStep;
-  error: unknown;
-  agentId?: string;
+    type: 'execution_paused';
+    step: PlanStep;
+    error: unknown;
+    agentId?: string;
 }
 ```
 

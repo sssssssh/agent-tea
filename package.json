@@ -1,36 +1,39 @@
 {
-  "name": "agent-tea",
-  "private": true,
-  "type": "module",
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "scripts": {
-    "build": "pnpm -r run build",
-    "test": "vitest run",
-    "test:watch": "vitest",
-    "typecheck": "pnpm -r run typecheck",
-    "example:01": "node --env-file=.env --import tsx examples/01-hello-agent.ts",
-    "example:02": "node --env-file=.env --import tsx examples/02-builtin-tools.ts",
-    "example:03": "node --env-file=.env --import tsx examples/03-event-stream.ts",
-    "example:04": "node --env-file=.env --import tsx examples/04-hooks.ts",
-    "example:05": "node --env-file=.env --import tsx examples/05-multi-provider.ts",
-    "example:06": "node --env-file=.env --import tsx examples/06-context-management.ts",
-    "example:07": "node --env-file=.env --import tsx examples/07-approval.ts",
-    "example:08": "node --env-file=.env --import tsx examples/08-memory.ts",
-    "example:09": "node --env-file=.env --import tsx examples/09-extension-and-skill.ts",
-    "example:10": "node --env-file=.env --import tsx examples/10-sub-agent.ts",
-    "example:11": "node --env-file=.env --import tsx examples/11-plan-and-execute.ts",
-    "example:12": "node --env-file=.env --import tsx examples/12-loop-detection.ts",
-    "example:13": "node --env-file=.env --import tsx examples/13-error-recovery.ts",
-    "example:14": "node --env-file=.env --import tsx examples/14-knowledge-qa.ts",
-    "example:15": "node --env-file=.env --import tsx examples/15-dev-assistant.ts",
-    "example:16": "node --env-file=.env --import tsx examples/16-discovery.ts",
-    "publish:all": "pnpm build && pnpm -r publish --no-git-checks"
-  },
-  "devDependencies": {
-    "@types/node": "^25.5.2",
-    "tsx": "^4.21.0",
-    "vitest": "^3.2.0"
-  }
+    "name": "agent-tea",
+    "private": true,
+    "type": "module",
+    "engines": {
+        "node": ">=20.0.0"
+    },
+    "scripts": {
+        "build": "pnpm -r run build",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "typecheck": "pnpm -r run typecheck",
+        "example:01": "node --env-file=.env --import tsx examples/01-hello-agent.ts",
+        "example:02": "node --env-file=.env --import tsx examples/02-builtin-tools.ts",
+        "example:03": "node --env-file=.env --import tsx examples/03-event-stream.ts",
+        "example:04": "node --env-file=.env --import tsx examples/04-hooks.ts",
+        "example:05": "node --env-file=.env --import tsx examples/05-multi-provider.ts",
+        "example:06": "node --env-file=.env --import tsx examples/06-context-management.ts",
+        "example:07": "node --env-file=.env --import tsx examples/07-approval.ts",
+        "example:08": "node --env-file=.env --import tsx examples/08-memory.ts",
+        "example:09": "node --env-file=.env --import tsx examples/09-extension-and-skill.ts",
+        "example:10": "node --env-file=.env --import tsx examples/10-sub-agent.ts",
+        "example:11": "node --env-file=.env --import tsx examples/11-plan-and-execute.ts",
+        "example:12": "node --env-file=.env --import tsx examples/12-loop-detection.ts",
+        "example:13": "node --env-file=.env --import tsx examples/13-error-recovery.ts",
+        "example:14": "node --env-file=.env --import tsx examples/14-knowledge-qa.ts",
+        "example:15": "node --env-file=.env --import tsx examples/15-dev-assistant.ts",
+        "example:16": "node --env-file=.env --import tsx examples/16-discovery.ts",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "publish:all": "pnpm build && pnpm -r publish --no-git-checks"
+    },
+    "devDependencies": {
+        "@types/node": "^25.5.2",
+        "prettier": "^3.8.1",
+        "tsx": "^4.21.0",
+        "vitest": "^3.2.0"
+    }
 }

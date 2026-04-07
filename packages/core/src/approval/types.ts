@@ -28,20 +28,20 @@
  * - 高安全场景用 'always'
  */
 export interface ApprovalPolicy {
-  /**
-   * 审批模式：
-   * - 'always': 所有工具调用都需要审批（最安全）
-   * - 'tagged': 只有带指定标签的工具需要审批（推荐默认）
-   * - 'never':  全部自动通过（测试/信任环境）
-   */
-  mode: 'always' | 'tagged' | 'never';
+    /**
+     * 审批模式：
+     * - 'always': 所有工具调用都需要审批（最安全）
+     * - 'tagged': 只有带指定标签的工具需要审批（推荐默认）
+     * - 'never':  全部自动通过（测试/信任环境）
+     */
+    mode: 'always' | 'tagged' | 'never';
 
-  /**
-   * 当 mode='tagged' 时，带有这些标签的工具需要审批。
-   * 例如 ['write', 'irreversible', 'external']
-   * 默认为空数组（无工具需要审批）
-   */
-  requireApprovalTags?: string[];
+    /**
+     * 当 mode='tagged' 时，带有这些标签的工具需要审批。
+     * 例如 ['write', 'irreversible', 'external']
+     * 默认为空数组（无工具需要审批）
+     */
+    requireApprovalTags?: string[];
 }
 
 /**
@@ -52,10 +52,10 @@ export interface ApprovalPolicy {
  * - 修改参数（参考 Gemini CLI 的"确认时可编辑"设计）
  */
 export interface ApprovalDecision {
-  /** 是否批准执行 */
-  approved: boolean;
-  /** 拒绝原因，会作为工具错误返回给 LLM */
-  reason?: string;
-  /** 修改后的参数（批准时可选），允许用户在审批时微调入参 */
-  modifiedArgs?: Record<string, unknown>;
+    /** 是否批准执行 */
+    approved: boolean;
+    /** 拒绝原因，会作为工具错误返回给 LLM */
+    reason?: string;
+    /** 修改后的参数（批准时可选），允许用户在审批时微调入参 */
+    modifiedArgs?: Record<string, unknown>;
 }

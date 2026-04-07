@@ -11,11 +11,7 @@
  * 架构位置：Core 层的 LLM 子模块，被 Agent 直接使用。
  */
 
-import type {
-  ChatStreamEvent,
-  Message,
-  ToolDefinition,
-} from './types.js';
+import type { ChatStreamEvent, Message, ToolDefinition } from './types.js';
 
 /**
  * 创建 ChatSession 时的选项。
@@ -23,11 +19,11 @@ import type {
  * 避免每次 sendMessage 都重复传递相同配置。
  */
 export interface ChatOptions {
-  model: string;
-  systemPrompt?: string;
-  tools?: ToolDefinition[];
-  temperature?: number;
-  maxTokens?: number;
+    model: string;
+    systemPrompt?: string;
+    tools?: ToolDefinition[];
+    temperature?: number;
+    maxTokens?: number;
 }
 
 /**
@@ -36,14 +32,11 @@ export interface ChatOptions {
  * 采用 AsyncGenerator 返回流式事件，使调用方可以逐步处理响应。
  */
 export interface ChatSession {
-  /**
-   * 发送消息并获取流式响应。
-   * signal 用于支持取消操作（如用户主动中断）。
-   */
-  sendMessage(
-    messages: Message[],
-    signal?: AbortSignal,
-  ): AsyncGenerator<ChatStreamEvent>;
+    /**
+     * 发送消息并获取流式响应。
+     * signal 用于支持取消操作（如用户主动中断）。
+     */
+    sendMessage(messages: Message[], signal?: AbortSignal): AsyncGenerator<ChatStreamEvent>;
 }
 
 /**
@@ -63,9 +56,9 @@ export interface ChatSession {
  * ```
  */
 export interface LLMProvider {
-  /** Provider 唯一标识，用于日志和调试 */
-  readonly id: string;
+    /** Provider 唯一标识，用于日志和调试 */
+    readonly id: string;
 
-  /** 创建一个绑定了指定配置的聊天会话 */
-  chat(options: ChatOptions): ChatSession;
+    /** 创建一个绑定了指定配置的聊天会话 */
+    chat(options: ChatOptions): ChatSession;
 }

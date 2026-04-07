@@ -32,14 +32,14 @@ import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 // ============================================================
 
 const echo = tool(
-  {
-    name: 'echo',
-    description: '回显用户消息',
-    parameters: z.object({
-      message: z.string().describe('要回显的消息'),
-    }),
-  },
-  async ({ message }) => `回显: ${message}`,
+    {
+        name: 'echo',
+        description: '回显用户消息',
+        parameters: z.object({
+            message: z.string().describe('要回显的消息'),
+        }),
+    },
+    async ({ message }) => `回显: ${message}`,
 );
 
 // ============================================================
@@ -51,13 +51,13 @@ const echo = tool(
 // ============================================================
 
 const agent = new Agent({
-  provider: new OpenAIProvider({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL,
-  }),
-  model: process.env.MODEL || 'gpt-4o-mini',
-  tools: [echo],
-  systemPrompt: '你是一个有用的助手。当用户让你回显消息时，使用 echo 工具。用中文回答。',
+    provider: new OpenAIProvider({
+        apiKey: process.env.OPENAI_API_KEY,
+        baseURL: process.env.OPENAI_BASE_URL,
+    }),
+    model: process.env.MODEL || 'gpt-4o-mini',
+    tools: [echo],
+    systemPrompt: '你是一个有用的助手。当用户让你回显消息时，使用 echo 工具。用中文回答。',
 });
 
 // ============================================================
@@ -72,29 +72,29 @@ const agent = new Agent({
 // ============================================================
 
 async function main() {
-  const query = process.argv[2] || '请帮我回显这条消息：Hello, Agent!';
-  console.log(`\n> ${query}\n`);
+    const query = process.argv[2] || '请帮我回显这条消息：Hello, Agent!';
+    console.log(`\n> ${query}\n`);
 
-  for await (const event of agent.run(query)) {
-    switch (event.type) {
-      case 'message':
-        // LLM 产出的文本内容
-        console.log(`[助手] ${event.content}`);
-        break;
+    for await (const event of agent.run(query)) {
+        switch (event.type) {
+            case 'message':
+                // LLM 产出的文本内容
+                console.log(`[助手] ${event.content}`);
+                break;
 
-      case 'tool_request':
-        // LLM 请求调用工具（此时工具尚未执行）
-        console.log(`[工具调用] ${event.toolName}(${JSON.stringify(event.args)})`);
-        break;
+            case 'tool_request':
+                // LLM 请求调用工具（此时工具尚未执行）
+                console.log(`[工具调用] ${event.toolName}(${JSON.stringify(event.args)})`);
+                break;
 
-      case 'tool_response':
-        // 工具执行完毕，返回结果
-        console.log(`[工具结果] ${event.content}`);
-        break;
+            case 'tool_response':
+                // 工具执行完毕，返回结果
+                console.log(`[工具结果] ${event.content}`);
+                break;
+        }
     }
-  }
 
-  console.log('\n完成。');
+    console.log('\n完成。');
 }
 
 main().catch(console.error);

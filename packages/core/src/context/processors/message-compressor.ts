@@ -17,27 +17,27 @@ import type { Message } from '../../llm/types.js';
 import type { ContextProcessor, TokenBudget } from '../types.js';
 
 export interface MessageCompressorConfig {
-  /** 异步摘要函数，当前版本未使用（预留接口） */
-  summarize: (messages: Message[]) => Promise<string>;
-  /** 触发压缩的消息数阈值，默认 30 */
-  triggerThreshold?: number;
-  /** 受保护的最近轮次数（不压缩），默认 5 */
-  protectedTurns?: number;
+    /** 异步摘要函数，当前版本未使用（预留接口） */
+    summarize: (messages: Message[]) => Promise<string>;
+    /** 触发压缩的消息数阈值，默认 30 */
+    triggerThreshold?: number;
+    /** 受保护的最近轮次数（不压缩），默认 5 */
+    protectedTurns?: number;
 }
 
 export class MessageCompressor implements ContextProcessor {
-  readonly name = 'message_compressor';
+    readonly name = 'message_compressor';
 
-  constructor(private config: MessageCompressorConfig) {}
+    constructor(private config: MessageCompressorConfig) {}
 
-  /**
-   * 当前为占位实现，直接返回原始消息。
-   * 完整的 LLM 摘要功能需要异步接口支持，留待后续版本实现。
-   */
-  process(messages: Message[], _budget: TokenBudget): Message[] {
-    // 占位实现：不做实际压缩
-    // 未来异步版本将在消息数超过 triggerThreshold 时，
-    // 对受保护区域外的早期消息调用 summarize 生成摘要
-    return messages;
-  }
+    /**
+     * 当前为占位实现，直接返回原始消息。
+     * 完整的 LLM 摘要功能需要异步接口支持，留待后续版本实现。
+     */
+    process(messages: Message[], _budget: TokenBudget): Message[] {
+        // 占位实现：不做实际压缩
+        // 未来异步版本将在消息数超过 triggerThreshold 时，
+        // 对受保护区域外的早期消息调用 summarize 生成摘要
+        return messages;
+    }
 }

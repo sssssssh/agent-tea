@@ -12,6 +12,7 @@
 这就是 **ReAct 模式**（Reasoning + Acting），也是 agent-tea 的核心循环。
 
 agent-tea 就是管理这个实习生工作流程的框架：
+
 - 你负责提供 LLM（大脑）和 Tool（工具）
 - 框架负责编排循环、传递消息、处理错误、流式输出
 
@@ -68,30 +69,30 @@ LLM 只能"想"和"说"，Tool 让它能"做"。
 
 ```typescript
 const searchLog = tool(
-  {
-    name: 'search_log',
-    description: '在日志系统中搜索错误日志',
-    parameters: z.object({
-      keyword: z.string().describe('搜索关键词'),
-      timeRange: z.string().describe('时间范围，如 "1h", "24h"'),
-    }),
-    tags: ['readonly'],  // 标记为只读，审批系统会用到
-  },
-  async ({ keyword, timeRange }) => {
-    const logs = await logService.search(keyword, timeRange);
-    return { content: JSON.stringify(logs) };
-  }
+    {
+        name: 'search_log',
+        description: '在日志系统中搜索错误日志',
+        parameters: z.object({
+            keyword: z.string().describe('搜索关键词'),
+            timeRange: z.string().describe('时间范围，如 "1h", "24h"'),
+        }),
+        tags: ['readonly'], // 标记为只读，审批系统会用到
+    },
+    async ({ keyword, timeRange }) => {
+        const logs = await logService.search(keyword, timeRange);
+        return { content: JSON.stringify(logs) };
+    },
 );
 ```
 
 **一个 Tool 有四个要素：**
 
-| 要素 | 作用 | 给谁用 |
-|------|------|--------|
-| `name` + `description` | LLM 通过描述判断什么时候该调这个工具 | LLM |
+| 要素                      | 作用                                                      | 给谁用     |
+| ------------------------- | --------------------------------------------------------- | ---------- |
+| `name` + `description`    | LLM 通过描述判断什么时候该调这个工具                      | LLM        |
 | `parameters` (Zod schema) | 定义参数格式，自动转成 JSON Schema 给 LLM，也做运行时验证 | LLM + 框架 |
-| `tags` | 标签，用于审批过滤、阶段过滤 | 框架 |
-| `execute` 函数 | 真正的业务逻辑 | 框架调用 |
+| `tags`                    | 标签，用于审批过滤、阶段过滤                              | 框架       |
+| `execute` 函数            | 真正的业务逻辑                                            | 框架调用   |
 
 **关键设计：工具永不抛异常。** 不管是参数验证失败、还是执行报错，都包装成 `{ content: "错误信息", isError: true }` 返回给 LLM。这样 LLM 看到错误后可以调整策略（比如换个参数重试），而不是让整个循环崩溃。
 
@@ -113,6 +114,7 @@ const searchLog = tool(
 ```
 
 这就是 ReAct 循环。框架做的事情就是不断地：
+
 1. 把消息发给 LLM
 2. 看 LLM 是回了一段文字（完成），还是请求调用工具（继续）
 3. 如果要调工具：验证参数 → 执行 → 把结果追加到消息 → 回到第 1 步
@@ -125,15 +127,16 @@ const searchLog = tool(
 
 ```typescript
 for await (const event of agent.run('分析这个错误')) {
-  // 每产生一个事件就能立刻处理
-  if (event.type === 'message') showToUser(event.content);
-  if (event.type === 'tool_request') showSpinner(event.toolName);
+    // 每产生一个事件就能立刻处理
+    if (event.type === 'message') showToUser(event.content);
+    if (event.type === 'tool_request') showSpinner(event.toolName);
 }
 ```
 
 这通过 TypeScript 的 `AsyncGenerator` 实现 — 你可以理解为一个**异步的迭代器**，Agent 每做一步就 `yield` 一个事件出来，消费者按需接收。
 
 **为什么不用回调或 Promise？**
+
 - 回调会嵌套地狱
 - Promise 只能等全部完成
 - AsyncGenerator 兼具流式和控制权 — 消费者可以随时停止消费（取消任务）
@@ -213,6 +216,7 @@ graph TD
 ```
 
 **从下往上看**：
+
 1. **错误处理**和**类型定义**在最底层，不依赖任何人
 2. **工具注册表、执行器、调度器、内置工具**组成执行层，**循环检测器**也在这层
 3. **BaseAgent** 把所有模块串起来

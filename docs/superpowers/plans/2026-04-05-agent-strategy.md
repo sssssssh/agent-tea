@@ -47,6 +47,7 @@ packages/sdk/src/
 ### Task 1: Tool 接口加 tags 字段
 
 **Files:**
+
 - Modify: `packages/core/src/tools/types.ts:59-75`
 - Modify: `packages/core/src/tools/builder.ts:33-37,44-61`
 - Modify: `packages/core/src/tools/builder.test.ts`
@@ -66,29 +67,29 @@ readonly tags?: string[];
 
 ```typescript
 interface ToolConfig<T extends ZodType> {
-  name: string;
-  description: string;
-  parameters: T;
-  tags?: string[];
+    name: string;
+    description: string;
+    parameters: T;
+    tags?: string[];
 }
 
 export function tool<T extends ZodType>(
-  config: ToolConfig<T>,
-  execute: ToolExecuteFn<z.infer<T>>,
+    config: ToolConfig<T>,
+    execute: ToolExecuteFn<z.infer<T>>,
 ): Tool<z.infer<T>> {
-  return {
-    name: config.name,
-    description: config.description,
-    parameters: config.parameters,
-    tags: config.tags,
-    async execute(params, context) {
-      const result = await execute(params, context);
-      if (typeof result === 'string') {
-        return { content: result };
-      }
-      return result;
-    },
-  };
+    return {
+        name: config.name,
+        description: config.description,
+        parameters: config.parameters,
+        tags: config.tags,
+        async execute(params, context) {
+            const result = await execute(params, context);
+            if (typeof result === 'string') {
+                return { content: result };
+            }
+            return result;
+        },
+    };
 }
 ```
 
@@ -98,30 +99,30 @@ export function tool<T extends ZodType>(
 
 ```typescript
 it('supports tags on tool', () => {
-  const readFile = tool(
-    {
-      name: 'read_file',
-      description: 'Read a file',
-      parameters: z.object({ path: z.string() }),
-      tags: ['readonly'],
-    },
-    async ({ path }) => `content of ${path}`,
-  );
+    const readFile = tool(
+        {
+            name: 'read_file',
+            description: 'Read a file',
+            parameters: z.object({ path: z.string() }),
+            tags: ['readonly'],
+        },
+        async ({ path }) => `content of ${path}`,
+    );
 
-  expect(readFile.tags).toEqual(['readonly']);
+    expect(readFile.tags).toEqual(['readonly']);
 });
 
 it('tags default to undefined', () => {
-  const greet = tool(
-    {
-      name: 'greet',
-      description: 'Greet',
-      parameters: z.object({ name: z.string() }),
-    },
-    async ({ name }) => `Hello, ${name}!`,
-  );
+    const greet = tool(
+        {
+            name: 'greet',
+            description: 'Greet',
+            parameters: z.object({ name: z.string() }),
+        },
+        async ({ name }) => `Hello, ${name}!`,
+    );
 
-  expect(readFile.tags).toBeUndefined();
+    expect(readFile.tags).toBeUndefined();
 });
 ```
 
@@ -146,6 +147,7 @@ git commit -m "feat: add tags field to Tool interface for tool categorization"
 ### Task 2: AgentConfig 扩展
 
 **Files:**
+
 - Modify: `packages/core/src/config/types.ts`
 
 - [ ] **Step 1: 添加新字段**
@@ -182,6 +184,7 @@ git commit -m "feat: extend AgentConfig with agentId, strategy, allowPlanMode"
 ### Task 3: AgentStateMachine
 
 **Files:**
+
 - Create: `packages/core/src/agent/state-machine.ts`
 - Create: `packages/core/src/agent/state-machine.test.ts`
 
@@ -195,76 +198,76 @@ import { AgentStateMachine } from './state-machine.js';
 import type { AgentState, StateTransition } from './types.js';
 
 const reactTransitions: StateTransition[] = [
-  { from: 'idle', to: 'reacting' },
-  { from: 'reacting', to: 'completed' },
-  { from: 'reacting', to: 'error' },
-  { from: 'reacting', to: 'aborted' },
+    { from: 'idle', to: 'reacting' },
+    { from: 'reacting', to: 'completed' },
+    { from: 'reacting', to: 'error' },
+    { from: 'reacting', to: 'aborted' },
 ];
 
 describe('AgentStateMachine', () => {
-  it('starts in idle state', () => {
-    const sm = new AgentStateMachine(reactTransitions);
-    expect(sm.current).toBe('idle');
-  });
+    it('starts in idle state', () => {
+        const sm = new AgentStateMachine(reactTransitions);
+        expect(sm.current).toBe('idle');
+    });
 
-  it('allows valid transitions', () => {
-    const sm = new AgentStateMachine(reactTransitions);
-    sm.transition('reacting');
-    expect(sm.current).toBe('reacting');
+    it('allows valid transitions', () => {
+        const sm = new AgentStateMachine(reactTransitions);
+        sm.transition('reacting');
+        expect(sm.current).toBe('reacting');
 
-    sm.transition('completed');
-    expect(sm.current).toBe('completed');
-  });
+        sm.transition('completed');
+        expect(sm.current).toBe('completed');
+    });
 
-  it('throws on invalid transitions', () => {
-    const sm = new AgentStateMachine(reactTransitions);
-    expect(() => sm.transition('completed')).toThrow(
-      'Invalid state transition: idle → completed',
-    );
-  });
+    it('throws on invalid transitions', () => {
+        const sm = new AgentStateMachine(reactTransitions);
+        expect(() => sm.transition('completed')).toThrow(
+            'Invalid state transition: idle → completed',
+        );
+    });
 
-  it('supports from as array', () => {
-    const transitions: StateTransition[] = [
-      { from: ['idle', 'error'], to: 'reacting' },
-      { from: 'reacting', to: 'completed' },
-    ];
-    const sm = new AgentStateMachine(transitions);
+    it('supports from as array', () => {
+        const transitions: StateTransition[] = [
+            { from: ['idle', 'error'], to: 'reacting' },
+            { from: 'reacting', to: 'completed' },
+        ];
+        const sm = new AgentStateMachine(transitions);
 
-    sm.transition('reacting');
-    expect(sm.current).toBe('reacting');
-  });
+        sm.transition('reacting');
+        expect(sm.current).toBe('reacting');
+    });
 
-  it('notifies listeners on transition', () => {
-    const sm = new AgentStateMachine(reactTransitions);
-    const listener = vi.fn();
+    it('notifies listeners on transition', () => {
+        const sm = new AgentStateMachine(reactTransitions);
+        const listener = vi.fn();
 
-    sm.onTransition(listener);
-    sm.transition('reacting');
+        sm.onTransition(listener);
+        sm.transition('reacting');
 
-    expect(listener).toHaveBeenCalledWith('idle', 'reacting');
-  });
+        expect(listener).toHaveBeenCalledWith('idle', 'reacting');
+    });
 
-  it('supports unsubscribe', () => {
-    const sm = new AgentStateMachine(reactTransitions);
-    const listener = vi.fn();
+    it('supports unsubscribe', () => {
+        const sm = new AgentStateMachine(reactTransitions);
+        const listener = vi.fn();
 
-    const unsubscribe = sm.onTransition(listener);
-    unsubscribe();
+        const unsubscribe = sm.onTransition(listener);
+        unsubscribe();
 
-    sm.transition('reacting');
-    expect(listener).not.toHaveBeenCalled();
-  });
+        sm.transition('reacting');
+        expect(listener).not.toHaveBeenCalled();
+    });
 
-  it('respects guard conditions', () => {
-    const transitions: StateTransition[] = [
-      { from: 'idle', to: 'reacting', guard: () => false },
-    ];
-    const sm = new AgentStateMachine(transitions);
+    it('respects guard conditions', () => {
+        const transitions: StateTransition[] = [
+            { from: 'idle', to: 'reacting', guard: () => false },
+        ];
+        const sm = new AgentStateMachine(transitions);
 
-    expect(() => sm.transition('reacting')).toThrow(
-      'Invalid state transition: idle → reacting',
-    );
-  });
+        expect(() => sm.transition('reacting')).toThrow(
+            'Invalid state transition: idle → reacting',
+        );
+    });
 });
 ```
 
@@ -284,22 +287,22 @@ Expected: FAIL（文件不存在）
 
 /** Agent 的所有可能状态 */
 export type AgentState =
-  | 'idle'
-  | 'reacting'
-  | 'planning'
-  | 'awaiting_approval'
-  | 'executing'
-  | 'step_failed'
-  | 'completed'
-  | 'error'
-  | 'aborted';
+    | 'idle'
+    | 'reacting'
+    | 'planning'
+    | 'awaiting_approval'
+    | 'executing'
+    | 'step_failed'
+    | 'completed'
+    | 'error'
+    | 'aborted';
 
 /** 状态转换规则 */
 export interface StateTransition {
-  from: AgentState | AgentState[];
-  to: AgentState;
-  /** 可选的转换条件，返回 false 则阻止此转换 */
-  guard?: () => boolean;
+    from: AgentState | AgentState[];
+    to: AgentState;
+    /** 可选的转换条件，返回 false 则阻止此转换 */
+    guard?: () => boolean;
 }
 ```
 
@@ -308,10 +311,10 @@ export interface StateTransition {
 ```typescript
 /** Agent 状态变更事件 */
 export interface StateChangeEvent {
-  type: 'state_change';
-  from: AgentState;
-  to: AgentState;
-  agentId?: string;
+    type: 'state_change';
+    from: AgentState;
+    to: AgentState;
+    agentId?: string;
 }
 ```
 
@@ -319,14 +322,14 @@ export interface StateChangeEvent {
 
 ```typescript
 export type AgentEvent =
-  | AgentStartEvent
-  | AgentEndEvent
-  | MessageEvent
-  | ToolRequestEvent
-  | ToolResponseEvent
-  | UsageEvent
-  | ErrorEvent
-  | StateChangeEvent;
+    | AgentStartEvent
+    | AgentEndEvent
+    | MessageEvent
+    | ToolRequestEvent
+    | ToolResponseEvent
+    | UsageEvent
+    | ErrorEvent
+    | StateChangeEvent;
 ```
 
 - [ ] **Step 4: 实现 AgentStateMachine**
@@ -348,51 +351,51 @@ import type { AgentState, StateTransition } from './types.js';
 type TransitionListener = (from: AgentState, to: AgentState) => void;
 
 export class AgentStateMachine {
-  private state: AgentState = 'idle';
-  private readonly transitions: StateTransition[];
-  private readonly listeners: TransitionListener[] = [];
+    private state: AgentState = 'idle';
+    private readonly transitions: StateTransition[];
+    private readonly listeners: TransitionListener[] = [];
 
-  constructor(transitions: StateTransition[]) {
-    this.transitions = transitions;
-  }
-
-  /** 当前状态 */
-  get current(): AgentState {
-    return this.state;
-  }
-
-  /**
-   * 尝试转换到目标状态。
-   * 查找匹配的转换规则，检查 guard 条件，非法转换抛异常。
-   */
-  transition(to: AgentState): void {
-    const valid = this.transitions.some((t) => {
-      const fromMatch = Array.isArray(t.from)
-        ? t.from.includes(this.state)
-        : t.from === this.state;
-      return fromMatch && t.to === to && (t.guard ? t.guard() : true);
-    });
-
-    if (!valid) {
-      throw new Error(`Invalid state transition: ${this.state} → ${to}`);
+    constructor(transitions: StateTransition[]) {
+        this.transitions = transitions;
     }
 
-    const from = this.state;
-    this.state = to;
-
-    for (const listener of this.listeners) {
-      listener(from, to);
+    /** 当前状态 */
+    get current(): AgentState {
+        return this.state;
     }
-  }
 
-  /** 监听状态变化，返回取消订阅函数 */
-  onTransition(listener: TransitionListener): () => void {
-    this.listeners.push(listener);
-    return () => {
-      const index = this.listeners.indexOf(listener);
-      if (index >= 0) this.listeners.splice(index, 1);
-    };
-  }
+    /**
+     * 尝试转换到目标状态。
+     * 查找匹配的转换规则，检查 guard 条件，非法转换抛异常。
+     */
+    transition(to: AgentState): void {
+        const valid = this.transitions.some((t) => {
+            const fromMatch = Array.isArray(t.from)
+                ? t.from.includes(this.state)
+                : t.from === this.state;
+            return fromMatch && t.to === to && (t.guard ? t.guard() : true);
+        });
+
+        if (!valid) {
+            throw new Error(`Invalid state transition: ${this.state} → ${to}`);
+        }
+
+        const from = this.state;
+        this.state = to;
+
+        for (const listener of this.listeners) {
+            listener(from, to);
+        }
+    }
+
+    /** 监听状态变化，返回取消订阅函数 */
+    onTransition(listener: TransitionListener): () => void {
+        this.listeners.push(listener);
+        return () => {
+            const index = this.listeners.indexOf(listener);
+            if (index >= 0) this.listeners.splice(index, 1);
+        };
+    }
 }
 ```
 
@@ -413,6 +416,7 @@ git commit -m "feat: add AgentStateMachine for explicit agent state management"
 ### Task 4: BaseAgent 抽象类
 
 **Files:**
+
 - Create: `packages/core/src/agent/base-agent.ts`
 
 - [ ] **Step 1: 在 types.ts 中添加 Plan 相关类型和新事件**
@@ -426,31 +430,31 @@ git commit -m "feat: add AgentStateMachine for explicit agent state management"
 
 /** 执行计划 */
 export interface Plan {
-  id: string;
-  filePath: string;
-  steps: PlanStep[];
-  rawContent: string;
-  createdAt: Date;
+    id: string;
+    filePath: string;
+    steps: PlanStep[];
+    rawContent: string;
+    createdAt: Date;
 }
 
 /** 计划中的单个步骤 */
 export interface PlanStep {
-  index: number;
-  description: string;
-  status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
-  result?: StepResult;
+    index: number;
+    description: string;
+    status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
+    result?: StepResult;
 }
 
 /** 步骤执行结果 */
 export interface StepResult {
-  summary: string;
-  toolCallCount: number;
+    summary: string;
+    toolCallCount: number;
 }
 
 /** 计划审批结果 */
 export interface PlanApproval {
-  approved: boolean;
-  feedback?: string;
+    approved: boolean;
+    feedback?: string;
 }
 
 /** 步骤失败后的处理方式 */
@@ -462,30 +466,30 @@ export type StepFailureAction = 'pause' | 'skip' | 'replan' | 'abort';
 
 /** 迭代上下文，传给 onBeforeIteration / onAfterIteration */
 export interface IterationContext {
-  iteration: number;
-  messages: readonly Message[];
-  sessionId: string;
-  state: AgentState;
+    iteration: number;
+    messages: readonly Message[];
+    sessionId: string;
+    state: AgentState;
 }
 
 /** 工具调用前的决策 */
 export interface ToolCallDecision {
-  allow: boolean;
-  modifiedArgs?: Record<string, unknown>;
+    allow: boolean;
+    modifiedArgs?: Record<string, unknown>;
 }
 
 /** 收集到的 LLM 响应 */
 export interface CollectedResponse {
-  text: string;
-  toolCalls: ToolCallInfo[];
-  usage?: UsageInfo;
+    text: string;
+    toolCalls: ToolCallInfo[];
+    usage?: UsageInfo;
 }
 
 /** 工具调用信息 */
 export interface ToolCallInfo {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
 }
 ```
 
@@ -494,40 +498,40 @@ export interface ToolCallInfo {
 ```typescript
 /** 计划创建事件 */
 export interface PlanCreatedEvent {
-  type: 'plan_created';
-  plan: Plan;
-  filePath: string;
-  agentId?: string;
+    type: 'plan_created';
+    plan: Plan;
+    filePath: string;
+    agentId?: string;
 }
 
 /** 步骤开始事件 */
 export interface StepStartEvent {
-  type: 'step_start';
-  step: PlanStep;
-  agentId?: string;
+    type: 'step_start';
+    step: PlanStep;
+    agentId?: string;
 }
 
 /** 步骤完成事件 */
 export interface StepCompleteEvent {
-  type: 'step_complete';
-  step: PlanStep;
-  agentId?: string;
+    type: 'step_complete';
+    step: PlanStep;
+    agentId?: string;
 }
 
 /** 步骤失败事件 */
 export interface StepFailedEvent {
-  type: 'step_failed';
-  step: PlanStep;
-  error: unknown;
-  agentId?: string;
+    type: 'step_failed';
+    step: PlanStep;
+    error: unknown;
+    agentId?: string;
 }
 
 /** 执行暂停事件 */
 export interface ExecutionPausedEvent {
-  type: 'execution_paused';
-  step: PlanStep;
-  error: unknown;
-  agentId?: string;
+    type: 'execution_paused';
+    step: PlanStep;
+    error: unknown;
+    agentId?: string;
 }
 ```
 
@@ -535,19 +539,19 @@ export interface ExecutionPausedEvent {
 
 ```typescript
 export type AgentEvent =
-  | AgentStartEvent
-  | AgentEndEvent
-  | MessageEvent
-  | ToolRequestEvent
-  | ToolResponseEvent
-  | UsageEvent
-  | ErrorEvent
-  | StateChangeEvent
-  | PlanCreatedEvent
-  | StepStartEvent
-  | StepCompleteEvent
-  | StepFailedEvent
-  | ExecutionPausedEvent;
+    | AgentStartEvent
+    | AgentEndEvent
+    | MessageEvent
+    | ToolRequestEvent
+    | ToolResponseEvent
+    | UsageEvent
+    | ErrorEvent
+    | StateChangeEvent
+    | PlanCreatedEvent
+    | StepStartEvent
+    | StepCompleteEvent
+    | StepFailedEvent
+    | ExecutionPausedEvent;
 ```
 
 同时给 `AgentStartEvent` 加 `agentId?: string`，给 `AgentEndEvent` 加 `agentId?: string`，给其他现有事件也加 `agentId?: string`（二期预留）。
@@ -574,27 +578,27 @@ export type AgentEvent =
 
 import type { ChatSession } from '../llm/provider.js';
 import type {
-  ChatStreamEvent,
-  ContentPart,
-  Message,
-  ToolCallPart,
-  ToolResultPart,
-  UsageInfo,
+    ChatStreamEvent,
+    ContentPart,
+    Message,
+    ToolCallPart,
+    ToolResultPart,
+    UsageInfo,
 } from '../llm/types.js';
 import type { AgentConfig } from '../config/types.js';
 import type {
-  AgentEvent,
-  AgentState,
-  CollectedResponse,
-  IterationContext,
-  Plan,
-  PlanApproval,
-  PlanStep,
-  StateTransition,
-  StepFailureAction,
-  StepResult,
-  ToolCallDecision,
-  ToolCallInfo,
+    AgentEvent,
+    AgentState,
+    CollectedResponse,
+    IterationContext,
+    Plan,
+    PlanApproval,
+    PlanStep,
+    StateTransition,
+    StepFailureAction,
+    StepResult,
+    ToolCallDecision,
+    ToolCallInfo,
 } from './types.js';
 import type { Tool, ToolContext, ToolResult } from '../tools/types.js';
 import { ToolRegistry } from '../tools/registry.js';
@@ -603,246 +607,240 @@ import type { ToolCallRequest } from '../scheduler/executor.js';
 import { AgentStateMachine } from './state-machine.js';
 
 export abstract class BaseAgent {
-  protected readonly config: AgentConfig;
-  protected readonly registry: ToolRegistry;
-  protected readonly scheduler: Scheduler;
-  protected readonly stateMachine: AgentStateMachine;
-  protected readonly agentId: string;
+    protected readonly config: AgentConfig;
+    protected readonly registry: ToolRegistry;
+    protected readonly scheduler: Scheduler;
+    protected readonly stateMachine: AgentStateMachine;
+    protected readonly agentId: string;
 
-  constructor(config: AgentConfig) {
-    this.config = config;
-    this.agentId = config.agentId ?? crypto.randomUUID();
+    constructor(config: AgentConfig) {
+        this.config = config;
+        this.agentId = config.agentId ?? crypto.randomUUID();
 
-    this.registry = new ToolRegistry();
-    for (const tool of config.tools ?? []) {
-      this.registry.register(tool);
-    }
-
-    this.scheduler = new Scheduler(this.registry);
-    this.stateMachine = new AgentStateMachine(this.defineTransitions());
-  }
-
-  // ============================================================
-  // 子类必须实现
-  // ============================================================
-
-  /** 定义本策略的合法状态转换 */
-  protected abstract defineTransitions(): StateTransition[];
-
-  /** 核心循环逻辑 */
-  protected abstract executeLoop(
-    messages: Message[],
-    chatSession: ChatSession,
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent>;
-
-  // ============================================================
-  // 生命周期钩子（默认空实现，子类按需覆写）
-  // ============================================================
-
-  protected async onBeforeIteration(_ctx: IterationContext): Promise<void> {}
-  protected async onAfterIteration(_ctx: IterationContext): Promise<void> {}
-  protected onToolFilter(tools: Tool[]): Tool[] { return tools; }
-  protected async onPlanCreated(_plan: Plan): Promise<PlanApproval> {
-    return { approved: true };
-  }
-  protected async onStepStart(_step: PlanStep): Promise<void> {}
-  protected async onStepComplete(_step: PlanStep, _result: StepResult): Promise<void> {}
-  protected async onStepFailed(_step: PlanStep, _error: Error): Promise<StepFailureAction> {
-    return 'pause';
-  }
-  protected async onBeforeToolCall(
-    _toolName: string,
-    _args: Record<string, unknown>,
-  ): Promise<ToolCallDecision> {
-    return { allow: true };
-  }
-  protected async onAfterToolCall(
-    _toolName: string,
-    _result: ToolResult,
-  ): Promise<void> {}
-
-  // ============================================================
-  // 公共入口
-  // ============================================================
-
-  /**
-   * 运行 Agent 处理用户输入。
-   * 处理 session 创建、信号桥接、事件包装，循环逻辑委托给 executeLoop()。
-   */
-  async *run(
-    input: string | Message[],
-    signal?: AbortSignal,
-  ): AsyncGenerator<AgentEvent> {
-    const sessionId = crypto.randomUUID();
-    const abortController = new AbortController();
-
-    if (signal) {
-      signal.addEventListener('abort', () => abortController.abort(signal.reason), {
-        once: true,
-      });
-    }
-
-    yield { type: 'agent_start', sessionId, agentId: this.agentId };
-
-    try {
-      const messages: Message[] = Array.isArray(input)
-        ? [...input]
-        : [{ role: 'user', content: input }];
-
-      const chatSession = this.createChatSession();
-
-      yield* this.executeLoop(messages, chatSession, sessionId, abortController.signal);
-
-      yield { type: 'agent_end', sessionId, reason: 'complete', agentId: this.agentId };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      yield {
-        type: 'error',
-        message,
-        fatal: true,
-        error: error instanceof Error ? error : undefined,
-        agentId: this.agentId,
-      };
-      yield { type: 'agent_end', sessionId, reason: 'error', agentId: this.agentId };
-    }
-  }
-
-  // ============================================================
-  // 共享基础设施
-  // ============================================================
-
-  /** 创建 ChatSession，应用 onToolFilter 过滤工具 */
-  protected createChatSession(): ChatSession {
-    const filteredTools = this.onToolFilter(this.registry.getAll());
-
-    // 构建一个临时 registry 来生成 ToolDefinitions
-    const filteredRegistry = new ToolRegistry();
-    for (const t of filteredTools) {
-      filteredRegistry.register(t);
-    }
-
-    return this.config.provider.chat({
-      model: this.config.model,
-      systemPrompt: this.config.systemPrompt,
-      tools: filteredRegistry.size > 0
-        ? filteredRegistry.toToolDefinitions()
-        : undefined,
-      temperature: this.config.temperature,
-      maxTokens: this.config.maxTokens,
-    });
-  }
-
-  /** 收集一轮 LLM 流式响应 */
-  protected async collectResponse(
-    chatSession: ChatSession,
-    messages: Message[],
-    signal: AbortSignal,
-  ): Promise<CollectedResponse> {
-    let text = '';
-    const toolCalls: ToolCallInfo[] = [];
-    let usage: UsageInfo | undefined;
-
-    for await (const event of chatSession.sendMessage(messages, signal)) {
-      switch (event.type) {
-        case 'text':
-          text += event.text;
-          break;
-        case 'tool_call':
-          toolCalls.push({ id: event.id, name: event.name, args: event.args });
-          break;
-        case 'finish':
-          usage = event.usage;
-          break;
-        case 'error':
-          throw event.error;
-      }
-    }
-
-    return { text, toolCalls, usage };
-  }
-
-  /**
-   * 执行一批工具调用，内部调用 onBeforeToolCall/onAfterToolCall 钩子。
-   * yield 工具请求/响应事件，并将结果追加到消息历史。
-   */
-  protected async *executeToolCalls(
-    toolCalls: ToolCallInfo[],
-    messages: Message[],
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent> {
-    const toolResults: ToolResultPart[] = [];
-    const toolCallRequests: ToolCallRequest[] = toolCalls.map((tc) => ({
-      id: tc.id,
-      name: tc.name,
-      args: tc.args,
-    }));
-
-    const toolContext: ToolContext = {
-      sessionId,
-      cwd: process.cwd(),
-      messages: messages as readonly Message[],
-      signal,
-    };
-
-    for await (const result of this.scheduler.execute(toolCallRequests, toolContext)) {
-      // 钩子：工具调用前
-      const tc = toolCalls.find((t) => t.id === result.id);
-      if (tc) {
-        const decision = await this.onBeforeToolCall(tc.name, tc.args);
-        if (!decision.allow) {
-          // 被钩子拒绝的工具调用，返回错误结果给 LLM
-          toolResults.push({
-            type: 'tool_result',
-            toolCallId: result.id,
-            content: `Tool call "${tc.name}" was rejected by policy.`,
-            isError: true,
-          });
-
-          yield {
-            type: 'tool_response',
-            requestId: result.id,
-            toolName: tc.name,
-            content: `Tool call "${tc.name}" was rejected by policy.`,
-            isError: true,
-            agentId: this.agentId,
-          };
-          continue;
+        this.registry = new ToolRegistry();
+        for (const tool of config.tools ?? []) {
+            this.registry.register(tool);
         }
-      }
 
-      yield {
-        type: 'tool_request',
-        requestId: result.id,
-        toolName: result.name,
-        args: tc?.args ?? {},
-        agentId: this.agentId,
-      };
-
-      yield {
-        type: 'tool_response',
-        requestId: result.id,
-        toolName: result.name,
-        content: result.result.content,
-        isError: result.result.isError,
-        agentId: this.agentId,
-      };
-
-      // 钩子：工具调用后
-      await this.onAfterToolCall(result.name, result.result);
-
-      toolResults.push({
-        type: 'tool_result',
-        toolCallId: result.id,
-        content: result.result.content,
-        isError: result.result.isError,
-      });
+        this.scheduler = new Scheduler(this.registry);
+        this.stateMachine = new AgentStateMachine(this.defineTransitions());
     }
 
-    messages.push({ role: 'tool', content: toolResults });
-  }
+    // ============================================================
+    // 子类必须实现
+    // ============================================================
+
+    /** 定义本策略的合法状态转换 */
+    protected abstract defineTransitions(): StateTransition[];
+
+    /** 核心循环逻辑 */
+    protected abstract executeLoop(
+        messages: Message[],
+        chatSession: ChatSession,
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent>;
+
+    // ============================================================
+    // 生命周期钩子（默认空实现，子类按需覆写）
+    // ============================================================
+
+    protected async onBeforeIteration(_ctx: IterationContext): Promise<void> {}
+    protected async onAfterIteration(_ctx: IterationContext): Promise<void> {}
+    protected onToolFilter(tools: Tool[]): Tool[] {
+        return tools;
+    }
+    protected async onPlanCreated(_plan: Plan): Promise<PlanApproval> {
+        return { approved: true };
+    }
+    protected async onStepStart(_step: PlanStep): Promise<void> {}
+    protected async onStepComplete(_step: PlanStep, _result: StepResult): Promise<void> {}
+    protected async onStepFailed(_step: PlanStep, _error: Error): Promise<StepFailureAction> {
+        return 'pause';
+    }
+    protected async onBeforeToolCall(
+        _toolName: string,
+        _args: Record<string, unknown>,
+    ): Promise<ToolCallDecision> {
+        return { allow: true };
+    }
+    protected async onAfterToolCall(_toolName: string, _result: ToolResult): Promise<void> {}
+
+    // ============================================================
+    // 公共入口
+    // ============================================================
+
+    /**
+     * 运行 Agent 处理用户输入。
+     * 处理 session 创建、信号桥接、事件包装，循环逻辑委托给 executeLoop()。
+     */
+    async *run(input: string | Message[], signal?: AbortSignal): AsyncGenerator<AgentEvent> {
+        const sessionId = crypto.randomUUID();
+        const abortController = new AbortController();
+
+        if (signal) {
+            signal.addEventListener('abort', () => abortController.abort(signal.reason), {
+                once: true,
+            });
+        }
+
+        yield { type: 'agent_start', sessionId, agentId: this.agentId };
+
+        try {
+            const messages: Message[] = Array.isArray(input)
+                ? [...input]
+                : [{ role: 'user', content: input }];
+
+            const chatSession = this.createChatSession();
+
+            yield* this.executeLoop(messages, chatSession, sessionId, abortController.signal);
+
+            yield { type: 'agent_end', sessionId, reason: 'complete', agentId: this.agentId };
+        } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            yield {
+                type: 'error',
+                message,
+                fatal: true,
+                error: error instanceof Error ? error : undefined,
+                agentId: this.agentId,
+            };
+            yield { type: 'agent_end', sessionId, reason: 'error', agentId: this.agentId };
+        }
+    }
+
+    // ============================================================
+    // 共享基础设施
+    // ============================================================
+
+    /** 创建 ChatSession，应用 onToolFilter 过滤工具 */
+    protected createChatSession(): ChatSession {
+        const filteredTools = this.onToolFilter(this.registry.getAll());
+
+        // 构建一个临时 registry 来生成 ToolDefinitions
+        const filteredRegistry = new ToolRegistry();
+        for (const t of filteredTools) {
+            filteredRegistry.register(t);
+        }
+
+        return this.config.provider.chat({
+            model: this.config.model,
+            systemPrompt: this.config.systemPrompt,
+            tools: filteredRegistry.size > 0 ? filteredRegistry.toToolDefinitions() : undefined,
+            temperature: this.config.temperature,
+            maxTokens: this.config.maxTokens,
+        });
+    }
+
+    /** 收集一轮 LLM 流式响应 */
+    protected async collectResponse(
+        chatSession: ChatSession,
+        messages: Message[],
+        signal: AbortSignal,
+    ): Promise<CollectedResponse> {
+        let text = '';
+        const toolCalls: ToolCallInfo[] = [];
+        let usage: UsageInfo | undefined;
+
+        for await (const event of chatSession.sendMessage(messages, signal)) {
+            switch (event.type) {
+                case 'text':
+                    text += event.text;
+                    break;
+                case 'tool_call':
+                    toolCalls.push({ id: event.id, name: event.name, args: event.args });
+                    break;
+                case 'finish':
+                    usage = event.usage;
+                    break;
+                case 'error':
+                    throw event.error;
+            }
+        }
+
+        return { text, toolCalls, usage };
+    }
+
+    /**
+     * 执行一批工具调用，内部调用 onBeforeToolCall/onAfterToolCall 钩子。
+     * yield 工具请求/响应事件，并将结果追加到消息历史。
+     */
+    protected async *executeToolCalls(
+        toolCalls: ToolCallInfo[],
+        messages: Message[],
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent> {
+        const toolResults: ToolResultPart[] = [];
+        const toolCallRequests: ToolCallRequest[] = toolCalls.map((tc) => ({
+            id: tc.id,
+            name: tc.name,
+            args: tc.args,
+        }));
+
+        const toolContext: ToolContext = {
+            sessionId,
+            cwd: process.cwd(),
+            messages: messages as readonly Message[],
+            signal,
+        };
+
+        for await (const result of this.scheduler.execute(toolCallRequests, toolContext)) {
+            // 钩子：工具调用前
+            const tc = toolCalls.find((t) => t.id === result.id);
+            if (tc) {
+                const decision = await this.onBeforeToolCall(tc.name, tc.args);
+                if (!decision.allow) {
+                    // 被钩子拒绝的工具调用，返回错误结果给 LLM
+                    toolResults.push({
+                        type: 'tool_result',
+                        toolCallId: result.id,
+                        content: `Tool call "${tc.name}" was rejected by policy.`,
+                        isError: true,
+                    });
+
+                    yield {
+                        type: 'tool_response',
+                        requestId: result.id,
+                        toolName: tc.name,
+                        content: `Tool call "${tc.name}" was rejected by policy.`,
+                        isError: true,
+                        agentId: this.agentId,
+                    };
+                    continue;
+                }
+            }
+
+            yield {
+                type: 'tool_request',
+                requestId: result.id,
+                toolName: result.name,
+                args: tc?.args ?? {},
+                agentId: this.agentId,
+            };
+
+            yield {
+                type: 'tool_response',
+                requestId: result.id,
+                toolName: result.name,
+                content: result.result.content,
+                isError: result.result.isError,
+                agentId: this.agentId,
+            };
+
+            // 钩子：工具调用后
+            await this.onAfterToolCall(result.name, result.result);
+
+            toolResults.push({
+                type: 'tool_result',
+                toolCallId: result.id,
+                content: result.result.content,
+                isError: result.result.isError,
+            });
+        }
+
+        messages.push({ role: 'tool', content: toolResults });
+    }
 }
 ```
 
@@ -863,6 +861,7 @@ git commit -m "feat: add BaseAgent abstract class with lifecycle hooks"
 ### Task 5: ReActAgent（从现有 Agent 迁移）
 
 **Files:**
+
 - Create: `packages/core/src/agent/react-agent.ts`
 - Create: `packages/core/src/agent/react-agent.test.ts`
 - Modify: `packages/core/src/agent/agent.ts`
@@ -883,110 +882,103 @@ git commit -m "feat: add BaseAgent abstract class with lifecycle hooks"
  */
 
 import type { ChatSession } from '../llm/provider.js';
-import type {
-  ContentPart,
-  Message,
-} from '../llm/types.js';
-import type {
-  AgentEvent,
-  StateTransition,
-} from './types.js';
+import type { ContentPart, Message } from '../llm/types.js';
+import type { AgentEvent, StateTransition } from './types.js';
 import { BaseAgent } from './base-agent.js';
 
 const DEFAULT_MAX_ITERATIONS = 20;
 
 export class ReActAgent extends BaseAgent {
-
-  protected defineTransitions(): StateTransition[] {
-    return [
-      { from: 'idle', to: 'reacting' },
-      { from: 'reacting', to: 'completed' },
-      { from: 'reacting', to: 'error' },
-      { from: 'reacting', to: 'aborted' },
-    ];
-  }
-
-  protected async *executeLoop(
-    messages: Message[],
-    chatSession: ChatSession,
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent> {
-    this.stateMachine.transition('reacting');
-    yield { type: 'state_change', from: 'idle', to: 'reacting', agentId: this.agentId };
-
-    const maxIterations = this.config.maxIterations ?? DEFAULT_MAX_ITERATIONS;
-
-    for (let iteration = 0; iteration < maxIterations; iteration++) {
-      if (signal.aborted) {
-        this.stateMachine.transition('aborted');
-        return;
-      }
-
-      await this.onBeforeIteration({
-        iteration,
-        messages,
-        sessionId,
-        state: this.stateMachine.current,
-      });
-
-      const { text, toolCalls, usage } = await this.collectResponse(
-        chatSession,
-        messages,
-        signal,
-      );
-
-      if (usage) {
-        yield { type: 'usage', model: this.config.model, usage, agentId: this.agentId };
-      }
-
-      if (text) {
-        yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
-      }
-
-      // 没有工具调用 → 任务完成
-      if (toolCalls.length === 0) {
-        const assistantParts: ContentPart[] = [];
-        if (text) assistantParts.push({ type: 'text', text });
-        messages.push({ role: 'assistant', content: assistantParts });
-
-        this.stateMachine.transition('completed');
-        return;
-      }
-
-      // 记录助手消息到历史
-      const assistantParts: ContentPart[] = [];
-      if (text) assistantParts.push({ type: 'text', text });
-      for (const tc of toolCalls) {
-        assistantParts.push({
-          type: 'tool_call',
-          toolCallId: tc.id,
-          toolName: tc.name,
-          args: tc.args,
-        });
-      }
-      messages.push({ role: 'assistant', content: assistantParts });
-
-      // 执行工具调用
-      yield* this.executeToolCalls(toolCalls, messages, sessionId, signal);
-
-      await this.onAfterIteration({
-        iteration,
-        messages,
-        sessionId,
-        state: this.stateMachine.current,
-      });
+    protected defineTransitions(): StateTransition[] {
+        return [
+            { from: 'idle', to: 'reacting' },
+            { from: 'reacting', to: 'completed' },
+            { from: 'reacting', to: 'error' },
+            { from: 'reacting', to: 'aborted' },
+        ];
     }
 
-    // 超过最大迭代次数
-    this.stateMachine.transition('error');
-    yield {
-      type: 'error',
-      message: `Agent loop exceeded maximum iterations (${maxIterations})`,
-      fatal: true,
-      agentId: this.agentId,
-    };
-  }
+    protected async *executeLoop(
+        messages: Message[],
+        chatSession: ChatSession,
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent> {
+        this.stateMachine.transition('reacting');
+        yield { type: 'state_change', from: 'idle', to: 'reacting', agentId: this.agentId };
+
+        const maxIterations = this.config.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+
+        for (let iteration = 0; iteration < maxIterations; iteration++) {
+            if (signal.aborted) {
+                this.stateMachine.transition('aborted');
+                return;
+            }
+
+            await this.onBeforeIteration({
+                iteration,
+                messages,
+                sessionId,
+                state: this.stateMachine.current,
+            });
+
+            const { text, toolCalls, usage } = await this.collectResponse(
+                chatSession,
+                messages,
+                signal,
+            );
+
+            if (usage) {
+                yield { type: 'usage', model: this.config.model, usage, agentId: this.agentId };
+            }
+
+            if (text) {
+                yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
+            }
+
+            // 没有工具调用 → 任务完成
+            if (toolCalls.length === 0) {
+                const assistantParts: ContentPart[] = [];
+                if (text) assistantParts.push({ type: 'text', text });
+                messages.push({ role: 'assistant', content: assistantParts });
+
+                this.stateMachine.transition('completed');
+                return;
+            }
+
+            // 记录助手消息到历史
+            const assistantParts: ContentPart[] = [];
+            if (text) assistantParts.push({ type: 'text', text });
+            for (const tc of toolCalls) {
+                assistantParts.push({
+                    type: 'tool_call',
+                    toolCallId: tc.id,
+                    toolName: tc.name,
+                    args: tc.args,
+                });
+            }
+            messages.push({ role: 'assistant', content: assistantParts });
+
+            // 执行工具调用
+            yield* this.executeToolCalls(toolCalls, messages, sessionId, signal);
+
+            await this.onAfterIteration({
+                iteration,
+                messages,
+                sessionId,
+                state: this.stateMachine.current,
+            });
+        }
+
+        // 超过最大迭代次数
+        this.stateMachine.transition('error');
+        yield {
+            type: 'error',
+            message: `Agent loop exceeded maximum iterations (${maxIterations})`,
+            fatal: true,
+            agentId: this.agentId,
+        };
+    }
 }
 ```
 
@@ -1005,6 +997,7 @@ export { ReActAgent as Agent } from './react-agent.js';
 - [ ] **Step 3: 创建 ReActAgent 测试**
 
 创建 `packages/core/src/agent/react-agent.test.ts`，将 `agent.test.ts` 的全部测试内容复制过来，但做以下替换：
+
 - `import { Agent } from './agent.js'` → `import { ReActAgent } from './react-agent.js'`
 - 所有 `new Agent(` → `new ReActAgent(`
 - `describe('Agent',` → `describe('ReActAgent',`
@@ -1014,23 +1007,23 @@ export { ReActAgent as Agent } from './react-agent.js';
 
 ```typescript
 it('emits state_change events', async () => {
-  const provider = mockProvider([
-    [
-      { type: 'text', text: 'Hello!' },
-      { type: 'finish', reason: 'stop' },
-    ],
-  ]);
+    const provider = mockProvider([
+        [
+            { type: 'text', text: 'Hello!' },
+            { type: 'finish', reason: 'stop' },
+        ],
+    ]);
 
-  const agent = new ReActAgent({ provider, model: 'test-model' });
-  const events = await collectEvents(agent, 'Hi');
+    const agent = new ReActAgent({ provider, model: 'test-model' });
+    const events = await collectEvents(agent, 'Hi');
 
-  const stateChanges = events.filter((e) => e.type === 'state_change');
-  expect(stateChanges).toHaveLength(1);
-  expect(stateChanges[0]).toMatchObject({
-    type: 'state_change',
-    from: 'idle',
-    to: 'reacting',
-  });
+    const stateChanges = events.filter((e) => e.type === 'state_change');
+    expect(stateChanges).toHaveLength(1);
+    expect(stateChanges[0]).toMatchObject({
+        type: 'state_change',
+        from: 'idle',
+        to: 'reacting',
+    });
 });
 ```
 
@@ -1044,9 +1037,9 @@ import { Agent } from './agent.js';
 import { ReActAgent } from './react-agent.js';
 
 describe('Agent backward compatibility', () => {
-  it('Agent is an alias for ReActAgent', () => {
-    expect(Agent).toBe(ReActAgent);
-  });
+    it('Agent is an alias for ReActAgent', () => {
+        expect(Agent).toBe(ReActAgent);
+    });
 });
 ```
 
@@ -1071,31 +1064,31 @@ export { AgentStateMachine } from './agent/state-machine.js';
 
 ```typescript
 export type {
-  AgentEvent,
-  AgentStartEvent,
-  AgentEndEvent,
-  MessageEvent,
-  ToolRequestEvent,
-  ToolResponseEvent,
-  UsageEvent,
-  ErrorEvent,
-  StateChangeEvent,
-  PlanCreatedEvent,
-  StepStartEvent,
-  StepCompleteEvent,
-  StepFailedEvent,
-  ExecutionPausedEvent,
-  AgentState,
-  StateTransition,
-  Plan,
-  PlanStep,
-  StepResult,
-  PlanApproval,
-  StepFailureAction,
-  IterationContext,
-  ToolCallDecision,
-  CollectedResponse,
-  ToolCallInfo,
+    AgentEvent,
+    AgentStartEvent,
+    AgentEndEvent,
+    MessageEvent,
+    ToolRequestEvent,
+    ToolResponseEvent,
+    UsageEvent,
+    ErrorEvent,
+    StateChangeEvent,
+    PlanCreatedEvent,
+    StepStartEvent,
+    StepCompleteEvent,
+    StepFailedEvent,
+    ExecutionPausedEvent,
+    AgentState,
+    StateTransition,
+    Plan,
+    PlanStep,
+    StepResult,
+    PlanApproval,
+    StepFailureAction,
+    IterationContext,
+    ToolCallDecision,
+    CollectedResponse,
+    ToolCallInfo,
 } from './agent/types.js';
 ```
 
@@ -1105,13 +1098,13 @@ export type {
 
 ```typescript
 export {
-  Agent,
-  BaseAgent,
-  ReActAgent,
-  AgentStateMachine,
-  tool,
-  ToolRegistry,
-  // ... 保留原有错误类导出 ...
+    Agent,
+    BaseAgent,
+    ReActAgent,
+    AgentStateMachine,
+    tool,
+    ToolRegistry,
+    // ... 保留原有错误类导出 ...
 } from '@agent-tea/core';
 ```
 
@@ -1134,6 +1127,7 @@ git commit -m "refactor: extract ReActAgent from Agent, introduce BaseAgent abst
 ### Task 6: PlanStore
 
 **Files:**
+
 - Create: `packages/core/src/agent/plan-store.ts`
 - Create: `packages/core/src/agent/plan-store.test.ts`
 
@@ -1150,65 +1144,65 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 
 describe('PlanStore', () => {
-  let tmpDir: string;
-  let store: PlanStore;
+    let tmpDir: string;
+    let store: PlanStore;
 
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'plan-store-test-'));
-    store = new PlanStore(tmpDir);
-  });
+    beforeEach(async () => {
+        tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'plan-store-test-'));
+        store = new PlanStore(tmpDir);
+    });
 
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
+    afterEach(async () => {
+        await fs.rm(tmpDir, { recursive: true, force: true });
+    });
 
-  function makePlan(overrides?: Partial<Plan>): Plan {
-    return {
-      id: 'plan-1',
-      filePath: '',
-      steps: [
-        { index: 0, description: 'Step 1: do something', status: 'pending' },
-        { index: 1, description: 'Step 2: do another thing', status: 'pending' },
-      ],
-      rawContent: '1. do something\n2. do another thing',
-      createdAt: new Date('2026-04-05'),
-      ...overrides,
-    };
-  }
+    function makePlan(overrides?: Partial<Plan>): Plan {
+        return {
+            id: 'plan-1',
+            filePath: '',
+            steps: [
+                { index: 0, description: 'Step 1: do something', status: 'pending' },
+                { index: 1, description: 'Step 2: do another thing', status: 'pending' },
+            ],
+            rawContent: '1. do something\n2. do another thing',
+            createdAt: new Date('2026-04-05'),
+            ...overrides,
+        };
+    }
 
-  it('saves and loads a plan', async () => {
-    const plan = makePlan();
-    const filePath = await store.save(plan, 'session-1');
+    it('saves and loads a plan', async () => {
+        const plan = makePlan();
+        const filePath = await store.save(plan, 'session-1');
 
-    expect(filePath).toContain('session-1');
-    expect(filePath).toContain(tmpDir);
+        expect(filePath).toContain('session-1');
+        expect(filePath).toContain(tmpDir);
 
-    const loaded = await store.load(filePath);
-    expect(loaded.id).toBe('plan-1');
-    expect(loaded.steps).toHaveLength(2);
-    expect(loaded.steps[0].description).toBe('Step 1: do something');
-  });
+        const loaded = await store.load(filePath);
+        expect(loaded.id).toBe('plan-1');
+        expect(loaded.steps).toHaveLength(2);
+        expect(loaded.steps[0].description).toBe('Step 1: do something');
+    });
 
-  it('updates step status', async () => {
-    const plan = makePlan();
-    const filePath = await store.save(plan, 'session-2');
+    it('updates step status', async () => {
+        const plan = makePlan();
+        const filePath = await store.save(plan, 'session-2');
 
-    await store.updateStep(filePath, 0, 'completed');
+        await store.updateStep(filePath, 0, 'completed');
 
-    const loaded = await store.load(filePath);
-    expect(loaded.steps[0].status).toBe('completed');
-    expect(loaded.steps[1].status).toBe('pending');
-  });
+        const loaded = await store.load(filePath);
+        expect(loaded.steps[0].status).toBe('completed');
+        expect(loaded.steps[1].status).toBe('pending');
+    });
 
-  it('creates directory if not exists', async () => {
-    const nestedDir = path.join(tmpDir, 'nested', 'dir');
-    const nestedStore = new PlanStore(nestedDir);
-    const plan = makePlan();
+    it('creates directory if not exists', async () => {
+        const nestedDir = path.join(tmpDir, 'nested', 'dir');
+        const nestedStore = new PlanStore(nestedDir);
+        const plan = makePlan();
 
-    const filePath = await nestedStore.save(plan, 'session-3');
-    const loaded = await nestedStore.load(filePath);
-    expect(loaded.id).toBe('plan-1');
-  });
+        const filePath = await nestedStore.save(plan, 'session-3');
+        const loaded = await nestedStore.load(filePath);
+        expect(loaded.id).toBe('plan-1');
+    });
 });
 ```
 
@@ -1236,44 +1230,44 @@ import * as path from 'node:path';
 import type { Plan, PlanStep } from './types.js';
 
 export class PlanStore {
-  constructor(private readonly baseDir: string = '.agent-tea/plans') {}
+    constructor(private readonly baseDir: string = '.agent-tea/plans') {}
 
-  /** 保存计划到文件，返回文件路径 */
-  async save(plan: Plan, sessionId: string): Promise<string> {
-    await fs.mkdir(this.baseDir, { recursive: true });
+    /** 保存计划到文件，返回文件路径 */
+    async save(plan: Plan, sessionId: string): Promise<string> {
+        await fs.mkdir(this.baseDir, { recursive: true });
 
-    const fileName = `${sessionId}-${plan.id}.json`;
-    const filePath = path.join(this.baseDir, fileName);
+        const fileName = `${sessionId}-${plan.id}.json`;
+        const filePath = path.join(this.baseDir, fileName);
 
-    plan.filePath = filePath;
-    await fs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
+        plan.filePath = filePath;
+        await fs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
 
-    return filePath;
-  }
-
-  /** 从文件加载计划 */
-  async load(filePath: string): Promise<Plan> {
-    const content = await fs.readFile(filePath, 'utf-8');
-    const plan = JSON.parse(content) as Plan;
-    plan.createdAt = new Date(plan.createdAt);
-    return plan;
-  }
-
-  /** 更新指定步骤的状态 */
-  async updateStep(
-    filePath: string,
-    stepIndex: number,
-    status: PlanStep['status'],
-  ): Promise<void> {
-    const plan = await this.load(filePath);
-
-    if (stepIndex < 0 || stepIndex >= plan.steps.length) {
-      throw new Error(`Step index ${stepIndex} out of range (0-${plan.steps.length - 1})`);
+        return filePath;
     }
 
-    plan.steps[stepIndex].status = status;
-    await fs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
-  }
+    /** 从文件加载计划 */
+    async load(filePath: string): Promise<Plan> {
+        const content = await fs.readFile(filePath, 'utf-8');
+        const plan = JSON.parse(content) as Plan;
+        plan.createdAt = new Date(plan.createdAt);
+        return plan;
+    }
+
+    /** 更新指定步骤的状态 */
+    async updateStep(
+        filePath: string,
+        stepIndex: number,
+        status: PlanStep['status'],
+    ): Promise<void> {
+        const plan = await this.load(filePath);
+
+        if (stepIndex < 0 || stepIndex >= plan.steps.length) {
+            throw new Error(`Step index ${stepIndex} out of range (0-${plan.steps.length - 1})`);
+        }
+
+        plan.steps[stepIndex].status = status;
+        await fs.writeFile(filePath, JSON.stringify(plan, null, 2), 'utf-8');
+    }
 }
 ```
 
@@ -1294,6 +1288,7 @@ git commit -m "feat: add PlanStore for plan file persistence"
 ### Task 7: 内置 Plan 模式工具
 
 **Files:**
+
 - Create: `packages/core/src/tools/internal/enter-plan-mode.ts`
 - Create: `packages/core/src/tools/internal/exit-plan-mode.ts`
 
@@ -1320,18 +1315,18 @@ import { z } from 'zod';
 import { tool } from '../builder.js';
 
 export const enterPlanModeTool = tool(
-  {
-    name: 'enter_plan_mode',
-    description:
-      '当任务复杂、需要多步骤规划时调用。进入规划模式后只能使用只读工具来探索和制定计划。',
-    parameters: z.object({
-      reason: z.string().describe('为什么需要进入规划模式'),
-    }),
-    tags: ['readonly', 'internal'],
-  },
-  async ({ reason }) => {
-    return `已进入规划模式。原因：${reason}\n请开始探索代码并制定执行计划。`;
-  },
+    {
+        name: 'enter_plan_mode',
+        description:
+            '当任务复杂、需要多步骤规划时调用。进入规划模式后只能使用只读工具来探索和制定计划。',
+        parameters: z.object({
+            reason: z.string().describe('为什么需要进入规划模式'),
+        }),
+        tags: ['readonly', 'internal'],
+    },
+    async ({ reason }) => {
+        return `已进入规划模式。原因：${reason}\n请开始探索代码并制定执行计划。`;
+    },
 );
 ```
 
@@ -1351,17 +1346,17 @@ import { z } from 'zod';
 import { tool } from '../builder.js';
 
 export const exitPlanModeTool = tool(
-  {
-    name: 'exit_plan_mode',
-    description: '规划完成后调用，提交计划等待审批。',
-    parameters: z.object({
-      planSummary: z.string().describe('计划概要'),
-    }),
-    tags: ['internal'],
-  },
-  async ({ planSummary }) => {
-    return `计划已提交审批。概要：${planSummary}`;
-  },
+    {
+        name: 'exit_plan_mode',
+        description: '规划完成后调用，提交计划等待审批。',
+        parameters: z.object({
+            planSummary: z.string().describe('计划概要'),
+        }),
+        tags: ['internal'],
+    },
+    async ({ planSummary }) => {
+        return `计划已提交审批。概要：${planSummary}`;
+    },
 );
 ```
 
@@ -1382,6 +1377,7 @@ git commit -m "feat: add enter_plan_mode and exit_plan_mode internal tools"
 ### Task 8: PlanAndExecuteAgent
 
 **Files:**
+
 - Create: `packages/core/src/agent/plan-and-execute-agent.ts`
 - Create: `packages/core/src/agent/plan-and-execute-agent.test.ts`
 
@@ -1389,7 +1385,7 @@ git commit -m "feat: add enter_plan_mode and exit_plan_mode internal tools"
 
 创建 `packages/core/src/agent/plan-and-execute-agent.test.ts`：
 
-```typescript
+````typescript
 import { describe, it, expect, vi } from 'vitest';
 import { z } from 'zod';
 import { PlanAndExecuteAgent } from './plan-and-execute-agent.js';
@@ -1406,175 +1402,182 @@ import * as os from 'node:os';
  * 与 ReActAgent 测试中的 mockProvider 完全一致。
  */
 function mockProvider(responses: ChatStreamEvent[][]): LLMProvider {
-  let callIndex = 0;
-  return {
-    id: 'mock',
-    chat(_options: ChatOptions): ChatSession {
-      return {
-        async *sendMessage(
-          _messages: Message[],
-          _signal?: AbortSignal,
-        ): AsyncGenerator<ChatStreamEvent> {
-          const events = responses[callIndex++];
-          if (!events) throw new Error('No more mock responses');
-          for (const event of events) {
-            yield event;
-          }
+    let callIndex = 0;
+    return {
+        id: 'mock',
+        chat(_options: ChatOptions): ChatSession {
+            return {
+                async *sendMessage(
+                    _messages: Message[],
+                    _signal?: AbortSignal,
+                ): AsyncGenerator<ChatStreamEvent> {
+                    const events = responses[callIndex++];
+                    if (!events) throw new Error('No more mock responses');
+                    for (const event of events) {
+                        yield event;
+                    }
+                },
+            };
         },
-      };
-    },
-  };
+    };
 }
 
-async function collectEvents(
-  agent: PlanAndExecuteAgent,
-  input: string,
-): Promise<AgentEvent[]> {
-  const events: AgentEvent[] = [];
-  for await (const event of agent.run(input)) {
-    events.push(event);
-  }
-  return events;
+async function collectEvents(agent: PlanAndExecuteAgent, input: string): Promise<AgentEvent[]> {
+    const events: AgentEvent[] = [];
+    for await (const event of agent.run(input)) {
+        events.push(event);
+    }
+    return events;
 }
 
 describe('PlanAndExecuteAgent', () => {
-  let tmpDir: string;
+    let tmpDir: string;
 
-  beforeEach(async () => {
-    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'plan-agent-test-'));
-  });
-
-  afterEach(async () => {
-    await fs.rm(tmpDir, { recursive: true, force: true });
-  });
-
-  it('goes through planning → approval → execution flow', async () => {
-    const readFileTool = tool(
-      {
-        name: 'read_file',
-        description: 'Read a file',
-        parameters: z.object({ path: z.string() }),
-        tags: ['readonly'],
-      },
-      async ({ path }) => `content of ${path}`,
-    );
-
-    const writeFileTool = tool(
-      {
-        name: 'write_file',
-        description: 'Write a file',
-        parameters: z.object({ path: z.string(), content: z.string() }),
-      },
-      async ({ path, content }) => `wrote ${content} to ${path}`,
-    );
-
-    const provider = mockProvider([
-      // Plan phase: LLM uses readonly tool then outputs plan
-      [
-        { type: 'tool_call', id: 'tc1', name: 'read_file', args: { path: 'src/index.ts' } },
-        { type: 'finish', reason: 'tool_calls' },
-      ],
-      // Plan phase: LLM outputs plan text
-      [
-        {
-          type: 'text',
-          text: '```plan\n1. Read the config file\n2. Update the config\n```',
-        },
-        { type: 'finish', reason: 'stop' },
-      ],
-      // Execute step 1: LLM uses read tool
-      [
-        { type: 'tool_call', id: 'tc2', name: 'read_file', args: { path: 'config.json' } },
-        { type: 'finish', reason: 'tool_calls' },
-      ],
-      [
-        { type: 'text', text: 'Read the config successfully.' },
-        { type: 'finish', reason: 'stop' },
-      ],
-      // Execute step 2: LLM uses write tool
-      [
-        { type: 'tool_call', id: 'tc3', name: 'write_file', args: { path: 'config.json', content: '{}' } },
-        { type: 'finish', reason: 'tool_calls' },
-      ],
-      [
-        { type: 'text', text: 'Updated the config.' },
-        { type: 'finish', reason: 'stop' },
-      ],
-    ]);
-
-    const agent = new PlanAndExecuteAgent({
-      provider,
-      model: 'test-model',
-      tools: [readFileTool, writeFileTool],
-      planStoreDir: tmpDir,
+    beforeEach(async () => {
+        tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'plan-agent-test-'));
     });
 
-    const events = await collectEvents(agent, 'Update the config');
-
-    // 验证状态转换
-    const stateChanges = events.filter((e) => e.type === 'state_change');
-    const states = stateChanges.map((e: any) => e.to);
-    expect(states).toContain('planning');
-    expect(states).toContain('executing');
-    expect(states).toContain('completed');
-
-    // 验证 plan_created 事件
-    const planCreated = events.find((e) => e.type === 'plan_created');
-    expect(planCreated).toBeDefined();
-
-    // 验证 step 事件
-    const stepStarts = events.filter((e) => e.type === 'step_start');
-    const stepCompletes = events.filter((e) => e.type === 'step_complete');
-    expect(stepStarts.length).toBeGreaterThanOrEqual(2);
-    expect(stepCompletes.length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('filters to readonly tools during planning phase', async () => {
-    const writeFileTool = tool(
-      {
-        name: 'write_file',
-        description: 'Write a file',
-        parameters: z.object({ path: z.string(), content: z.string() }),
-      },
-      async () => 'wrote',
-    );
-
-    // LLM tries to call write_file during planning — should get error
-    const provider = mockProvider([
-      [
-        { type: 'tool_call', id: 'tc1', name: 'write_file', args: { path: 'x', content: 'y' } },
-        { type: 'finish', reason: 'tool_calls' },
-      ],
-      [
-        { type: 'text', text: '```plan\n1. Do something\n```' },
-        { type: 'finish', reason: 'stop' },
-      ],
-      // Execute phase
-      [
-        { type: 'text', text: 'Done.' },
-        { type: 'finish', reason: 'stop' },
-      ],
-    ]);
-
-    const agent = new PlanAndExecuteAgent({
-      provider,
-      model: 'test-model',
-      tools: [writeFileTool],
-      planStoreDir: tmpDir,
+    afterEach(async () => {
+        await fs.rm(tmpDir, { recursive: true, force: true });
     });
 
-    const events = await collectEvents(agent, 'Do something');
+    it('goes through planning → approval → execution flow', async () => {
+        const readFileTool = tool(
+            {
+                name: 'read_file',
+                description: 'Read a file',
+                parameters: z.object({ path: z.string() }),
+                tags: ['readonly'],
+            },
+            async ({ path }) => `content of ${path}`,
+        );
 
-    // write_file 在 planning 阶段应该找不到（被过滤掉了）
-    const toolResponses = events.filter(
-      (e) => e.type === 'tool_response' && e.toolName === 'write_file',
-    );
-    if (toolResponses.length > 0) {
-      expect((toolResponses[0] as any).isError).toBe(true);
-    }
-  });
+        const writeFileTool = tool(
+            {
+                name: 'write_file',
+                description: 'Write a file',
+                parameters: z.object({ path: z.string(), content: z.string() }),
+            },
+            async ({ path, content }) => `wrote ${content} to ${path}`,
+        );
+
+        const provider = mockProvider([
+            // Plan phase: LLM uses readonly tool then outputs plan
+            [
+                { type: 'tool_call', id: 'tc1', name: 'read_file', args: { path: 'src/index.ts' } },
+                { type: 'finish', reason: 'tool_calls' },
+            ],
+            // Plan phase: LLM outputs plan text
+            [
+                {
+                    type: 'text',
+                    text: '```plan\n1. Read the config file\n2. Update the config\n```',
+                },
+                { type: 'finish', reason: 'stop' },
+            ],
+            // Execute step 1: LLM uses read tool
+            [
+                { type: 'tool_call', id: 'tc2', name: 'read_file', args: { path: 'config.json' } },
+                { type: 'finish', reason: 'tool_calls' },
+            ],
+            [
+                { type: 'text', text: 'Read the config successfully.' },
+                { type: 'finish', reason: 'stop' },
+            ],
+            // Execute step 2: LLM uses write tool
+            [
+                {
+                    type: 'tool_call',
+                    id: 'tc3',
+                    name: 'write_file',
+                    args: { path: 'config.json', content: '{}' },
+                },
+                { type: 'finish', reason: 'tool_calls' },
+            ],
+            [
+                { type: 'text', text: 'Updated the config.' },
+                { type: 'finish', reason: 'stop' },
+            ],
+        ]);
+
+        const agent = new PlanAndExecuteAgent({
+            provider,
+            model: 'test-model',
+            tools: [readFileTool, writeFileTool],
+            planStoreDir: tmpDir,
+        });
+
+        const events = await collectEvents(agent, 'Update the config');
+
+        // 验证状态转换
+        const stateChanges = events.filter((e) => e.type === 'state_change');
+        const states = stateChanges.map((e: any) => e.to);
+        expect(states).toContain('planning');
+        expect(states).toContain('executing');
+        expect(states).toContain('completed');
+
+        // 验证 plan_created 事件
+        const planCreated = events.find((e) => e.type === 'plan_created');
+        expect(planCreated).toBeDefined();
+
+        // 验证 step 事件
+        const stepStarts = events.filter((e) => e.type === 'step_start');
+        const stepCompletes = events.filter((e) => e.type === 'step_complete');
+        expect(stepStarts.length).toBeGreaterThanOrEqual(2);
+        expect(stepCompletes.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('filters to readonly tools during planning phase', async () => {
+        const writeFileTool = tool(
+            {
+                name: 'write_file',
+                description: 'Write a file',
+                parameters: z.object({ path: z.string(), content: z.string() }),
+            },
+            async () => 'wrote',
+        );
+
+        // LLM tries to call write_file during planning — should get error
+        const provider = mockProvider([
+            [
+                {
+                    type: 'tool_call',
+                    id: 'tc1',
+                    name: 'write_file',
+                    args: { path: 'x', content: 'y' },
+                },
+                { type: 'finish', reason: 'tool_calls' },
+            ],
+            [
+                { type: 'text', text: '```plan\n1. Do something\n```' },
+                { type: 'finish', reason: 'stop' },
+            ],
+            // Execute phase
+            [
+                { type: 'text', text: 'Done.' },
+                { type: 'finish', reason: 'stop' },
+            ],
+        ]);
+
+        const agent = new PlanAndExecuteAgent({
+            provider,
+            model: 'test-model',
+            tools: [writeFileTool],
+            planStoreDir: tmpDir,
+        });
+
+        const events = await collectEvents(agent, 'Do something');
+
+        // write_file 在 planning 阶段应该找不到（被过滤掉了）
+        const toolResponses = events.filter(
+            (e) => e.type === 'tool_response' && e.toolName === 'write_file',
+        );
+        if (toolResponses.length > 0) {
+            expect((toolResponses[0] as any).isError).toBe(true);
+        }
+    });
 });
-```
+````
 
 - [ ] **Step 2: 运行测试确认失败**
 
@@ -1594,7 +1597,7 @@ planStoreDir?: string;
 
 创建 `packages/core/src/agent/plan-and-execute-agent.ts`：
 
-```typescript
+````typescript
 /**
  * PlanAndExecuteAgent —— 先规划再执行的 Agent 策略
  *
@@ -1607,16 +1610,8 @@ planStoreDir?: string;
  */
 
 import type { ChatSession } from '../llm/provider.js';
-import type {
-  ContentPart,
-  Message,
-} from '../llm/types.js';
-import type {
-  AgentEvent,
-  Plan,
-  PlanStep,
-  StateTransition,
-} from './types.js';
+import type { ContentPart, Message } from '../llm/types.js';
+import type { AgentEvent, Plan, PlanStep, StateTransition } from './types.js';
 import type { Tool } from '../tools/types.js';
 import { BaseAgent } from './base-agent.js';
 import { PlanStore } from './plan-store.js';
@@ -1625,381 +1620,390 @@ const DEFAULT_MAX_ITERATIONS = 20;
 const DEFAULT_STEP_MAX_ITERATIONS = 10;
 
 export class PlanAndExecuteAgent extends BaseAgent {
-  private readonly planStore: PlanStore;
+    private readonly planStore: PlanStore;
 
-  constructor(config: import('../config/types.js').AgentConfig) {
-    super(config);
-    this.planStore = new PlanStore(config.planStoreDir);
-  }
-
-  protected defineTransitions(): StateTransition[] {
-    return [
-      { from: 'idle', to: 'planning' },
-      { from: 'planning', to: 'awaiting_approval' },
-      { from: 'awaiting_approval', to: 'executing' },
-      { from: 'awaiting_approval', to: 'planning' },
-      { from: 'executing', to: 'completed' },
-      { from: 'executing', to: 'step_failed' },
-      { from: 'step_failed', to: 'executing' },
-      { from: 'step_failed', to: 'planning' },
-      { from: 'step_failed', to: 'error' },
-      { from: 'step_failed', to: 'aborted' },
-      { from: 'planning', to: 'error' },
-      { from: 'planning', to: 'aborted' },
-      { from: 'executing', to: 'error' },
-      { from: 'executing', to: 'aborted' },
-    ];
-  }
-
-  /** Plan 阶段只保留带 'readonly' 标签的工具 */
-  protected onToolFilter(tools: Tool[]): Tool[] {
-    if (this.stateMachine.current === 'planning') {
-      return tools.filter((t) => t.tags?.includes('readonly'));
-    }
-    return tools;
-  }
-
-  protected async *executeLoop(
-    messages: Message[],
-    _chatSession: ChatSession,
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent> {
-    yield* this.planPhase(messages, sessionId, signal);
-  }
-
-  // ============================================================
-  // 阶段一：Planning（只读 ReAct 子循环）
-  // ============================================================
-
-  private async *planPhase(
-    messages: Message[],
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent> {
-    this.stateMachine.transition('planning');
-    yield { type: 'state_change', from: 'idle', to: 'planning', agentId: this.agentId };
-
-    // 创建只读工具集的 ChatSession
-    const planSession = this.createChatSession();
-    const maxIterations = this.config.maxIterations ?? DEFAULT_MAX_ITERATIONS;
-
-    let planText = '';
-
-    for (let iteration = 0; iteration < maxIterations; iteration++) {
-      if (signal.aborted) return;
-
-      await this.onBeforeIteration({
-        iteration,
-        messages,
-        sessionId,
-        state: this.stateMachine.current,
-      });
-
-      const { text, toolCalls, usage } = await this.collectResponse(
-        planSession,
-        messages,
-        signal,
-      );
-
-      if (usage) {
-        yield { type: 'usage', model: this.config.model, usage, agentId: this.agentId };
-      }
-
-      if (text) {
-        planText += text;
-        yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
-      }
-
-      if (toolCalls.length === 0) {
-        // LLM 停止工具调用 → 规划完成
-        const assistantParts: ContentPart[] = [];
-        if (text) assistantParts.push({ type: 'text', text });
-        messages.push({ role: 'assistant', content: assistantParts });
-        break;
-      }
-
-      // 记录助手消息
-      const assistantParts: ContentPart[] = [];
-      if (text) assistantParts.push({ type: 'text', text });
-      for (const tc of toolCalls) {
-        assistantParts.push({
-          type: 'tool_call',
-          toolCallId: tc.id,
-          toolName: tc.name,
-          args: tc.args,
-        });
-      }
-      messages.push({ role: 'assistant', content: assistantParts });
-
-      // 执行只读工具
-      yield* this.executeToolCalls(toolCalls, messages, sessionId, signal);
-
-      await this.onAfterIteration({
-        iteration,
-        messages,
-        sessionId,
-        state: this.stateMachine.current,
-      });
+    constructor(config: import('../config/types.js').AgentConfig) {
+        super(config);
+        this.planStore = new PlanStore(config.planStoreDir);
     }
 
-    // 解析计划
-    const plan = this.parsePlan(planText, sessionId);
-
-    // 保存到文件
-    const filePath = await this.planStore.save(plan, sessionId);
-
-    // 审批
-    this.stateMachine.transition('awaiting_approval');
-    yield {
-      type: 'state_change',
-      from: 'planning',
-      to: 'awaiting_approval',
-      agentId: this.agentId,
-    };
-    yield { type: 'plan_created', plan, filePath, agentId: this.agentId };
-
-    const approval = await this.onPlanCreated(plan);
-
-    if (!approval.approved) {
-      // 带反馈重新规划
-      this.stateMachine.transition('planning');
-      yield {
-        type: 'state_change',
-        from: 'awaiting_approval',
-        to: 'planning',
-        agentId: this.agentId,
-      };
-      messages.push({
-        role: 'user',
-        content: `计划未通过审批。反馈：${approval.feedback ?? '请重新规划。'}`,
-      });
-      yield* this.planPhase(messages, sessionId, signal);
-      return;
+    protected defineTransitions(): StateTransition[] {
+        return [
+            { from: 'idle', to: 'planning' },
+            { from: 'planning', to: 'awaiting_approval' },
+            { from: 'awaiting_approval', to: 'executing' },
+            { from: 'awaiting_approval', to: 'planning' },
+            { from: 'executing', to: 'completed' },
+            { from: 'executing', to: 'step_failed' },
+            { from: 'step_failed', to: 'executing' },
+            { from: 'step_failed', to: 'planning' },
+            { from: 'step_failed', to: 'error' },
+            { from: 'step_failed', to: 'aborted' },
+            { from: 'planning', to: 'error' },
+            { from: 'planning', to: 'aborted' },
+            { from: 'executing', to: 'error' },
+            { from: 'executing', to: 'aborted' },
+        ];
     }
 
-    // 进入执行阶段
-    yield* this.executePhase(plan, messages, sessionId, signal);
-  }
+    /** Plan 阶段只保留带 'readonly' 标签的工具 */
+    protected onToolFilter(tools: Tool[]): Tool[] {
+        if (this.stateMachine.current === 'planning') {
+            return tools.filter((t) => t.tags?.includes('readonly'));
+        }
+        return tools;
+    }
 
-  // ============================================================
-  // 阶段三：Execute（逐步执行）
-  // ============================================================
+    protected async *executeLoop(
+        messages: Message[],
+        _chatSession: ChatSession,
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent> {
+        yield* this.planPhase(messages, sessionId, signal);
+    }
 
-  private async *executePhase(
-    plan: Plan,
-    messages: Message[],
-    sessionId: string,
-    signal: AbortSignal,
-  ): AsyncGenerator<AgentEvent> {
-    this.stateMachine.transition('executing');
-    yield {
-      type: 'state_change',
-      from: 'awaiting_approval',
-      to: 'executing',
-      agentId: this.agentId,
-    };
+    // ============================================================
+    // 阶段一：Planning（只读 ReAct 子循环）
+    // ============================================================
 
-    for (const step of plan.steps) {
-      if (signal.aborted) return;
+    private async *planPhase(
+        messages: Message[],
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent> {
+        this.stateMachine.transition('planning');
+        yield { type: 'state_change', from: 'idle', to: 'planning', agentId: this.agentId };
 
-      step.status = 'executing';
-      await this.onStepStart(step);
-      yield { type: 'step_start', step, agentId: this.agentId };
+        // 创建只读工具集的 ChatSession
+        const planSession = this.createChatSession();
+        const maxIterations = this.config.maxIterations ?? DEFAULT_MAX_ITERATIONS;
 
-      try {
-        // 将当前步骤作为用户消息
-        const stepMessage: Message = {
-          role: 'user',
-          content: `执行计划步骤 ${step.index + 1}/${plan.steps.length}：\n${step.description}`,
-        };
-        const stepMessages: Message[] = [...messages, stepMessage];
+        let planText = '';
 
-        // 为这一步创建新的 ChatSession（完整工具集）
-        // 重置 stateMachine 不需要，因为 onToolFilter 根据 'executing' 状态返回全部工具
-        const stepSession = this.createChatSession();
+        for (let iteration = 0; iteration < maxIterations; iteration++) {
+            if (signal.aborted) return;
 
-        let toolCallCount = 0;
-        const stepMaxIterations = DEFAULT_STEP_MAX_ITERATIONS;
-
-        for (let iteration = 0; iteration < stepMaxIterations; iteration++) {
-          if (signal.aborted) return;
-
-          const { text, toolCalls, usage } = await this.collectResponse(
-            stepSession,
-            stepMessages,
-            signal,
-          );
-
-          if (usage) {
-            yield { type: 'usage', model: this.config.model, usage, agentId: this.agentId };
-          }
-
-          if (text) {
-            yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
-          }
-
-          if (toolCalls.length === 0) {
-            const parts: ContentPart[] = [];
-            if (text) parts.push({ type: 'text', text });
-            stepMessages.push({ role: 'assistant', content: parts });
-            break;
-          }
-
-          // 记录助手消息
-          const parts: ContentPart[] = [];
-          if (text) parts.push({ type: 'text', text });
-          for (const tc of toolCalls) {
-            parts.push({
-              type: 'tool_call',
-              toolCallId: tc.id,
-              toolName: tc.name,
-              args: tc.args,
+            await this.onBeforeIteration({
+                iteration,
+                messages,
+                sessionId,
+                state: this.stateMachine.current,
             });
-          }
-          stepMessages.push({ role: 'assistant', content: parts });
 
-          yield* this.executeToolCalls(toolCalls, stepMessages, sessionId, signal);
-          toolCallCount += toolCalls.length;
+            const { text, toolCalls, usage } = await this.collectResponse(
+                planSession,
+                messages,
+                signal,
+            );
+
+            if (usage) {
+                yield { type: 'usage', model: this.config.model, usage, agentId: this.agentId };
+            }
+
+            if (text) {
+                planText += text;
+                yield { type: 'message', role: 'assistant', content: text, agentId: this.agentId };
+            }
+
+            if (toolCalls.length === 0) {
+                // LLM 停止工具调用 → 规划完成
+                const assistantParts: ContentPart[] = [];
+                if (text) assistantParts.push({ type: 'text', text });
+                messages.push({ role: 'assistant', content: assistantParts });
+                break;
+            }
+
+            // 记录助手消息
+            const assistantParts: ContentPart[] = [];
+            if (text) assistantParts.push({ type: 'text', text });
+            for (const tc of toolCalls) {
+                assistantParts.push({
+                    type: 'tool_call',
+                    toolCallId: tc.id,
+                    toolName: tc.name,
+                    args: tc.args,
+                });
+            }
+            messages.push({ role: 'assistant', content: assistantParts });
+
+            // 执行只读工具
+            yield* this.executeToolCalls(toolCalls, messages, sessionId, signal);
+
+            await this.onAfterIteration({
+                iteration,
+                messages,
+                sessionId,
+                state: this.stateMachine.current,
+            });
         }
 
-        // 步骤完成
-        step.status = 'completed';
-        const result = { summary: '', toolCallCount };
-        step.result = result;
-        await this.planStore.updateStep(plan.filePath, step.index, 'completed');
-        await this.onStepComplete(step, result);
-        yield { type: 'step_complete', step, agentId: this.agentId };
+        // 解析计划
+        const plan = this.parsePlan(planText, sessionId);
 
-        // 将步骤消息合并回主消息历史（保留上下文连续性）
-        messages.push({
-          role: 'user',
-          content: `[步骤 ${step.index + 1} 已完成] ${step.description}`,
-        });
+        // 保存到文件
+        const filePath = await this.planStore.save(plan, sessionId);
 
-      } catch (error) {
-        step.status = 'failed';
-        this.stateMachine.transition('step_failed');
+        // 审批
+        this.stateMachine.transition('awaiting_approval');
         yield {
-          type: 'state_change',
-          from: 'executing',
-          to: 'step_failed',
-          agentId: this.agentId,
+            type: 'state_change',
+            from: 'planning',
+            to: 'awaiting_approval',
+            agentId: this.agentId,
         };
-        yield { type: 'step_failed', step, error, agentId: this.agentId };
+        yield { type: 'plan_created', plan, filePath, agentId: this.agentId };
 
-        const action = await this.onStepFailed(step, error as Error);
+        const approval = await this.onPlanCreated(plan);
 
-        switch (action) {
-          case 'skip':
-            step.status = 'skipped';
-            await this.planStore.updateStep(plan.filePath, step.index, 'skipped');
-            this.stateMachine.transition('executing');
-            yield {
-              type: 'state_change',
-              from: 'step_failed',
-              to: 'executing',
-              agentId: this.agentId,
-            };
-            continue;
-
-          case 'replan':
+        if (!approval.approved) {
+            // 带反馈重新规划
             this.stateMachine.transition('planning');
             yield {
-              type: 'state_change',
-              from: 'step_failed',
-              to: 'planning',
-              agentId: this.agentId,
+                type: 'state_change',
+                from: 'awaiting_approval',
+                to: 'planning',
+                agentId: this.agentId,
             };
             messages.push({
-              role: 'user',
-              content: `步骤 ${step.index + 1} 执行失败：${error instanceof Error ? error.message : String(error)}\n请重新规划剩余步骤。`,
+                role: 'user',
+                content: `计划未通过审批。反馈：${approval.feedback ?? '请重新规划。'}`,
             });
             yield* this.planPhase(messages, sessionId, signal);
             return;
-
-          case 'abort':
-            this.stateMachine.transition('error');
-            yield {
-              type: 'state_change',
-              from: 'step_failed',
-              to: 'error',
-              agentId: this.agentId,
-            };
-            yield {
-              type: 'error',
-              message: `Step ${step.index + 1} failed: ${error instanceof Error ? error.message : String(error)}`,
-              fatal: true,
-              agentId: this.agentId,
-            };
-            return;
-
-          case 'pause':
-          default:
-            yield { type: 'execution_paused', step, error, agentId: this.agentId };
-            return;
         }
-      }
+
+        // 进入执行阶段
+        yield* this.executePhase(plan, messages, sessionId, signal);
     }
 
-    this.stateMachine.transition('completed');
-    yield {
-      type: 'state_change',
-      from: 'executing',
-      to: 'completed',
-      agentId: this.agentId,
-    };
-  }
+    // ============================================================
+    // 阶段三：Execute（逐步执行）
+    // ============================================================
 
-  // ============================================================
-  // 计划解析
-  // ============================================================
+    private async *executePhase(
+        plan: Plan,
+        messages: Message[],
+        sessionId: string,
+        signal: AbortSignal,
+    ): AsyncGenerator<AgentEvent> {
+        this.stateMachine.transition('executing');
+        yield {
+            type: 'state_change',
+            from: 'awaiting_approval',
+            to: 'executing',
+            agentId: this.agentId,
+        };
 
-  /**
-   * 从 LLM 输出中解析计划。
-   * 支持 ```plan ... ``` 代码块格式和普通编号列表格式。
-   */
-  private parsePlan(text: string, sessionId: string): Plan {
-    // 尝试从 ```plan ... ``` 代码块中提取
-    const codeBlockMatch = text.match(/```plan\n([\s\S]*?)```/);
-    const planContent = codeBlockMatch ? codeBlockMatch[1].trim() : text.trim();
+        for (const step of plan.steps) {
+            if (signal.aborted) return;
 
-    // 按行解析步骤（支持 "1. xxx" 或 "- xxx" 格式）
-    const lines = planContent.split('\n').filter((line) => line.trim());
-    const steps: PlanStep[] = [];
+            step.status = 'executing';
+            await this.onStepStart(step);
+            yield { type: 'step_start', step, agentId: this.agentId };
 
-    for (const line of lines) {
-      const trimmed = line.trim();
-      // 匹配 "1. xxx"、"1) xxx"、"- xxx"
-      const match = trimmed.match(/^(?:\d+[.)]\s*|-\s*)(.*)/);
-      if (match) {
-        steps.push({
-          index: steps.length,
-          description: match[1].trim(),
-          status: 'pending',
-        });
-      }
+            try {
+                // 将当前步骤作为用户消息
+                const stepMessage: Message = {
+                    role: 'user',
+                    content: `执行计划步骤 ${step.index + 1}/${plan.steps.length}：\n${step.description}`,
+                };
+                const stepMessages: Message[] = [...messages, stepMessage];
+
+                // 为这一步创建新的 ChatSession（完整工具集）
+                // 重置 stateMachine 不需要，因为 onToolFilter 根据 'executing' 状态返回全部工具
+                const stepSession = this.createChatSession();
+
+                let toolCallCount = 0;
+                const stepMaxIterations = DEFAULT_STEP_MAX_ITERATIONS;
+
+                for (let iteration = 0; iteration < stepMaxIterations; iteration++) {
+                    if (signal.aborted) return;
+
+                    const { text, toolCalls, usage } = await this.collectResponse(
+                        stepSession,
+                        stepMessages,
+                        signal,
+                    );
+
+                    if (usage) {
+                        yield {
+                            type: 'usage',
+                            model: this.config.model,
+                            usage,
+                            agentId: this.agentId,
+                        };
+                    }
+
+                    if (text) {
+                        yield {
+                            type: 'message',
+                            role: 'assistant',
+                            content: text,
+                            agentId: this.agentId,
+                        };
+                    }
+
+                    if (toolCalls.length === 0) {
+                        const parts: ContentPart[] = [];
+                        if (text) parts.push({ type: 'text', text });
+                        stepMessages.push({ role: 'assistant', content: parts });
+                        break;
+                    }
+
+                    // 记录助手消息
+                    const parts: ContentPart[] = [];
+                    if (text) parts.push({ type: 'text', text });
+                    for (const tc of toolCalls) {
+                        parts.push({
+                            type: 'tool_call',
+                            toolCallId: tc.id,
+                            toolName: tc.name,
+                            args: tc.args,
+                        });
+                    }
+                    stepMessages.push({ role: 'assistant', content: parts });
+
+                    yield* this.executeToolCalls(toolCalls, stepMessages, sessionId, signal);
+                    toolCallCount += toolCalls.length;
+                }
+
+                // 步骤完成
+                step.status = 'completed';
+                const result = { summary: '', toolCallCount };
+                step.result = result;
+                await this.planStore.updateStep(plan.filePath, step.index, 'completed');
+                await this.onStepComplete(step, result);
+                yield { type: 'step_complete', step, agentId: this.agentId };
+
+                // 将步骤消息合并回主消息历史（保留上下文连续性）
+                messages.push({
+                    role: 'user',
+                    content: `[步骤 ${step.index + 1} 已完成] ${step.description}`,
+                });
+            } catch (error) {
+                step.status = 'failed';
+                this.stateMachine.transition('step_failed');
+                yield {
+                    type: 'state_change',
+                    from: 'executing',
+                    to: 'step_failed',
+                    agentId: this.agentId,
+                };
+                yield { type: 'step_failed', step, error, agentId: this.agentId };
+
+                const action = await this.onStepFailed(step, error as Error);
+
+                switch (action) {
+                    case 'skip':
+                        step.status = 'skipped';
+                        await this.planStore.updateStep(plan.filePath, step.index, 'skipped');
+                        this.stateMachine.transition('executing');
+                        yield {
+                            type: 'state_change',
+                            from: 'step_failed',
+                            to: 'executing',
+                            agentId: this.agentId,
+                        };
+                        continue;
+
+                    case 'replan':
+                        this.stateMachine.transition('planning');
+                        yield {
+                            type: 'state_change',
+                            from: 'step_failed',
+                            to: 'planning',
+                            agentId: this.agentId,
+                        };
+                        messages.push({
+                            role: 'user',
+                            content: `步骤 ${step.index + 1} 执行失败：${error instanceof Error ? error.message : String(error)}\n请重新规划剩余步骤。`,
+                        });
+                        yield* this.planPhase(messages, sessionId, signal);
+                        return;
+
+                    case 'abort':
+                        this.stateMachine.transition('error');
+                        yield {
+                            type: 'state_change',
+                            from: 'step_failed',
+                            to: 'error',
+                            agentId: this.agentId,
+                        };
+                        yield {
+                            type: 'error',
+                            message: `Step ${step.index + 1} failed: ${error instanceof Error ? error.message : String(error)}`,
+                            fatal: true,
+                            agentId: this.agentId,
+                        };
+                        return;
+
+                    case 'pause':
+                    default:
+                        yield { type: 'execution_paused', step, error, agentId: this.agentId };
+                        return;
+                }
+            }
+        }
+
+        this.stateMachine.transition('completed');
+        yield {
+            type: 'state_change',
+            from: 'executing',
+            to: 'completed',
+            agentId: this.agentId,
+        };
     }
 
-    // 如果没解析出任何步骤，把整段文本作为一个步骤
-    if (steps.length === 0) {
-      steps.push({
-        index: 0,
-        description: planContent,
-        status: 'pending',
-      });
-    }
+    // ============================================================
+    // 计划解析
+    // ============================================================
 
-    return {
-      id: `plan-${Date.now()}`,
-      filePath: '',
-      steps,
-      rawContent: text,
-      createdAt: new Date(),
-    };
-  }
+    /**
+     * 从 LLM 输出中解析计划。
+     * 支持 ```plan ... ``` 代码块格式和普通编号列表格式。
+     */
+    private parsePlan(text: string, sessionId: string): Plan {
+        // 尝试从 ```plan ... ``` 代码块中提取
+        const codeBlockMatch = text.match(/```plan\n([\s\S]*?)```/);
+        const planContent = codeBlockMatch ? codeBlockMatch[1].trim() : text.trim();
+
+        // 按行解析步骤（支持 "1. xxx" 或 "- xxx" 格式）
+        const lines = planContent.split('\n').filter((line) => line.trim());
+        const steps: PlanStep[] = [];
+
+        for (const line of lines) {
+            const trimmed = line.trim();
+            // 匹配 "1. xxx"、"1) xxx"、"- xxx"
+            const match = trimmed.match(/^(?:\d+[.)]\s*|-\s*)(.*)/);
+            if (match) {
+                steps.push({
+                    index: steps.length,
+                    description: match[1].trim(),
+                    status: 'pending',
+                });
+            }
+        }
+
+        // 如果没解析出任何步骤，把整段文本作为一个步骤
+        if (steps.length === 0) {
+            steps.push({
+                index: 0,
+                description: planContent,
+                status: 'pending',
+            });
+        }
+
+        return {
+            id: `plan-${Date.now()}`,
+            filePath: '',
+            steps,
+            rawContent: text,
+            createdAt: new Date(),
+        };
+    }
 }
-```
+````
 
 - [ ] **Step 5: 更新 index.ts 导出**
 
@@ -2038,6 +2042,7 @@ git commit -m "feat: add PlanAndExecuteAgent with plan-approve-execute workflow"
 ### Task 9: ReActAgent allowPlanMode 支持
 
 **Files:**
+
 - Modify: `packages/core/src/agent/react-agent.ts`
 - Modify: `packages/core/src/agent/react-agent.test.ts`
 
@@ -2047,34 +2052,34 @@ git commit -m "feat: add PlanAndExecuteAgent with plan-approve-execute workflow"
 
 ```typescript
 describe('ReActAgent with allowPlanMode', () => {
-  it('injects enter_plan_mode tool when allowPlanMode is true', async () => {
-    // LLM 直接回复文本（不调用 enter_plan_mode）
-    const provider = mockProvider([
-      [
-        { type: 'text', text: 'Simple task, no plan needed.' },
-        { type: 'finish', reason: 'stop' },
-      ],
-    ]);
+    it('injects enter_plan_mode tool when allowPlanMode is true', async () => {
+        // LLM 直接回复文本（不调用 enter_plan_mode）
+        const provider = mockProvider([
+            [
+                { type: 'text', text: 'Simple task, no plan needed.' },
+                { type: 'finish', reason: 'stop' },
+            ],
+        ]);
 
-    // 验证 chatSession 被创建时包含 enter_plan_mode 工具
-    let capturedOptions: any;
-    const originalChat = provider.chat.bind(provider);
-    provider.chat = (options: any) => {
-      capturedOptions = options;
-      return originalChat(options);
-    };
+        // 验证 chatSession 被创建时包含 enter_plan_mode 工具
+        let capturedOptions: any;
+        const originalChat = provider.chat.bind(provider);
+        provider.chat = (options: any) => {
+            capturedOptions = options;
+            return originalChat(options);
+        };
 
-    const agent = new ReActAgent({
-      provider,
-      model: 'test-model',
-      allowPlanMode: true,
+        const agent = new ReActAgent({
+            provider,
+            model: 'test-model',
+            allowPlanMode: true,
+        });
+
+        await collectEvents(agent, 'Hello');
+
+        const toolNames = capturedOptions?.tools?.map((t: any) => t.name) ?? [];
+        expect(toolNames).toContain('enter_plan_mode');
     });
-
-    await collectEvents(agent, 'Hello');
-
-    const toolNames = capturedOptions?.tools?.map((t: any) => t.name) ?? [];
-    expect(toolNames).toContain('enter_plan_mode');
-  });
 });
 ```
 
@@ -2094,18 +2099,17 @@ import { enterPlanModeTool } from '../tools/internal/enter-plan-mode.js';
 import { exitPlanModeTool } from '../tools/internal/exit-plan-mode.js';
 
 export class ReActAgent extends BaseAgent {
-
-  constructor(config: import('../config/types.js').AgentConfig) {
-    // 当 allowPlanMode=true 时，将内置 plan 工具注入到工具列表
-    if (config.allowPlanMode) {
-      const tools = [...(config.tools ?? []), enterPlanModeTool, exitPlanModeTool];
-      super({ ...config, tools });
-    } else {
-      super(config);
+    constructor(config: import('../config/types.js').AgentConfig) {
+        // 当 allowPlanMode=true 时，将内置 plan 工具注入到工具列表
+        if (config.allowPlanMode) {
+            const tools = [...(config.tools ?? []), enterPlanModeTool, exitPlanModeTool];
+            super({ ...config, tools });
+        } else {
+            super(config);
+        }
     }
-  }
 
-  // ... defineTransitions 和 executeLoop 保持不变 ...
+    // ... defineTransitions 和 executeLoop 保持不变 ...
 }
 ```
 
@@ -2133,6 +2137,7 @@ git commit -m "feat: add allowPlanMode to ReActAgent for runtime plan mode switc
 ### Task 10: SDK 层 subAgent 适配
 
 **Files:**
+
 - Modify: `packages/sdk/src/sub-agent.ts`
 
 - [ ] **Step 1: 更新 subAgent 使用 ReActAgent**
@@ -2146,15 +2151,15 @@ import { ReActAgent, tool, type LLMProvider, type Tool } from '@agent-tea/core';
 // ... SubAgentConfig 不变 ...
 
 export function subAgent(config: SubAgentConfig): Tool {
-  const agent = new ReActAgent({
-    provider: config.provider,
-    model: config.model,
-    tools: config.tools,
-    systemPrompt: config.systemPrompt,
-    maxIterations: config.maxIterations ?? 10,
-  });
+    const agent = new ReActAgent({
+        provider: config.provider,
+        model: config.model,
+        tools: config.tools,
+        systemPrompt: config.systemPrompt,
+        maxIterations: config.maxIterations ?? 10,
+    });
 
-  // ... tool 定义不变，但内部 agent 类型已经是 ReActAgent ...
+    // ... tool 定义不变，但内部 agent 类型已经是 ReActAgent ...
 }
 ```
 
@@ -2196,6 +2201,7 @@ Expected: 所有包构建成功
 - [ ] **Step 4: 验证导出**
 
 检查 `packages/core/dist/index.d.ts` 中包含以下导出：
+
 - `BaseAgent`
 - `ReActAgent`
 - `Agent`（ReActAgent 别名）

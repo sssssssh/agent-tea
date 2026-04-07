@@ -21,11 +21,11 @@ import type { Message } from '../llm/types.js';
  * 实现者可以选择不同的裁剪策略。
  */
 export interface ContextManager {
-  /**
-   * 处理消息列表，返回裁剪后的消息数组。
-   * 不修改原始数组，返回新数组。
-   */
-  prepare(messages: Message[]): Message[];
+    /**
+     * 处理消息列表，返回裁剪后的消息数组。
+     * 不修改原始数组，返回新数组。
+     */
+    prepare(messages: Message[]): Message[];
 }
 
 /**
@@ -33,31 +33,31 @@ export interface ContextManager {
  * 放在 AgentConfig 中，由 BaseAgent 在初始化时创建对应的 ContextManager。
  */
 export interface ContextManagerConfig {
-  /**
-   * 最大上下文 token 数（粗略估算）。
-   * 建议设为模型上下文窗口的 80%，留余量给系统提示和输出。
-   */
-  maxTokens: number;
+    /**
+     * 最大上下文 token 数（粗略估算）。
+     * 建议设为模型上下文窗口的 80%，留余量给系统提示和输出。
+     */
+    maxTokens: number;
 
-  /**
-   * 裁剪策略：
-   * - 'sliding_window': 保留最近的消息，丢弃最早的（默认）
-   * - 'pipeline': 按 processors 列表依次处理消息
-   */
-  strategy?: 'sliding_window' | 'pipeline';
+    /**
+     * 裁剪策略：
+     * - 'sliding_window': 保留最近的消息，丢弃最早的（默认）
+     * - 'pipeline': 按 processors 列表依次处理消息
+     */
+    strategy?: 'sliding_window' | 'pipeline';
 
-  /**
-   * 始终保留的消息数（从列表头部开始计数）。
-   * 用于保护最初的系统/用户消息不被裁剪。
-   * 默认为 1（保留第一条用户消息）。
-   */
-  reservedMessageCount?: number;
+    /**
+     * 始终保留的消息数（从列表头部开始计数）。
+     * 用于保护最初的系统/用户消息不被裁剪。
+     * 默认为 1（保留第一条用户消息）。
+     */
+    reservedMessageCount?: number;
 
-  /**
-   * 当 strategy 为 'pipeline' 时使用的处理器列表。
-   * 消息会按顺序经过每个处理器，前一个的输出作为后一个的输入。
-   */
-  processors?: ContextProcessor[];
+    /**
+     * 当 strategy 为 'pipeline' 时使用的处理器列表。
+     * 消息会按顺序经过每个处理器，前一个的输出作为后一个的输入。
+     */
+    processors?: ContextProcessor[];
 }
 
 /**
@@ -65,8 +65,8 @@ export interface ContextManagerConfig {
  * 包含最大 token 数和估算函数，让处理器可以做预算感知的裁剪决策。
  */
 export interface TokenBudget {
-  maxTokens: number;
-  estimateTokens(messages: Message[]): number;
+    maxTokens: number;
+    estimateTokens(messages: Message[]): number;
 }
 
 /**
@@ -75,8 +75,8 @@ export interface TokenBudget {
  * 处理器应该是非破坏性的——返回新数组，不修改输入。
  */
 export interface ContextProcessor {
-  /** 处理器名称，用于日志和调试 */
-  name: string;
-  /** 处理消息列表，返回处理后的新数组 */
-  process(messages: Message[], budget: TokenBudget): Message[];
+    /** 处理器名称，用于日志和调试 */
+    name: string;
+    /** 处理消息列表，返回处理后的新数组 */
+    process(messages: Message[], budget: TokenBudget): Message[];
 }

@@ -18,24 +18,21 @@ import type { ApprovalPolicy } from './types.js';
  * - 'always': 永远返回 true
  * - 'tagged': 检查工具的 tags 是否包含任意一个 requireApprovalTags
  */
-export function requiresApproval(
-  tool: Tool,
-  policy: ApprovalPolicy | undefined,
-): boolean {
-  if (!policy || policy.mode === 'never') {
-    return false;
-  }
+export function requiresApproval(tool: Tool, policy: ApprovalPolicy | undefined): boolean {
+    if (!policy || policy.mode === 'never') {
+        return false;
+    }
 
-  if (policy.mode === 'always') {
-    return true;
-  }
+    if (policy.mode === 'always') {
+        return true;
+    }
 
-  // mode === 'tagged'
-  const requiredTags = policy.requireApprovalTags ?? [];
-  if (requiredTags.length === 0) {
-    return false;
-  }
+    // mode === 'tagged'
+    const requiredTags = policy.requireApprovalTags ?? [];
+    if (requiredTags.length === 0) {
+        return false;
+    }
 
-  const toolTags = tool.tags ?? [];
-  return requiredTags.some((tag) => toolTags.includes(tag));
+    const toolTags = tool.tags ?? [];
+    return requiredTags.some((tag) => toolTags.includes(tag));
 }

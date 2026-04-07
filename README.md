@@ -45,37 +45,37 @@ import { z } from 'zod';
 
 // 定义工具
 const calculator = tool(
-  {
-    name: 'calculator',
-    description: '计算数学表达式',
-    parameters: z.object({
-      expression: z.string().describe('数学表达式，如 "2 + 3 * 4"'),
-    }),
-  },
-  async ({ expression }) => {
-    return { content: String(eval(expression)) };
-  }
+    {
+        name: 'calculator',
+        description: '计算数学表达式',
+        parameters: z.object({
+            expression: z.string().describe('数学表达式，如 "2 + 3 * 4"'),
+        }),
+    },
+    async ({ expression }) => {
+        return { content: String(eval(expression)) };
+    },
 );
 
 // 创建 Agent
 const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY });
 const agent = new Agent({
-  provider,
-  model: 'gpt-4o',
-  tools: [calculator],
-  systemPrompt: '你是一个有用的助手。',
+    provider,
+    model: 'gpt-4o',
+    tools: [calculator],
+    systemPrompt: '你是一个有用的助手。',
 });
 
 // 运行并消费事件流
 for await (const event of agent.run('123 * 456 等于多少？')) {
-  switch (event.type) {
-    case 'message':
-      console.log(event.content);
-      break;
-    case 'tool_request':
-      console.log(`调用工具: ${event.toolName}`);
-      break;
-  }
+    switch (event.type) {
+        case 'message':
+            console.log(event.content);
+            break;
+        case 'tool_request':
+            console.log(`调用工具: ${event.toolName}`);
+            break;
+    }
 }
 ```
 
@@ -107,13 +107,13 @@ pnpm example:15         # 研发助手 — 全功能综合
 
 ## 包结构
 
-| 包 | 说明 |
-|---|------|
-| `@agent-tea/core` | 框架核心 — Agent 循环、工具系统、事件流、状态机 |
-| `@agent-tea/sdk` | 开发者 API — Extension、Skill、SubAgent 抽象 |
-| `@agent-tea/provider-openai` | OpenAI / 兼容 API 适配器 |
-| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器 |
-| `@agent-tea/provider-gemini` | Google Gemini 适配器 |
+| 包                              | 说明                                            |
+| ------------------------------- | ----------------------------------------------- |
+| `@agent-tea/core`               | 框架核心 — Agent 循环、工具系统、事件流、状态机 |
+| `@agent-tea/sdk`                | 开发者 API — Extension、Skill、SubAgent 抽象    |
+| `@agent-tea/provider-openai`    | OpenAI / 兼容 API 适配器                        |
+| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器                         |
+| `@agent-tea/provider-gemini`    | Google Gemini 适配器                            |
 
 ## 要求
 

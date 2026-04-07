@@ -24,14 +24,14 @@ import type { Message } from '../llm/types.js';
 
 /** 会话记录的元数据 */
 export interface ConversationMetadata {
-  /** 创建时间 */
-  createdAt: Date;
-  /** 最后更新时间 */
-  updatedAt: Date;
-  /** 使用的模型 */
-  model?: string;
-  /** 自定义元数据 */
-  [key: string]: unknown;
+    /** 创建时间 */
+    createdAt: Date;
+    /** 最后更新时间 */
+    updatedAt: Date;
+    /** 使用的模型 */
+    model?: string;
+    /** 自定义元数据 */
+    [key: string]: unknown;
 }
 
 /**
@@ -41,28 +41,20 @@ export interface ConversationMetadata {
  * 实现者可以选择不同的存储后端（文件、数据库、云存储）。
  */
 export interface ConversationStore {
-  /** 保存会话消息 */
-  save(
-    sessionId: string,
-    messages: Message[],
-    metadata?: Record<string, unknown>,
-  ): Promise<void>;
+    /** 保存会话消息 */
+    save(sessionId: string, messages: Message[], metadata?: Record<string, unknown>): Promise<void>;
 
-  /** 加载会话消息，不存在返回 null */
-  load(
-    sessionId: string,
-  ): Promise<{
-    messages: Message[];
-    metadata: ConversationMetadata;
-  } | null>;
+    /** 加载会话消息，不存在返回 null */
+    load(sessionId: string): Promise<{
+        messages: Message[];
+        metadata: ConversationMetadata;
+    } | null>;
 
-  /** 列举所有已保存的会话 */
-  list(): Promise<
-    { sessionId: string; metadata: ConversationMetadata }[]
-  >;
+    /** 列举所有已保存的会话 */
+    list(): Promise<{ sessionId: string; metadata: ConversationMetadata }[]>;
 
-  /** 删除一个会话 */
-  delete(sessionId: string): Promise<void>;
+    /** 删除一个会话 */
+    delete(sessionId: string): Promise<void>;
 }
 
 // ============================================================
@@ -71,16 +63,16 @@ export interface ConversationStore {
 
 /** 单条记忆条目 */
 export interface MemoryEntry {
-  /** 唯一键，用于查找和更新 */
-  key: string;
-  /** 记忆内容 */
-  content: string;
-  /** 创建时间 */
-  createdAt: Date;
-  /** 最后更新时间 */
-  updatedAt: Date;
-  /** 分类标签 */
-  tags?: string[];
+    /** 唯一键，用于查找和更新 */
+    key: string;
+    /** 记忆内容 */
+    content: string;
+    /** 创建时间 */
+    createdAt: Date;
+    /** 最后更新时间 */
+    updatedAt: Date;
+    /** 分类标签 */
+    tags?: string[];
 }
 
 /**
@@ -93,22 +85,18 @@ export interface MemoryEntry {
  * 需要语义搜索时，实现者可以在 search() 方法中集成向量数据库。
  */
 export interface MemoryStore {
-  /** 添加或更新一条记忆 */
-  set(
-    key: string,
-    content: string,
-    tags?: string[],
-  ): Promise<void>;
+    /** 添加或更新一条记忆 */
+    set(key: string, content: string, tags?: string[]): Promise<void>;
 
-  /** 获取一条记忆，不存在返回 null */
-  get(key: string): Promise<MemoryEntry | null>;
+    /** 获取一条记忆，不存在返回 null */
+    get(key: string): Promise<MemoryEntry | null>;
 
-  /** 按标签搜索记忆，不传标签返回全部 */
-  search(tags?: string[]): Promise<MemoryEntry[]>;
+    /** 按标签搜索记忆，不传标签返回全部 */
+    search(tags?: string[]): Promise<MemoryEntry[]>;
 
-  /** 删除一条记忆 */
-  delete(key: string): Promise<void>;
+    /** 删除一条记忆 */
+    delete(key: string): Promise<void>;
 
-  /** 列举所有记忆 */
-  list(): Promise<MemoryEntry[]>;
+    /** 列举所有记忆 */
+    list(): Promise<MemoryEntry[]>;
 }

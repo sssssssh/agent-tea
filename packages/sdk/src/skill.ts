@@ -27,19 +27,19 @@
 import type { Tool } from '@agent-tea/core';
 
 export interface Skill {
-  /** 技能唯一名称 */
-  name: string;
-  /** 技能描述 */
-  description: string;
-  /** 激活时注入 system prompt 的指令，定义 Agent 在此技能下的行为 */
-  instructions: string;
-  /** 此技能专属的工具（仅在技能激活时可用） */
-  tools?: Tool[];
-  /** 触发命令（如 '/review'），用户输入此命令可激活技能 */
-  trigger?: string;
+    /** 技能唯一名称 */
+    name: string;
+    /** 技能描述 */
+    description: string;
+    /** 激活时注入 system prompt 的指令，定义 Agent 在此技能下的行为 */
+    instructions: string;
+    /** 此技能专属的工具（仅在技能激活时可用） */
+    tools?: Tool[];
+    /** 触发命令（如 '/review'），用户输入此命令可激活技能 */
+    trigger?: string;
 }
 
 /** 创建一个 Skill 配置。当前仅做透传，为后续添加校验和增强预留入口。 */
 export function skill(config: Skill): Skill {
-  return config;
+    return config;
 }

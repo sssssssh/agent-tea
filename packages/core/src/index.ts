@@ -13,48 +13,40 @@
 
 // ---- LLM 通信类型和 Provider 接口 ----
 export type {
-  ContentPart,
-  TextPart,
-  ToolCallPart,
-  ToolResultPart,
-  Message,
-  UserMessage,
-  AssistantMessage,
-  ToolMessage,
-  ChatStreamEvent,
-  TextStreamEvent,
-  ToolCallStreamEvent,
-  FinishStreamEvent,
-  ErrorStreamEvent,
-  FinishReason,
-  UsageInfo,
-  ToolDefinition,
+    ContentPart,
+    TextPart,
+    ToolCallPart,
+    ToolResultPart,
+    Message,
+    UserMessage,
+    AssistantMessage,
+    ToolMessage,
+    ChatStreamEvent,
+    TextStreamEvent,
+    ToolCallStreamEvent,
+    FinishStreamEvent,
+    ErrorStreamEvent,
+    FinishReason,
+    UsageInfo,
+    ToolDefinition,
 } from './llm/types.js';
 
-export type {
-  LLMProvider,
-  ChatSession,
-  ChatOptions,
-} from './llm/provider.js';
+export type { LLMProvider, ChatSession, ChatOptions } from './llm/provider.js';
 
 // ---- Tool 系统 ----
-export type {
-  Tool,
-  ToolContext,
-  ToolResult,
-} from './tools/types.js';
+export type { Tool, ToolContext, ToolResult } from './tools/types.js';
 
 export { tool } from './tools/builder.js';
 export { ToolRegistry } from './tools/registry.js';
 
 // ---- 内置工具 ----
 export {
-  readFile,
-  writeFile,
-  listDirectory,
-  executeShell,
-  grep,
-  webFetch,
+    readFile,
+    writeFile,
+    listDirectory,
+    executeShell,
+    grep,
+    webFetch,
 } from './tools/builtin/index.js';
 
 // ---- Agent 核心 ----
@@ -66,57 +58,51 @@ export { AgentStateMachine } from './agent/state-machine.js';
 export { PlanStore } from './agent/plan-store.js';
 
 export type {
-  AgentEvent,
-  AgentStartEvent,
-  AgentEndEvent,
-  MessageEvent,
-  ToolRequestEvent,
-  ToolResponseEvent,
-  UsageEvent,
-  ErrorEvent,
-  StateChangeEvent,
-  ApprovalRequestEvent,
-  PlanCreatedEvent,
-  StepStartEvent,
-  StepCompleteEvent,
-  StepFailedEvent,
-  ExecutionPausedEvent,
-  AgentState,
-  StateTransition,
-  Plan,
-  PlanStep,
-  StepResult,
-  PlanApproval,
-  StepFailureAction,
-  IterationContext,
-  ToolCallDecision,
-  CollectedResponse,
-  ToolCallInfo,
+    AgentEvent,
+    AgentStartEvent,
+    AgentEndEvent,
+    MessageEvent,
+    ToolRequestEvent,
+    ToolResponseEvent,
+    UsageEvent,
+    ErrorEvent,
+    StateChangeEvent,
+    ApprovalRequestEvent,
+    PlanCreatedEvent,
+    StepStartEvent,
+    StepCompleteEvent,
+    StepFailedEvent,
+    ExecutionPausedEvent,
+    AgentState,
+    StateTransition,
+    Plan,
+    PlanStep,
+    StepResult,
+    PlanApproval,
+    StepFailureAction,
+    IterationContext,
+    ToolCallDecision,
+    CollectedResponse,
+    ToolCallInfo,
 } from './agent/types.js';
 
 // ---- 配置 ----
 export type { AgentConfig } from './config/types.js';
 
 // ---- 审批系统 ----
-export type {
-  ApprovalPolicy,
-  ApprovalDecision,
-} from './approval/types.js';
+export type { ApprovalPolicy, ApprovalDecision } from './approval/types.js';
 
 export { requiresApproval } from './approval/policy.js';
 
 // ---- 上下文管理 ----
 export type {
-  ContextManager,
-  ContextManagerConfig,
-  ContextProcessor,
-  TokenBudget,
+    ContextManager,
+    ContextManagerConfig,
+    ContextProcessor,
+    TokenBudget,
 } from './context/types.js';
 
-export {
-  SlidingWindowContextManager,
-  createContextManager,
-} from './context/sliding-window.js';
+export { SlidingWindowContextManager, createContextManager } from './context/sliding-window.js';
 
 export { PipelineContextManager } from './context/pipeline.js';
 export { SlidingWindowProcessor } from './context/processors/sliding-window.js';
@@ -125,10 +111,10 @@ export { MessageCompressor } from './context/processors/message-compressor.js';
 
 // ---- 记忆持久化 ----
 export type {
-  ConversationStore,
-  ConversationMetadata,
-  MemoryStore,
-  MemoryEntry,
+    ConversationStore,
+    ConversationMetadata,
+    MemoryStore,
+    MemoryEntry,
 } from './memory/types.js';
 
 export { FileConversationStore } from './memory/file-conversation-store.js';
@@ -140,13 +126,13 @@ export type { LoopDetectionConfig, LoopCheckResult } from './agent/loop-detectio
 
 // ---- 错误处理 ----
 export {
-  AgentTeaError,
-  ProviderError,
-  ToolExecutionError,
-  ToolValidationError,
-  MaxIterationsError,
-  LoopDetectedError,
-  TimeoutError,
+    AgentTeaError,
+    ProviderError,
+    ToolExecutionError,
+    ToolValidationError,
+    MaxIterationsError,
+    LoopDetectedError,
+    TimeoutError,
 } from './errors/errors.js';
 
 export { retryWithBackoff } from './errors/retry.js';

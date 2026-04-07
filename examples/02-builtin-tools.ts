@@ -26,14 +26,14 @@ import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 // 适合只需要部分工具、或想精确控制 Agent 能力的场景
 // 可用工具：readFile, writeFile, listDirectory, executeShell, grep, webFetch
 const fileAssistant = new Agent({
-  provider: new OpenAIProvider({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL,
-  }),
-  model: process.env.MODEL || 'gpt-4o-mini',
-  // 只给 Agent 文件读取和搜索能力，不给写入和执行权限
-  tools: [readFile, listDirectory, grep],
-  systemPrompt: `你是一个文件助手，可以帮用户浏览目录、读取文件和搜索代码。
+    provider: new OpenAIProvider({
+        apiKey: process.env.OPENAI_API_KEY,
+        baseURL: process.env.OPENAI_BASE_URL,
+    }),
+    model: process.env.MODEL || 'gpt-4o-mini',
+    // 只给 Agent 文件读取和搜索能力，不给写入和执行权限
+    tools: [readFile, listDirectory, grep],
+    systemPrompt: `你是一个文件助手，可以帮用户浏览目录、读取文件和搜索代码。
 请用中文回答，展示关键信息即可，不需要把整个文件内容贴出来。`,
 });
 
@@ -64,34 +64,36 @@ console.log();
 // ============================================================
 
 async function main() {
-  const query = process.argv[2] || '列出 packages/ 目录下有哪些子包，然后读取其中一个包的 package.json';
-  console.log(`> ${query}\n`);
+    const query =
+        process.argv[2] || '列出 packages/ 目录下有哪些子包，然后读取其中一个包的 package.json';
+    console.log(`> ${query}\n`);
 
-  for await (const event of fileAssistant.run(query)) {
-    switch (event.type) {
-      case 'message':
-        console.log(`[助手] ${event.content}`);
-        break;
+    for await (const event of fileAssistant.run(query)) {
+        switch (event.type) {
+            case 'message':
+                console.log(`[助手] ${event.content}`);
+                break;
 
-      case 'tool_request':
-        console.log(`[工具调用] ${event.toolName}(${JSON.stringify(event.args)})`);
-        break;
+            case 'tool_request':
+                console.log(`[工具调用] ${event.toolName}(${JSON.stringify(event.args)})`);
+                break;
 
-      case 'tool_response':
-        // 文件内容可能很长，截取前 200 字符展示
-        const preview = event.content.length > 200
-          ? event.content.slice(0, 200) + '...'
-          : event.content;
-        console.log(`[工具结果] ${preview}`);
-        break;
+            case 'tool_response':
+                // 文件内容可能很长，截取前 200 字符展示
+                const preview =
+                    event.content.length > 200
+                        ? event.content.slice(0, 200) + '...'
+                        : event.content;
+                console.log(`[工具结果] ${preview}`);
+                break;
 
-      case 'error':
-        console.error(`[错误] ${event.message}`);
-        break;
+            case 'error':
+                console.error(`[错误] ${event.message}`);
+                break;
+        }
     }
-  }
 
-  console.log('\n完成。');
+    console.log('\n完成。');
 }
 
 main().catch(console.error);

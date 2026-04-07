@@ -5,6 +5,7 @@
 LLM 是大脑，工具是四肢。没有工具的 LLM 只能空谈；有了工具，它才能真正做事。
 
 工具系统就是框架的"手脚管理系统"：
+
 - **定义**手脚长什么样（参数格式）
 - **注册**到一个统一的库里
 - 运行时**验证**LLM 给的指令格式对不对
@@ -46,6 +47,7 @@ flowchart LR
 ```
 
 注意 **Zod 被用了两次**：
+
 1. 注册时：Zod → JSON Schema，告诉 LLM 参数长什么样
 2. 执行时：Zod.safeParse() 验证 LLM 返回的参数是否合法
 
@@ -58,38 +60,38 @@ import { tool } from '@agent-tea/core';
 import { z } from 'zod';
 
 const searchCode = tool(
-  {
-    name: 'search_code',
-    description: '在代码仓库中搜索匹配的代码片段',
-    parameters: z.object({
-      query: z.string().describe('搜索关键词或正则表达式'),
-      filePattern: z.string().optional().describe('文件名过滤，如 "*.ts"'),
-      maxResults: z.number().default(10).describe('最大返回条数'),
-    }),
-    tags: ['readonly'],
-    timeout: 10000,            // 可选：工具级超时（ms），优先于全局 toolTimeout
-  },
-  async ({ query, filePattern, maxResults }, context) => {
-    // context 提供运行时环境
-    const results = await grep(query, {
-      cwd: context.cwd,
-      glob: filePattern,
-      limit: maxResults,
-    });
+    {
+        name: 'search_code',
+        description: '在代码仓库中搜索匹配的代码片段',
+        parameters: z.object({
+            query: z.string().describe('搜索关键词或正则表达式'),
+            filePattern: z.string().optional().describe('文件名过滤，如 "*.ts"'),
+            maxResults: z.number().default(10).describe('最大返回条数'),
+        }),
+        tags: ['readonly'],
+        timeout: 10000, // 可选：工具级超时（ms），优先于全局 toolTimeout
+    },
+    async ({ query, filePattern, maxResults }, context) => {
+        // context 提供运行时环境
+        const results = await grep(query, {
+            cwd: context.cwd,
+            glob: filePattern,
+            limit: maxResults,
+        });
 
-    return {
-      content: JSON.stringify(results),          // 发给 LLM
-      displayContent: formatForHuman(results),   // 给 UI 显示（可选）
-      data: { matchCount: results.length },      // 结构化数据（可选）
-    };
-  }
+        return {
+            content: JSON.stringify(results), // 发给 LLM
+            displayContent: formatForHuman(results), // 给 UI 显示（可选）
+            data: { matchCount: results.length }, // 结构化数据（可选）
+        };
+    },
 );
 ```
 
 ### tool() 工厂做了什么？
 
 ```typescript
-function tool<T extends ZodType>(config, execute): Tool<z.infer<T>>
+function tool<T extends ZodType>(config, execute): Tool<z.infer<T>>;
 ```
 
 泛型链：`parameters (Zod T)` → `z.infer<T>` → `execute` 函数的参数类型。
@@ -104,10 +106,10 @@ function tool<T extends ZodType>(config, execute): Tool<z.infer<T>>
 
 ```typescript
 interface ToolContext {
-  sessionId: string            // 当前会话 ID，用于追踪
-  cwd: string                  // 工作目录
-  messages: readonly Message[] // 当前对话历史（只读）
-  signal: AbortSignal          // 取消信号
+    sessionId: string; // 当前会话 ID，用于追踪
+    cwd: string; // 工作目录
+    messages: readonly Message[]; // 当前对话历史（只读）
+    signal: AbortSignal; // 取消信号
 }
 ```
 
@@ -121,10 +123,10 @@ interface ToolContext {
 
 ```typescript
 interface ToolResult {
-  content: string                      // 必填：发给 LLM 的文本
-  displayContent?: string              // 可选：给人看的格式化内容
-  data?: Record<string, unknown>       // 可选：给程序用的结构化数据
-  isError?: boolean                    // 可选：标记为错误
+    content: string; // 必填：发给 LLM 的文本
+    displayContent?: string; // 可选：给人看的格式化内容
+    data?: Record<string, unknown>; // 可选：给程序用的结构化数据
+    isError?: boolean; // 可选：标记为错误
 }
 ```
 
@@ -134,9 +136,9 @@ interface ToolResult {
 
 ```typescript
 return {
-  content: JSON.stringify(logEntries),           // LLM 需要看原始数据来分析
-  displayContent: '找到 142 条错误日志（显示前 5 条）...', // 用户只需要摘要
-  data: { total: 142 },                          // 程序可能要用数量做判断
+    content: JSON.stringify(logEntries), // LLM 需要看原始数据来分析
+    displayContent: '找到 142 条错误日志（显示前 5 条）...', // 用户只需要摘要
+    data: { total: 142 }, // 程序可能要用数量做判断
 };
 ```
 
@@ -144,10 +146,10 @@ return {
 
 ```typescript
 class ToolRegistry {
-  register(tool: Tool): void            // 注册，名称冲突时抛异常
-  get(name: string): Tool | undefined   // 按名称查找
-  getAll(): Tool[]                      // 所有已注册工具
-  toToolDefinitions(): ToolDefinition[] // Zod → JSON Schema，发给 LLM
+    register(tool: Tool): void; // 注册，名称冲突时抛异常
+    get(name: string): Tool | undefined; // 按名称查找
+    getAll(): Tool[]; // 所有已注册工具
+    toToolDefinitions(): ToolDefinition[]; // Zod → JSON Schema，发给 LLM
 }
 ```
 
@@ -157,8 +159,8 @@ class ToolRegistry {
 
 ```typescript
 zodToJsonSchema(tool.parameters, {
-  target: 'openApi3',      // 最兼容的格式（OpenAI/Anthropic/Gemini 都认识）
-  $refStrategy: 'none',    // 不生成 $ref 引用，完全展平
+    target: 'openApi3', // 最兼容的格式（OpenAI/Anthropic/Gemini 都认识）
+    $refStrategy: 'none', // 不生成 $ref 引用，完全展平
 });
 ```
 
@@ -195,12 +197,12 @@ onToolFilter(tools) {
 
 **常用标签约定**：
 
-| 标签 | 含义 | 示例 |
-|------|------|------|
-| `readonly` | 无副作用的读操作 | read_file, search_code |
-| `write` | 有副作用的写操作 | write_file, delete_file |
-| `irreversible` | 不可逆操作 | drop_table, send_email |
-| `internal` | 框架内部工具 | enter_plan_mode |
+| 标签           | 含义             | 示例                    |
+| -------------- | ---------------- | ----------------------- |
+| `readonly`     | 无副作用的读操作 | read_file, search_code  |
+| `write`        | 有副作用的写操作 | write_file, delete_file |
+| `irreversible` | 不可逆操作       | drop_table, send_email  |
+| `internal`     | 框架内部工具     | enter_plan_mode         |
 
 ## Scheduler + ToolExecutor — 执行管线
 
@@ -262,13 +264,14 @@ const agent = new Agent({
 
 ```typescript
 class Scheduler {
-  async *execute(requests, context): AsyncGenerator<ToolCallResult>
+    async *execute(requests, context): AsyncGenerator<ToolCallResult>;
 }
 ```
 
 **调度策略：并行为主，标签控制顺序。**
 
 Scheduler 将工具调用请求分成两类：
+
 - **无 `sequential` 标签的工具** → 放入同一组，用 `Promise.all` 并行执行
 - **有 `sequential` 标签的工具** → 独立成组，按顺序执行
 
@@ -280,6 +283,7 @@ Scheduler 将工具调用请求分成两类：
 ```
 
 **为什么这样设计？**
+
 - 大多数只读工具（搜索、读文件）天然无依赖，并行加速明显
 - 写操作（`writeFile`、`executeShell`）可能有副作用，用 `sequential` 标签保证执行顺序
 - Scheduler 和 ToolExecutor 分离 — 调度策略可以随时调整，不影响工具执行逻辑
@@ -290,14 +294,14 @@ Scheduler 将工具调用请求分成两类：
 
 框架在 `packages/core/src/tools/builtin/` 提供了 6 个开箱即用的工具，覆盖文件操作、Shell 执行、代码搜索和网页抓取：
 
-| 工具 | 名称 | 标签 | 用途 |
-|------|------|------|------|
-| **readFile** | `read_file` | `readonly` | 读取文件内容，支持行号范围（startLine/endLine），超过 2000 行自动截断 |
-| **writeFile** | `write_file` | `write`, `sequential` | 创建或覆盖文件，自动创建父目录 |
-| **listDirectory** | `list_directory` | `readonly` | 列出目录内容，显示文件大小和类型 |
-| **executeShell** | `execute_shell` | `sequential` | 执行 Shell 命令，捕获 stdout/stderr，支持超时保护 |
-| **grep** | `grep` | `readonly` | 正则搜索文件内容，自动跳过 node_modules/.git/dist 等，返回 `文件:行号: 匹配内容` |
-| **webFetch** | `web_fetch` | `readonly` | 抓取网页，HTML 转纯文本返回 |
+| 工具              | 名称             | 标签                  | 用途                                                                             |
+| ----------------- | ---------------- | --------------------- | -------------------------------------------------------------------------------- |
+| **readFile**      | `read_file`      | `readonly`            | 读取文件内容，支持行号范围（startLine/endLine），超过 2000 行自动截断            |
+| **writeFile**     | `write_file`     | `write`, `sequential` | 创建或覆盖文件，自动创建父目录                                                   |
+| **listDirectory** | `list_directory` | `readonly`            | 列出目录内容，显示文件大小和类型                                                 |
+| **executeShell**  | `execute_shell`  | `sequential`          | 执行 Shell 命令，捕获 stdout/stderr，支持超时保护                                |
+| **grep**          | `grep`           | `readonly`            | 正则搜索文件内容，自动跳过 node_modules/.git/dist 等，返回 `文件:行号: 匹配内容` |
+| **webFetch**      | `web_fetch`      | `readonly`            | 抓取网页，HTML 转纯文本返回                                                      |
 
 通过 SDK 的 `builtinTools` 扩展一行引入所有实用工具：
 
@@ -305,13 +309,13 @@ Scheduler 将工具调用请求分成两类：
 import { Agent, builtinTools } from '@agent-tea/sdk';
 
 const agent = new Agent({
-  provider,
-  model: 'gpt-4o',
-  tools: [...builtinTools.tools],
-  systemPrompt: [
-    '你是一个编程助手。',
-    builtinTools.instructions,  // 自带使用说明
-  ].join('\n\n'),
+    provider,
+    model: 'gpt-4o',
+    tools: [...builtinTools.tools],
+    systemPrompt: [
+        '你是一个编程助手。',
+        builtinTools.instructions, // 自带使用说明
+    ].join('\n\n'),
 });
 ```
 

@@ -25,17 +25,17 @@ import type { Tool, ToolContext, ToolResult } from './types.js';
 
 /** 工具执行函数的类型签名 */
 type ToolExecuteFn<TParams> = (
-  params: TParams,
-  context: ToolContext,
+    params: TParams,
+    context: ToolContext,
 ) => Promise<ToolResult | string>;
 
 /** 工具配置，泛型 T 绑定 Zod Schema 以实现参数类型推导 */
 interface ToolConfig<T extends ZodType> {
-  name: string;
-  description: string;
-  parameters: T;
-  tags?: string[];
-  timeout?: number;
+    name: string;
+    description: string;
+    parameters: T;
+    tags?: string[];
+    timeout?: number;
 }
 
 /**
@@ -44,22 +44,22 @@ interface ToolConfig<T extends ZodType> {
  * 这样开发者定义 parameters 后，execute 函数的参数类型自动推导，无需手动标注。
  */
 export function tool<T extends ZodType>(
-  config: ToolConfig<T>,
-  execute: ToolExecuteFn<z.infer<T>>,
+    config: ToolConfig<T>,
+    execute: ToolExecuteFn<z.infer<T>>,
 ): Tool<z.infer<T>> {
-  return {
-    name: config.name,
-    description: config.description,
-    parameters: config.parameters,
-    tags: config.tags,
-    timeout: config.timeout,
-    async execute(params, context) {
-      const result = await execute(params, context);
-      // 允许简单工具直接返回字符串，自动包装为 ToolResult
-      if (typeof result === 'string') {
-        return { content: result };
-      }
-      return result;
-    },
-  };
+    return {
+        name: config.name,
+        description: config.description,
+        parameters: config.parameters,
+        tags: config.tags,
+        timeout: config.timeout,
+        async execute(params, context) {
+            const result = await execute(params, context);
+            // 允许简单工具直接返回字符串，自动包装为 ToolResult
+            if (typeof result === 'string') {
+                return { content: result };
+            }
+            return result;
+        },
+    };
 }

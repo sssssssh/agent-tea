@@ -64,6 +64,7 @@ docs/                   # 设计文档和实施计划
 **Provider + ChatSession 模式**：`LLMProvider` 是工厂，创建 `ChatSession` 实例。一个 provider 可创建多个不同配置的 session。每个 session 的 `sendMessage()` 返回 `AsyncGenerator<ChatStreamEvent>`。
 
 **Agent 策略**（`packages/core/src/agent/`）：
+
 - `BaseAgent` — 抽象基类，包含共享基础设施（session 创建、响应收集、工具执行、钩子）
 - `ReActAgent` — 经典 ReAct 循环：发送→收集→执行工具→循环，直到纯文本响应或达到 maxIterations（默认 20）。支持可选的 `allowPlanMode` 动态注入计划模式工具。
 - `PlanAndExecuteAgent` — 三阶段工作流：**规划**（仅只读工具，通过 `readonly` 标签过滤）→ **审批**（计划通过 `PlanStore` 持久化，`onPlanCreated` 钩子等待用户确认）→ **执行**（完整工具集，逐步执行，支持失败恢复钩子：暂停/跳过/重新规划/中止）
@@ -81,17 +82,20 @@ docs/                   # 设计文档和实施计划
 **审批系统**（`packages/core/src/approval/`）：工具调用审批/拒绝工作流。通过 `AgentConfig` 中的 `ApprovalPolicy` 控制，三种模式：`'always'`（所有工具）、`'tagged'`（仅指定标签的工具，推荐）、`'never'`（默认）。复用现有 `Tool.tags` 标记。在 `executeToolCalls()` 中，Agent 产出 `approval_request` 事件并等待 `resolveApproval()` 调用 — 非阻塞异步模式，适用于 CLI/UI。`ApprovalDecision` 支持 `modifiedArgs` 在执行前修改参数。
 
 **上下文管理**（`packages/core/src/context/`）：Token 感知的消息裁剪。`ContextManager` 接口，`prepare(messages): Message[]` 方法。两种策略：
+
 - `SlidingWindowContextManager`（旧，已 @deprecated）— 用 `字符数/4` 估算 token，保留前 N 条保留消息 + 最新消息，中间插入截断标记。
 - `PipelineContextManager`（推荐）— 管道式组合多个 `ContextProcessor`，内置处理器：`SlidingWindowProcessor`（滑动窗口裁剪）、`ToolOutputTruncator`（截断过长工具输出）、`MessageCompressor`（占位，待异步支持）。
 - 通过 `createContextManager()` 工厂创建，支持 `'sliding_window'` 和 `'pipeline'` 两种 strategy。在 `collectResponse()` 中每次 LLM 调用前自动应用。
 
 **记忆/持久化**（`packages/core/src/memory/`）：两个独立存储层，均为可选：
+
 - `ConversationStore` — 会话级：保存/加载/列举/删除完整消息历史。`FileConversationStore` 以 JSON 存储在 `.agent-tea/conversations/`。
 - `MemoryStore` — 知识级：带标签的键值条目，用于跨会话知识。`FileMemoryStore` 存储在 `.agent-tea/memory/`，通过 index.json 支持快速标签搜索。
 
 **循环检测**（`packages/core/src/agent/loop-detection.ts`）：`LoopDetector` 检测 Agent 陷入重复行为。两种探测器：`ToolCallTracker` 检测连续相同工具调用（按工具名+参数哈希），`ContentTracker` 检测内容重复模式。首次检测发出警告注入提示，超过 `maxWarnings` 后中止。通过 `AgentConfig` 中的 `loopDetection: { enabled, maxConsecutiveIdenticalCalls, contentRepetitionThreshold, maxWarnings }` 配置。
 
 **超时系统**：两层超时保护，防止工具执行卡死或 LLM 连接中断。
+
 - **工具超时**：`AgentConfig.toolTimeout`（全局，默认 30s）或 `Tool.timeout`（工具级，优先级更高）。`ToolExecutor` 用 `Promise.race` 实现，超时返回 `ToolResult(isError: true)` 而非抛异常。
 - **LLM 超时**：`AgentConfig.llmTimeout: { connectionMs, streamStallMs }`。`connectionMs`（默认 60s）控制首个事件等待时间，`streamStallMs`（默认 30s）控制连续事件间最大间隔。由 `withStreamTimeout()` 工具函数包装 AsyncGenerator 实现，两阶段分别计时。
 - **`TimeoutError`**（`packages/core/src/errors/errors.ts`）：继承 `AgentTeaError`，携带 `timeoutMs` 和 `phase: 'tool' | 'llm_connection' | 'llm_stream'`，BaseAgent 根据 phase 采用不同重试策略（连接超时重试 3 次，流停滞重试 2 次）。
@@ -99,6 +103,7 @@ docs/                   # 设计文档和实施计划
 **并行调度器**（`packages/core/src/scheduler/`）：`Scheduler` 管理工具并发执行。默认所有工具并行执行（`Promise.all`），带 `sequential` 标签的工具按顺序执行。连续非 sequential 工具分组并行，结果通过 AsyncGenerator 逐个 yield。`ToolExecutor` 负责 Zod 验证 + 执行 + 错误包装。
 
 **钩子系统**：BaseAgent 暴露扩展点，无需子类化即可定制行为：
+
 - `onBeforeIteration` / `onAfterIteration` — 迭代生命周期
 - `onToolFilter` — 按 Agent 状态动态过滤工具集
 - `onBeforeToolCall` / `onAfterToolCall` — 工具执行拦截
@@ -108,6 +113,7 @@ docs/                   # 设计文档和实施计划
 **事件流**：`Agent.run()` 通过 AsyncGenerator 产出 `AgentEvent` — 支持实时 UI 而不阻塞。事件类型：`agent_start`、`agent_end`、`message`、`tool_request`、`tool_response`、`usage`、`error`、`state_change`、`approval_request`，以及计划相关：`plan_created`、`step_start`、`step_complete`、`step_failed`、`execution_paused`。
 
 **SDK 抽象**（`packages/sdk/`）：
+
 - `Extension` — 可复用能力包（打包工具 + 指令）
 - `Skill` — 任务特定的提示词 + 工具，带触发条件
 - `SubAgent` — 将 ReActAgent 包装为 Tool；父 Agent 通过工具调用发起，收集 assistant 消息作为结果。支持层级化多 Agent 协作。

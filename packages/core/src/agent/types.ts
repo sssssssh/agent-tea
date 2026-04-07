@@ -19,23 +19,23 @@
 
 /** Agent 的所有可能状态 */
 export type AgentState =
-  | 'idle'
-  | 'reacting'
-  | 'planning'
-  | 'awaiting_approval'
-  | 'executing'
-  | 'step_failed'
-  | 'paused'
-  | 'completed'
-  | 'error'
-  | 'aborted';
+    | 'idle'
+    | 'reacting'
+    | 'planning'
+    | 'awaiting_approval'
+    | 'executing'
+    | 'step_failed'
+    | 'paused'
+    | 'completed'
+    | 'error'
+    | 'aborted';
 
 /** 状态转换规则 */
 export interface StateTransition {
-  from: AgentState | AgentState[];
-  to: AgentState;
-  /** 可选的转换条件，返回 false 则阻止此转换 */
-  guard?: () => boolean;
+    from: AgentState | AgentState[];
+    to: AgentState;
+    /** 可选的转换条件，返回 false 则阻止此转换 */
+    guard?: () => boolean;
 }
 
 // ============================================================
@@ -43,28 +43,28 @@ export interface StateTransition {
 // ============================================================
 
 export interface Plan {
-  id: string;
-  filePath: string;
-  steps: PlanStep[];
-  rawContent: string;
-  createdAt: Date;
+    id: string;
+    filePath: string;
+    steps: PlanStep[];
+    rawContent: string;
+    createdAt: Date;
 }
 
 export interface PlanStep {
-  index: number;
-  description: string;
-  status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
-  result?: StepResult;
+    index: number;
+    description: string;
+    status: 'pending' | 'executing' | 'completed' | 'failed' | 'skipped';
+    result?: StepResult;
 }
 
 export interface StepResult {
-  summary: string;
-  toolCallCount: number;
+    summary: string;
+    toolCallCount: number;
 }
 
 export interface PlanApproval {
-  approved: boolean;
-  feedback?: string;
+    approved: boolean;
+    feedback?: string;
 }
 
 export type StepFailureAction = 'pause' | 'skip' | 'replan' | 'abort';
@@ -74,27 +74,27 @@ export type StepFailureAction = 'pause' | 'skip' | 'replan' | 'abort';
 // ============================================================
 
 export interface IterationContext {
-  iteration: number;
-  messages: readonly Message[];
-  sessionId: string;
-  state: AgentState;
+    iteration: number;
+    messages: readonly Message[];
+    sessionId: string;
+    state: AgentState;
 }
 
 export interface ToolCallDecision {
-  allow: boolean;
-  modifiedArgs?: Record<string, unknown>;
+    allow: boolean;
+    modifiedArgs?: Record<string, unknown>;
 }
 
 export interface CollectedResponse {
-  text: string;
-  toolCalls: ToolCallInfo[];
-  usage?: UsageInfo;
+    text: string;
+    toolCalls: ToolCallInfo[];
+    usage?: UsageInfo;
 }
 
 export interface ToolCallInfo {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
+    id: string;
+    name: string;
+    args: Record<string, unknown>;
 }
 
 import type { Message, UsageInfo } from '../llm/types.js';
@@ -105,17 +105,17 @@ import type { Message, UsageInfo } from '../llm/types.js';
 
 /** Agent 开始运行，携带唯一 sessionId 用于日志关联 */
 export interface AgentStartEvent {
-  type: 'agent_start';
-  sessionId: string;
-  agentId?: string;
+    type: 'agent_start';
+    sessionId: string;
+    agentId?: string;
 }
 
 /** Agent 运行结束，reason 区分正常完成、出错和被取消三种情况 */
 export interface AgentEndEvent {
-  type: 'agent_end';
-  sessionId: string;
-  reason: 'complete' | 'error' | 'abort' | 'paused';
-  agentId?: string;
+    type: 'agent_end';
+    sessionId: string;
+    reason: 'complete' | 'error' | 'abort' | 'paused';
+    agentId?: string;
 }
 
 // ============================================================
@@ -124,10 +124,10 @@ export interface AgentEndEvent {
 
 /** 消息事件 —— 用户输入或助手回复的文本内容 */
 export interface MessageEvent {
-  type: 'message';
-  role: 'user' | 'assistant';
-  content: string;
-  agentId?: string;
+    type: 'message';
+    role: 'user' | 'assistant';
+    content: string;
+    agentId?: string;
 }
 
 // ============================================================
@@ -139,21 +139,21 @@ export interface MessageEvent {
 
 /** LLM 发起工具调用（执行前） */
 export interface ToolRequestEvent {
-  type: 'tool_request';
-  requestId: string;
-  toolName: string;
-  args: Record<string, unknown>;
-  agentId?: string;
+    type: 'tool_request';
+    requestId: string;
+    toolName: string;
+    args: Record<string, unknown>;
+    agentId?: string;
 }
 
 /** 工具执行完毕（执行后） */
 export interface ToolResponseEvent {
-  type: 'tool_response';
-  requestId: string;
-  toolName: string;
-  content: string;
-  isError?: boolean;
-  agentId?: string;
+    type: 'tool_response';
+    requestId: string;
+    toolName: string;
+    content: string;
+    isError?: boolean;
+    agentId?: string;
 }
 
 // ============================================================
@@ -162,10 +162,10 @@ export interface ToolResponseEvent {
 
 /** Token 用量统计，用于成本监控或 UI 展示 */
 export interface UsageEvent {
-  type: 'usage';
-  model: string;
-  usage: UsageInfo;
-  agentId?: string;
+    type: 'usage';
+    model: string;
+    usage: UsageInfo;
+    agentId?: string;
 }
 
 /**
@@ -174,19 +174,19 @@ export interface UsageEvent {
  * fatal=true 的错误会导致 Agent 停止并发出 AgentEndEvent。
  */
 export interface ErrorEvent {
-  type: 'error';
-  message: string;
-  fatal: boolean;
-  error?: Error;
-  agentId?: string;
+    type: 'error';
+    message: string;
+    fatal: boolean;
+    error?: Error;
+    agentId?: string;
 }
 
 /** Agent 状态变更事件 */
 export interface StateChangeEvent {
-  type: 'state_change';
-  from: AgentState;
-  to: AgentState;
-  agentId?: string;
+    type: 'state_change';
+    from: AgentState;
+    to: AgentState;
+    agentId?: string;
 }
 
 // ============================================================
@@ -210,16 +210,16 @@ export interface StateChangeEvent {
  * ```
  */
 export interface ApprovalRequestEvent {
-  type: 'approval_request';
-  /** 唯一请求 ID，用于关联 resolveApproval 调用 */
-  requestId: string;
-  /** 工具名称 */
-  toolName: string;
-  /** 工具参数，展示给用户审阅 */
-  args: Record<string, unknown>;
-  /** 工具描述，帮助用户理解工具用途 */
-  toolDescription: string;
-  agentId?: string;
+    type: 'approval_request';
+    /** 唯一请求 ID，用于关联 resolveApproval 调用 */
+    requestId: string;
+    /** 工具名称 */
+    toolName: string;
+    /** 工具参数，展示给用户审阅 */
+    args: Record<string, unknown>;
+    /** 工具描述，帮助用户理解工具用途 */
+    toolDescription: string;
+    agentId?: string;
 }
 
 // ============================================================
@@ -227,51 +227,51 @@ export interface ApprovalRequestEvent {
 // ============================================================
 
 export interface PlanCreatedEvent {
-  type: 'plan_created';
-  plan: Plan;
-  filePath: string;
-  agentId?: string;
+    type: 'plan_created';
+    plan: Plan;
+    filePath: string;
+    agentId?: string;
 }
 
 export interface StepStartEvent {
-  type: 'step_start';
-  step: PlanStep;
-  agentId?: string;
+    type: 'step_start';
+    step: PlanStep;
+    agentId?: string;
 }
 
 export interface StepCompleteEvent {
-  type: 'step_complete';
-  step: PlanStep;
-  agentId?: string;
+    type: 'step_complete';
+    step: PlanStep;
+    agentId?: string;
 }
 
 export interface StepFailedEvent {
-  type: 'step_failed';
-  step: PlanStep;
-  error: unknown;
-  agentId?: string;
+    type: 'step_failed';
+    step: PlanStep;
+    error: unknown;
+    agentId?: string;
 }
 
 export interface ExecutionPausedEvent {
-  type: 'execution_paused';
-  step: PlanStep;
-  error: unknown;
-  agentId?: string;
+    type: 'execution_paused';
+    step: PlanStep;
+    error: unknown;
+    agentId?: string;
 }
 
 /** 所有事件的可区分联合 */
 export type AgentEvent =
-  | AgentStartEvent
-  | AgentEndEvent
-  | MessageEvent
-  | ToolRequestEvent
-  | ToolResponseEvent
-  | UsageEvent
-  | ErrorEvent
-  | StateChangeEvent
-  | ApprovalRequestEvent
-  | PlanCreatedEvent
-  | StepStartEvent
-  | StepCompleteEvent
-  | StepFailedEvent
-  | ExecutionPausedEvent;
+    | AgentStartEvent
+    | AgentEndEvent
+    | MessageEvent
+    | ToolRequestEvent
+    | ToolResponseEvent
+    | UsageEvent
+    | ErrorEvent
+    | StateChangeEvent
+    | ApprovalRequestEvent
+    | PlanCreatedEvent
+    | StepStartEvent
+    | StepCompleteEvent
+    | StepFailedEvent
+    | ExecutionPausedEvent;

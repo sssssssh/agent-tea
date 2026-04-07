@@ -28,32 +28,32 @@ import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 // ============================================================
 
 const calculator = tool(
-  {
-    name: 'calculate',
-    description: '计算数学表达式',
-    parameters: z.object({
-      expression: z.string().describe('数学表达式，如 "2 + 3 * 4"'),
-    }),
-  },
-  async ({ expression }) => {
-    try {
-      const result = Function(`"use strict"; return (${expression})`)();
-      return `${expression} = ${result}`;
-    } catch {
-      return { content: `无法计算: ${expression}`, isError: true };
-    }
-  },
+    {
+        name: 'calculate',
+        description: '计算数学表达式',
+        parameters: z.object({
+            expression: z.string().describe('数学表达式，如 "2 + 3 * 4"'),
+        }),
+    },
+    async ({ expression }) => {
+        try {
+            const result = Function(`"use strict"; return (${expression})`)();
+            return `${expression} = ${result}`;
+        } catch {
+            return { content: `无法计算: ${expression}`, isError: true };
+        }
+    },
 );
 
 const getTime = tool(
-  {
-    name: 'get_current_time',
-    description: '获取当前日期和时间',
-    parameters: z.object({}),
-  },
-  async () => {
-    return new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
-  },
+    {
+        name: 'get_current_time',
+        description: '获取当前日期和时间',
+        parameters: z.object({}),
+    },
+    async () => {
+        return new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' });
+    },
 );
 
 // ============================================================
@@ -73,57 +73,56 @@ const getTime = tool(
 const toolTimers = new Map<string, number>();
 
 class InstrumentedAgent extends ReActAgent {
-  /**
-   * 迭代前钩子
-   * IterationContext 包含：
-   *   - iteration: 当前轮次编号（从 0 开始）
-   *   - messages: 当前消息历史（只读）
-   *   - sessionId: 本次运行的会话 ID
-   *   - state: 当前 Agent 状态
-   */
-  protected override async onBeforeIteration(ctx: IterationContext): Promise<void> {
-    console.log(`\n--- 第 ${ctx.iteration + 1} 轮迭代开始 (状态: ${ctx.state}) ---`);
-  }
+    /**
+     * 迭代前钩子
+     * IterationContext 包含：
+     *   - iteration: 当前轮次编号（从 0 开始）
+     *   - messages: 当前消息历史（只读）
+     *   - sessionId: 本次运行的会话 ID
+     *   - state: 当前 Agent 状态
+     */
+    protected override async onBeforeIteration(ctx: IterationContext): Promise<void> {
+        console.log(`\n--- 第 ${ctx.iteration + 1} 轮迭代开始 (状态: ${ctx.state}) ---`);
+    }
 
-  /**
-   * 迭代后钩子
-   * 此时 LLM 已经返回响应，工具也已经执行完毕（如果有的话）
-   */
-  protected override async onAfterIteration(ctx: IterationContext): Promise<void> {
-    console.log(`--- 第 ${ctx.iteration + 1} 轮迭代结束 (消息数: ${ctx.messages.length}) ---\n`);
-  }
+    /**
+     * 迭代后钩子
+     * 此时 LLM 已经返回响应，工具也已经执行完毕（如果有的话）
+     */
+    protected override async onAfterIteration(ctx: IterationContext): Promise<void> {
+        console.log(
+            `--- 第 ${ctx.iteration + 1} 轮迭代结束 (消息数: ${ctx.messages.length}) ---\n`,
+        );
+    }
 
-  /**
-   * 工具调用前钩子
-   * 返回 ToolCallDecision：
-   *   - { allow: true }：允许执行
-   *   - { allow: true, modifiedArgs: {...} }：允许执行但修改参数
-   *   - { allow: false }：拒绝执行（LLM 会收到拒绝提示）
-   */
-  protected override async onBeforeToolCall(
-    toolName: string,
-    args: Record<string, unknown>,
-  ): Promise<ToolCallDecision> {
-    console.log(`  >> 即将调用 ${toolName}，参数: ${JSON.stringify(args)}`);
-    // 记录开始时间
-    toolTimers.set(toolName, Date.now());
-    // 允许所有工具调用
-    return { allow: true };
-  }
+    /**
+     * 工具调用前钩子
+     * 返回 ToolCallDecision：
+     *   - { allow: true }：允许执行
+     *   - { allow: true, modifiedArgs: {...} }：允许执行但修改参数
+     *   - { allow: false }：拒绝执行（LLM 会收到拒绝提示）
+     */
+    protected override async onBeforeToolCall(
+        toolName: string,
+        args: Record<string, unknown>,
+    ): Promise<ToolCallDecision> {
+        console.log(`  >> 即将调用 ${toolName}，参数: ${JSON.stringify(args)}`);
+        // 记录开始时间
+        toolTimers.set(toolName, Date.now());
+        // 允许所有工具调用
+        return { allow: true };
+    }
 
-  /**
-   * 工具调用后钩子
-   * result 是 ToolResult { content: string, isError?: boolean }
-   */
-  protected override async onAfterToolCall(
-    toolName: string,
-    result: ToolResult,
-  ): Promise<void> {
-    const startTime = toolTimers.get(toolName);
-    const elapsed = startTime ? Date.now() - startTime : 0;
-    const status = result.isError ? '失败' : '成功';
-    console.log(`  << 调用完成 ${toolName} [${status}]，耗时 ${elapsed}ms`);
-  }
+    /**
+     * 工具调用后钩子
+     * result 是 ToolResult { content: string, isError?: boolean }
+     */
+    protected override async onAfterToolCall(toolName: string, result: ToolResult): Promise<void> {
+        const startTime = toolTimers.get(toolName);
+        const elapsed = startTime ? Date.now() - startTime : 0;
+        const status = result.isError ? '失败' : '成功';
+        console.log(`  << 调用完成 ${toolName} [${status}]，耗时 ${elapsed}ms`);
+    }
 }
 
 // ============================================================
@@ -131,41 +130,42 @@ class InstrumentedAgent extends ReActAgent {
 // ============================================================
 
 const agent = new InstrumentedAgent({
-  provider: new OpenAIProvider({
-    apiKey: process.env.OPENAI_API_KEY,
-    baseURL: process.env.OPENAI_BASE_URL,
-  }),
-  model: process.env.MODEL || 'gpt-4o-mini',
-  tools: [calculator, getTime],
-  systemPrompt: '你是一个有用的助手。用中文回答问题。需要计算时用 calculate 工具，需要时间信息时用 get_current_time 工具。',
+    provider: new OpenAIProvider({
+        apiKey: process.env.OPENAI_API_KEY,
+        baseURL: process.env.OPENAI_BASE_URL,
+    }),
+    model: process.env.MODEL || 'gpt-4o-mini',
+    tools: [calculator, getTime],
+    systemPrompt:
+        '你是一个有用的助手。用中文回答问题。需要计算时用 calculate 工具，需要时间信息时用 get_current_time 工具。',
 });
 
 async function main() {
-  const query = process.argv[2] || '现在几点了？然后帮我算一下 123 * 456 和 789 + 321';
-  console.log(`> ${query}\n`);
+    const query = process.argv[2] || '现在几点了？然后帮我算一下 123 * 456 和 789 + 321';
+    console.log(`> ${query}\n`);
 
-  for await (const event of agent.run(query)) {
-    switch (event.type) {
-      case 'message':
-        console.log(`[助手] ${event.content}`);
-        break;
+    for await (const event of agent.run(query)) {
+        switch (event.type) {
+            case 'message':
+                console.log(`[助手] ${event.content}`);
+                break;
 
-      case 'tool_request':
-        // 钩子的日志会在 tool_request 事件之前/之后打印
-        console.log(`[工具调用] ${event.toolName}`);
-        break;
+            case 'tool_request':
+                // 钩子的日志会在 tool_request 事件之前/之后打印
+                console.log(`[工具调用] ${event.toolName}`);
+                break;
 
-      case 'tool_response':
-        console.log(`[工具结果] ${event.content}`);
-        break;
+            case 'tool_response':
+                console.log(`[工具结果] ${event.content}`);
+                break;
 
-      case 'error':
-        console.error(`[错误] ${event.message}`);
-        break;
+            case 'error':
+                console.error(`[错误] ${event.message}`);
+                break;
+        }
     }
-  }
 
-  console.log('\n完成。');
+    console.log('\n完成。');
 }
 
 main().catch(console.error);

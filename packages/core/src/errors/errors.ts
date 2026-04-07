@@ -17,10 +17,10 @@
  * 使用方可以用 `instanceof AgentTeaError` 区分框架错误和其他错误。
  */
 export class AgentTeaError extends Error {
-  constructor(message: string, options?: ErrorOptions) {
-    super(message, options);
-    this.name = 'AgentTeaError';
-  }
+    constructor(message: string, options?: ErrorOptions) {
+        super(message, options);
+        this.name = 'AgentTeaError';
+    }
 }
 
 /**
@@ -29,70 +29,72 @@ export class AgentTeaError extends Error {
  * 便于上层决定是直接失败还是触发重试逻辑。
  */
 export class ProviderError extends AgentTeaError {
-  constructor(
-    message: string,
-    /** HTTP 状态码（如 429 表示限流、500 表示服务端错误） */
-    public readonly statusCode?: number,
-    /** 是否可重试（如 429/503 可重试，401/403 不可重试） */
-    public readonly retryable: boolean = false,
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = 'ProviderError';
-  }
+    constructor(
+        message: string,
+        /** HTTP 状态码（如 429 表示限流、500 表示服务端错误） */
+        public readonly statusCode?: number,
+        /** 是否可重试（如 429/503 可重试，401/403 不可重试） */
+        public readonly retryable: boolean = false,
+        options?: ErrorOptions,
+    ) {
+        super(message, options);
+        this.name = 'ProviderError';
+    }
 }
 
 /** 工具执行过程中抛出的错误，携带工具名称便于定位问题 */
 export class ToolExecutionError extends AgentTeaError {
-  constructor(
-    message: string,
-    public readonly toolName: string,
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = 'ToolExecutionError';
-  }
+    constructor(
+        message: string,
+        public readonly toolName: string,
+        options?: ErrorOptions,
+    ) {
+        super(message, options);
+        this.name = 'ToolExecutionError';
+    }
 }
 
 /** 工具参数校验失败（Zod 校验不通过），携带详细的校验错误列表 */
 export class ToolValidationError extends AgentTeaError {
-  constructor(
-    message: string,
-    public readonly toolName: string,
-    public readonly validationErrors: string[],
-    options?: ErrorOptions,
-  ) {
-    super(message, options);
-    this.name = 'ToolValidationError';
-  }
+    constructor(
+        message: string,
+        public readonly toolName: string,
+        public readonly validationErrors: string[],
+        options?: ErrorOptions,
+    ) {
+        super(message, options);
+        this.name = 'ToolValidationError';
+    }
 }
 
 /** Agent 循环超过最大迭代次数，属于安全保护机制触发的错误 */
 export class MaxIterationsError extends AgentTeaError {
-  constructor(maxIterations: number) {
-    super(`Agent loop exceeded maximum iterations (${maxIterations})`);
-    this.name = 'MaxIterationsError';
-  }
+    constructor(maxIterations: number) {
+        super(`Agent loop exceeded maximum iterations (${maxIterations})`);
+        this.name = 'MaxIterationsError';
+    }
 }
 
 /** Agent 检测到循环行为（重复工具调用或重复内容输出） */
 export class LoopDetectedError extends AgentTeaError {
-  constructor(public readonly loopType: 'tool_call' | 'content') {
-    super(`Loop detected: repeated ${loopType === 'tool_call' ? 'tool calls' : 'content output'}`);
-    this.name = 'LoopDetectedError';
-  }
+    constructor(public readonly loopType: 'tool_call' | 'content') {
+        super(
+            `Loop detected: repeated ${loopType === 'tool_call' ? 'tool calls' : 'content output'}`,
+        );
+        this.name = 'LoopDetectedError';
+    }
 }
 
 /** 超时错误，区分超时阶段以支持不同的重试策略 */
 export class TimeoutError extends AgentTeaError {
-  constructor(
-    message: string,
-    /** 超时阈值（毫秒） */
-    public readonly timeoutMs: number,
-    /** 超时发生的阶段：工具执行、LLM 连接、LLM 流式传输 */
-    public readonly phase: 'tool' | 'llm_connection' | 'llm_stream',
-  ) {
-    super(message);
-    this.name = 'TimeoutError';
-  }
+    constructor(
+        message: string,
+        /** 超时阈值（毫秒） */
+        public readonly timeoutMs: number,
+        /** 超时发生的阶段：工具执行、LLM 连接、LLM 流式传输 */
+        public readonly phase: 'tool' | 'llm_connection' | 'llm_stream',
+    ) {
+        super(message);
+        this.name = 'TimeoutError';
+    }
 }

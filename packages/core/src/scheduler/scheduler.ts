@@ -21,116 +21,116 @@ import { ToolExecutor, type ToolCallRequest, type ToolCallResult } from './execu
 
 /** 一组可以一起执行的工具调用 */
 interface ExecutionGroup {
-  requests: ToolCallRequest[];
-  parallel: boolean;
+    requests: ToolCallRequest[];
+    parallel: boolean;
 }
 
 export class Scheduler {
-  private executor: ToolExecutor;
-  private registry: ToolRegistry;
+    private executor: ToolExecutor;
+    private registry: ToolRegistry;
 
-  constructor(registry: ToolRegistry) {
-    this.executor = new ToolExecutor(registry);
-    this.registry = registry;
-  }
-
-  /**
-   * 批量执行工具调用，逐个 yield 结果。
-   * 使用 AsyncGenerator 使 Agent 可以在每个工具完成后立即发出事件，
-   * 而不需要等所有工具都执行完毕。
-   *
-   * 按分组策略执行：并行组内 Promise.all 并发，组间顺序执行。
-   */
-  async *execute(
-    requests: ToolCallRequest[],
-    context: ToolContext,
-    globalTimeout?: number,
-  ): AsyncGenerator<ToolCallResult> {
-    const groups = this.groupRequests(requests);
-
-    for (const group of groups) {
-      // 组级取消检查：已取消则整组返回取消结果，用 continue 保证每个请求都有响应
-      if (context.signal.aborted) {
-        for (const req of group.requests) {
-          yield this.createAbortedResult(req);
-        }
-        continue;
-      }
-
-      if (group.parallel && group.requests.length > 1) {
-        // 并行执行：无 sequential 标签的连续工具可安全并发
-        const results = await Promise.all(
-          group.requests.map((req) => this.executor.execute(req, context, globalTimeout)),
-        );
-        for (const result of results) yield result;
-      } else {
-        // 顺序执行：单个工具或 sequential 组
-        for (const req of group.requests) {
-          if (context.signal.aborted) {
-            yield this.createAbortedResult(req);
-            continue;
-          }
-          yield await this.executor.execute(req, context, globalTimeout);
-        }
-      }
-    }
-  }
-
-  /**
-   * 执行单个工具调用。
-   * 当审批系统逐个处理工具调用时使用，避免批量执行的 AsyncGenerator 复杂性。
-   */
-  async executeSingle(
-    request: ToolCallRequest,
-    context: ToolContext,
-    globalTimeout?: number,
-  ): Promise<ToolCallResult> {
-    if (context.signal.aborted) {
-      return this.createAbortedResult(request);
+    constructor(registry: ToolRegistry) {
+        this.executor = new ToolExecutor(registry);
+        this.registry = registry;
     }
 
-    return this.executor.execute(request, context, globalTimeout);
-  }
+    /**
+     * 批量执行工具调用，逐个 yield 结果。
+     * 使用 AsyncGenerator 使 Agent 可以在每个工具完成后立即发出事件，
+     * 而不需要等所有工具都执行完毕。
+     *
+     * 按分组策略执行：并行组内 Promise.all 并发，组间顺序执行。
+     */
+    async *execute(
+        requests: ToolCallRequest[],
+        context: ToolContext,
+        globalTimeout?: number,
+    ): AsyncGenerator<ToolCallResult> {
+        const groups = this.groupRequests(requests);
 
-  /**
-   * 将工具调用按 sequential 标签分组。
-   * 连续的非 sequential 工具归为一个并行组，sequential 工具单独一组。
-   */
-  private groupRequests(requests: ToolCallRequest[]): ExecutionGroup[] {
-    const groups: ExecutionGroup[] = [];
-    let parallelBuffer: ToolCallRequest[] = [];
+        for (const group of groups) {
+            // 组级取消检查：已取消则整组返回取消结果，用 continue 保证每个请求都有响应
+            if (context.signal.aborted) {
+                for (const req of group.requests) {
+                    yield this.createAbortedResult(req);
+                }
+                continue;
+            }
 
-    const flushParallelBuffer = () => {
-      if (parallelBuffer.length > 0) {
-        groups.push({ requests: parallelBuffer, parallel: true });
-        parallelBuffer = [];
-      }
-    };
+            if (group.parallel && group.requests.length > 1) {
+                // 并行执行：无 sequential 标签的连续工具可安全并发
+                const results = await Promise.all(
+                    group.requests.map((req) => this.executor.execute(req, context, globalTimeout)),
+                );
+                for (const result of results) yield result;
+            } else {
+                // 顺序执行：单个工具或 sequential 组
+                for (const req of group.requests) {
+                    if (context.signal.aborted) {
+                        yield this.createAbortedResult(req);
+                        continue;
+                    }
+                    yield await this.executor.execute(req, context, globalTimeout);
+                }
+            }
+        }
+    }
 
-    for (const req of requests) {
-      const tool = this.registry.get(req.name);
-      const isSequential = tool?.tags?.includes('sequential') ?? false;
+    /**
+     * 执行单个工具调用。
+     * 当审批系统逐个处理工具调用时使用，避免批量执行的 AsyncGenerator 复杂性。
+     */
+    async executeSingle(
+        request: ToolCallRequest,
+        context: ToolContext,
+        globalTimeout?: number,
+    ): Promise<ToolCallResult> {
+        if (context.signal.aborted) {
+            return this.createAbortedResult(request);
+        }
 
-      if (isSequential) {
+        return this.executor.execute(request, context, globalTimeout);
+    }
+
+    /**
+     * 将工具调用按 sequential 标签分组。
+     * 连续的非 sequential 工具归为一个并行组，sequential 工具单独一组。
+     */
+    private groupRequests(requests: ToolCallRequest[]): ExecutionGroup[] {
+        const groups: ExecutionGroup[] = [];
+        let parallelBuffer: ToolCallRequest[] = [];
+
+        const flushParallelBuffer = () => {
+            if (parallelBuffer.length > 0) {
+                groups.push({ requests: parallelBuffer, parallel: true });
+                parallelBuffer = [];
+            }
+        };
+
+        for (const req of requests) {
+            const tool = this.registry.get(req.name);
+            const isSequential = tool?.tags?.includes('sequential') ?? false;
+
+            if (isSequential) {
+                flushParallelBuffer();
+                groups.push({ requests: [req], parallel: false });
+            } else {
+                parallelBuffer.push(req);
+            }
+        }
+
+        // 遍历结束后 flush 剩余缓冲区
         flushParallelBuffer();
-        groups.push({ requests: [req], parallel: false });
-      } else {
-        parallelBuffer.push(req);
-      }
+
+        return groups;
     }
 
-    // 遍历结束后 flush 剩余缓冲区
-    flushParallelBuffer();
-
-    return groups;
-  }
-
-  /** 创建取消结果，避免重复代码 */
-  private createAbortedResult(request: ToolCallRequest): ToolCallResult {
-    return {
-      id: request.id,
-      name: request.name,
-      result: { content: 'Tool execution cancelled', isError: true },
-    };
-  }
+    /** 创建取消结果，避免重复代码 */
+    private createAbortedResult(request: ToolCallRequest): ToolCallResult {
+        return {
+            id: request.id,
+            name: request.name,
+            result: { content: 'Tool execution cancelled', isError: true },
+        };
+    }
 }

@@ -12,16 +12,16 @@ import { z } from 'zod';
 import { tool } from '../builder.js';
 
 export const enterPlanModeTool = tool(
-  {
-    name: 'enter_plan_mode',
-    description:
-      '当任务复杂、需要多步骤规划时调用。进入规划模式后只能使用只读工具来探索和制定计划。',
-    parameters: z.object({
-      reason: z.string().describe('为什么需要进入规划模式'),
-    }),
-    tags: ['readonly', 'internal'],
-  },
-  async ({ reason }) => {
-    return `已进入规划模式。原因：${reason}\n请开始探索代码并制定执行计划。`;
-  },
+    {
+        name: 'enter_plan_mode',
+        description:
+            '当任务复杂、需要多步骤规划时调用。进入规划模式后只能使用只读工具来探索和制定计划。',
+        parameters: z.object({
+            reason: z.string().describe('为什么需要进入规划模式'),
+        }),
+        tags: ['readonly', 'internal'],
+    },
+    async ({ reason }) => {
+        return `已进入规划模式。原因：${reason}\n请开始探索代码并制定执行计划。`;
+    },
 );

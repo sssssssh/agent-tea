@@ -36,23 +36,20 @@
 
 ```typescript
 interface LLMProvider {
-  readonly id: string                              // 'openai' | 'anthropic' | 'gemini'
-  chat(options: ChatOptions): ChatSession          // 创建会话
+    readonly id: string; // 'openai' | 'anthropic' | 'gemini'
+    chat(options: ChatOptions): ChatSession; // 创建会话
 }
 
 interface ChatSession {
-  sendMessage(
-    messages: Message[],
-    signal?: AbortSignal
-  ): AsyncGenerator<ChatStreamEvent>               // 流式响应
+    sendMessage(messages: Message[], signal?: AbortSignal): AsyncGenerator<ChatStreamEvent>; // 流式响应
 }
 
 interface ChatOptions {
-  model: string                                    // 模型名
-  systemPrompt?: string                            // 系统提示词
-  tools?: ToolDefinition[]                         // 工具的 JSON Schema
-  temperature?: number
-  maxTokens?: number
+    model: string; // 模型名
+    systemPrompt?: string; // 系统提示词
+    tools?: ToolDefinition[]; // 工具的 JSON Schema
+    temperature?: number;
+    maxTokens?: number;
 }
 ```
 
@@ -73,9 +70,9 @@ provider-xxx/
 1. 构造函数：初始化 SDK 客户端（API Key、baseURL）
 2. `chat()` 方法：返回 ChatSession 实例
 3. ChatSession 的 `sendMessage()`：
-   - 调用 adapter 把框架 Message → 厂商格式
-   - 发起流式 API 请求
-   - 逐 chunk 解析，翻译为 ChatStreamEvent yield 出去
+    - 调用 adapter 把框架 Message → 厂商格式
+    - 发起流式 API 请求
+    - 逐 chunk 解析，翻译为 ChatStreamEvent yield 出去
 
 ### adapter.ts 的职责
 
@@ -155,6 +152,7 @@ chunk 3: { tool_calls: [{ index: 0, function: { arguments: '1}' } }] }
 ```
 
 工具调用参数是**分散在多个 chunk 里的字符串碎片**。Provider 需要：
+
 1. 用 Map 按 `index` 累积每个工具的参数字符串
 2. 在 finish 时 `JSON.parse()` 拼接后的完整字符串
 3. 处理 parse 失败的情况（降级为 `{ _raw: "原始字符串" }`）
@@ -180,15 +178,15 @@ chunk: { functionCall: { name: "calc", args: { x: 1 } } }
 
 ### 差异总览
 
-| 维度 | OpenAI | Anthropic | Gemini |
-|------|--------|-----------|--------|
-| 系统提示词 | messages 内 | 顶级参数 | config 属性 |
-| 工具参数 | JSON 字符串 | 对象 | 对象 |
-| 工具结果角色 | tool | user | user |
-| 流式颗粒度 | 碎片拼接 | 块生命周期 | 完整到达 |
-| max_tokens | 可选 | **必填** | 可选 |
-| API Key | 自动读环境变量 | 自动读环境变量 | 需手动传入 |
-| 消息交替 | 灵活 | **严格 user/assistant** | 灵活 |
+| 维度         | OpenAI         | Anthropic               | Gemini      |
+| ------------ | -------------- | ----------------------- | ----------- |
+| 系统提示词   | messages 内    | 顶级参数                | config 属性 |
+| 工具参数     | JSON 字符串    | 对象                    | 对象        |
+| 工具结果角色 | tool           | user                    | user        |
+| 流式颗粒度   | 碎片拼接       | 块生命周期              | 完整到达    |
+| max_tokens   | 可选           | **必填**                | 可选        |
+| API Key      | 自动读环境变量 | 自动读环境变量          | 需手动传入  |
+| 消息交替     | 灵活           | **严格 user/assistant** | 灵活        |
 
 ## 如何添加新 Provider？
 

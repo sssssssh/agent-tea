@@ -28,17 +28,17 @@ import type { Tool } from '@agent-tea/core';
 import type { Skill } from './skill.js';
 
 export interface Extension {
-  name: string;
-  description?: string;
-  /** 激活此扩展时注入到 system prompt 中的指令 */
-  instructions?: string;
-  /** 此扩展提供的工具 */
-  tools?: Tool[];
-  /** 此扩展提供的技能（预定义的 prompt + 工具组合） */
-  skills?: Skill[];
+    name: string;
+    description?: string;
+    /** 激活此扩展时注入到 system prompt 中的指令 */
+    instructions?: string;
+    /** 此扩展提供的工具 */
+    tools?: Tool[];
+    /** 此扩展提供的技能（预定义的 prompt + 工具组合） */
+    skills?: Skill[];
 }
 
 /** 创建一个 Extension 配置。当前仅做透传，为后续添加校验和增强预留入口。 */
 export function extension(config: Extension): Extension {
-  return config;
+    return config;
 }
