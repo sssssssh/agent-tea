@@ -67,6 +67,7 @@ const searchCode = tool(
       maxResults: z.number().default(10).describe('最大返回条数'),
     }),
     tags: ['readonly'],
+    timeout: 10000,            // 可选：工具级超时（ms），优先于全局 toolTimeout
   },
   async ({ query, filePattern, maxResults }, context) => {
     // context 提供运行时环境
@@ -214,20 +215,46 @@ flowchart TD
     PARSE -->|失败| ERR2["错误：参数验证失败<br/>expected string, got number"]
     PARSE -->|通过| EXEC["execute(parsedParams, context)"]
     EXEC -->|异常| ERR3["捕获异常<br/>包装为错误结果"]
+    EXEC -->|超时| ERR4["TimeoutError<br/>包装为错误结果"]
     EXEC -->|成功| OK["返回 ToolResult"]
 
     ERR1 --> OUT["ToolCallResult<br/>永远有结果，永不抛异常"]
     ERR2 --> OUT
     ERR3 --> OUT
+    ERR4 --> OUT
     OK --> OUT
 ```
 
-**四层防护**，每一层都不会让错误逃逸：
+**五层防护**，每一层都不会让错误逃逸：
 
 1. **工具不存在** → 返回可用工具列表（LLM 可以换一个）
 2. **参数格式错误** → 返回具体哪个字段有问题（LLM 可以修正）
 3. **执行抛异常** → 捕获并包装（LLM 看到错误信息后调整）
-4. **正常返回** → 直接传递
+4. **执行超时** → `Promise.race` 检测，返回 `Tool [name] timed out after Xms`（LLM 可以缩小范围重试）
+5. **正常返回** → 直接传递
+
+### 工具超时
+
+每个工具可以设置独立的超时时间，也可以通过全局配置统一控制：
+
+```typescript
+// 工具级超时（优先级最高）
+const slowTool = tool({
+  name: 'slow_search',
+  timeout: 60000,  // 这个工具允许 60 秒
+  ...
+}, async (params) => { ... });
+
+// 全局超时（AgentConfig）
+const agent = new Agent({
+  ...
+  toolTimeout: 30000,  // 所有工具默认 30 秒
+});
+```
+
+**优先级**：工具级 `timeout` > 全局 `toolTimeout` > 默认值（30s）。设为 `0` 或 `Infinity` 可禁用超时。
+
+**实现方式**：`ToolExecutor` 用 `Promise.race` 竞赛工具执行和超时计时器。超时后不会中止工具执行（JavaScript 无法强制终止 Promise），但会立即返回错误结果，Agent 循环继续推进。工具可通过 `context.signal` 检查取消状态来主动清理。
 
 ### Scheduler：多个工具的编排
 

@@ -361,6 +361,138 @@ for await (const event of agent.run('服务 user-api 响应时间突增，请诊
 - 审批系统保护写操作
 - 事件流驱动 UI 交互
 
+## discover() — 文件系统自动发现
+
+### 解决什么问题？
+
+随着 Skill 和 SubAgent 越来越多，手动在代码里 `import` 每个定义变得笨重。你希望像 Claude Code 一样，往特定目录扔一个 Markdown 文件就能自动加载新能力。
+
+### 类比：手机自动安装 App
+
+你把 `.apk` 文件放到手机的 `Downloads/` 目录，手机自动识别并安装。`discover()` 做的就是这件事 — 扫描约定目录下的 `SKILL.md` 和 `AGENT.md` 文件，自动解析并注册。
+
+### 目录约定
+
+```
+~/.agent-tea/           ← 全局（所有项目共享）
+├── skills/
+│   └── code-review/
+│       └── SKILL.md
+└── agents/
+    └── researcher/
+        └── AGENT.md
+
+.agent-tea/             ← 项目级（仅当前项目）
+├── skills/
+│   └── log-analysis/
+│       └── SKILL.md
+└── agents/
+    └── coder/
+        └── AGENT.md
+```
+
+**项目级同名覆盖全局** — 如果全局和项目下都有 `code-review` Skill，项目级的优先。
+
+### SKILL.md 格式
+
+```markdown
+---
+name: code-review
+description: 审查代码变更，找出安全和性能问题
+version: "1.0.0"
+trigger: /review
+tools:
+  - read_file
+  - grep
+---
+
+执行代码审查时，请遵循以下流程：
+1. 先获取变更文件列表
+2. 逐文件阅读完整上下文
+3. 分析安全性、性能、可维护性
+4. 输出结构化的审查报告
+```
+
+- **frontmatter**（YAML）：元数据，`name` 和 `description` 必填
+- **正文**（Markdown）：作为 Skill 的 `instructions` 注入到系统提示词
+- **tools**：引用内置工具名称（`read_file`、`grep`、`write_file` 等），解析时自动映射为 Tool 实例
+- 格式兼容 Claude Code 的 Skill 定义
+
+### AGENT.md 格式
+
+```markdown
+---
+name: researcher
+description: 深度调研一个主题，返回结构化报告
+model: gpt-4o-mini
+maxIterations: 10
+tools:
+  - web_fetch
+  - read_file
+---
+
+你是一个调研分析师。收到主题后，搜索信息并产出结构化报告。
+正文内容会在报告的最后附上参考来源。
+```
+
+正文作为子 Agent 的 `systemPrompt`。解析后自动包装为 `subAgent()` Tool。
+
+### 使用方式
+
+```typescript
+import { discover, Agent } from '@agent-tea/sdk';
+import { OpenAIProvider } from '@agent-tea/provider-openai';
+
+const provider = new OpenAIProvider();
+
+// 一行扫描所有 Skill 和 Agent
+const found = await discover({
+  provider,
+  model: 'gpt-4o',
+  // projectDir: '.agent-tea',         // 可选，默认 process.cwd()/.agent-tea
+  // globalDir: '~/.agent-tea',        // 可选，默认 ~/.agent-tea
+  // extraTools: new Map([...]),        // 可选，注册自定义工具供 SKILL.md/AGENT.md 引用
+});
+
+// 返回值直接合并到 AgentConfig
+const agent = new Agent({
+  provider,
+  model: 'gpt-4o',
+  tools: [...myTools, ...found.tools],  // 自动去重
+  systemPrompt: [
+    '你是一个全能助手。',
+    found.instructions,                  // 所有 Skill 指令拼接
+  ].join('\n\n'),
+});
+```
+
+### DiscoveredAssets
+
+```typescript
+interface DiscoveredAssets {
+  skills: Skill[]       // 解析后的 Skill 定义
+  agents: Tool[]        // SubAgent 包装后的 Tool
+  tools: Tool[]         // skills + agents 的所有工具，已去重
+  instructions: string  // 所有 Skill 的 instructions 拼接
+}
+```
+
+### ToolResolver — 工具名映射
+
+SKILL.md 和 AGENT.md 中的 `tools` 字段写的是工具名称字符串。`ToolResolver` 负责将名称映射为实际的 Tool 实例：
+
+| 名称 | 映射到 | 来源 |
+|------|--------|------|
+| `read_file` | readFile | 内置工具 |
+| `write_file` | writeFile | 内置工具 |
+| `list_directory` | listDirectory | 内置工具 |
+| `execute_shell` | executeShell | 内置工具 |
+| `grep` | grep | 内置工具 |
+| `web_fetch` | webFetch | 内置工具 |
+| 自定义名称 | — | `extraTools` Map |
+
+未知的工具名会产生警告（不会中断加载），方便排查拼写错误。
+
 ---
 
 以上就是 agent-tea 框架的完整架构文档。回到 [文档索引](./README.md) 查看所有章节。

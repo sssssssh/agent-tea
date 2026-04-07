@@ -91,6 +91,11 @@ docs/                   # 设计文档和实施计划
 
 **循环检测**（`packages/core/src/agent/loop-detection.ts`）：`LoopDetector` 检测 Agent 陷入重复行为。两种探测器：`ToolCallTracker` 检测连续相同工具调用（按工具名+参数哈希），`ContentTracker` 检测内容重复模式。首次检测发出警告注入提示，超过 `maxWarnings` 后中止。通过 `AgentConfig` 中的 `loopDetection: { enabled, maxConsecutiveIdenticalCalls, contentRepetitionThreshold, maxWarnings }` 配置。
 
+**超时系统**：两层超时保护，防止工具执行卡死或 LLM 连接中断。
+- **工具超时**：`AgentConfig.toolTimeout`（全局，默认 30s）或 `Tool.timeout`（工具级，优先级更高）。`ToolExecutor` 用 `Promise.race` 实现，超时返回 `ToolResult(isError: true)` 而非抛异常。
+- **LLM 超时**：`AgentConfig.llmTimeout: { connectionMs, streamStallMs }`。`connectionMs`（默认 60s）控制首个事件等待时间，`streamStallMs`（默认 30s）控制连续事件间最大间隔。由 `withStreamTimeout()` 工具函数包装 AsyncGenerator 实现，两阶段分别计时。
+- **`TimeoutError`**（`packages/core/src/errors/errors.ts`）：继承 `AgentTeaError`，携带 `timeoutMs` 和 `phase: 'tool' | 'llm_connection' | 'llm_stream'`，BaseAgent 根据 phase 采用不同重试策略（连接超时重试 3 次，流停滞重试 2 次）。
+
 **并行调度器**（`packages/core/src/scheduler/`）：`Scheduler` 管理工具并发执行。默认所有工具并行执行（`Promise.all`），带 `sequential` 标签的工具按顺序执行。连续非 sequential 工具分组并行，结果通过 AsyncGenerator 逐个 yield。`ToolExecutor` 负责 Zod 验证 + 执行 + 错误包装。
 
 **钩子系统**：BaseAgent 暴露扩展点，无需子类化即可定制行为：
@@ -117,13 +122,13 @@ Agent.run(input)
 │  ├─ createChatSession()，应用 onToolFilter
 │  └─ 循环：
 │     ├─ contextManager.prepare(messages) → 超预算则裁剪
-│     ├─ collectResponse() → LLM 流式响应 → { text, toolCalls, usage }
+│     ├─ collectResponse() → withStreamTimeout 包装 → LLM 流式响应 → { text, toolCalls, usage }
 │     ├─ yield message / usage 事件
 │     ├─ 无工具调用？→ 完成
 │     └─ executeToolCalls()
 │        ├─ 需要审批？→ yield approval_request，等待 resolveApproval()
 │        ├─ onBeforeToolCall 钩子
-│        ├─ Scheduler → ToolExecutor（Zod 验证 + 执行）
+│        ├─ Scheduler → ToolExecutor（Zod 验证 + 超时保护 + 执行）
 │        ├─ yield tool_request / tool_response
 │        └─ 将结果追加到消息，继续循环
 ├─ conversationStore.save()（如已配置）
@@ -135,7 +140,7 @@ Agent.run(input)
 - **Zod 作为唯一真相来源**：Zod schema 同时驱动 TypeScript 类型推断和运行时参数验证。
 - **仅 ESM**：所有包输出 ESM（`format: ['esm']`），目标 ES2022。
 - **流式优先**：所有 LLM 通信使用 async generator；无阻塞式请求/响应。
-- **错误层级**：`AgentTeaError` → `ProviderError` / `ToolExecutionError` / `ToolValidationError` / `MaxIterationsError`。`ProviderError` 包含 `retryable` 标志，供 `retryWithBackoff()` 使用。
+- **错误层级**：`AgentTeaError` → `ProviderError` / `ToolExecutionError` / `ToolValidationError` / `MaxIterationsError` / `TimeoutError`。`ProviderError` 包含 `retryable` 标志，供 `retryWithBackoff()` 使用。`TimeoutError` 携带 `phase` 和 `timeoutMs`，区分工具超时和 LLM 超时。
 - **可辨识联合**：Events、Messages、ContentParts 均使用 `type` 字段，支持安全的模式匹配和 TypeScript 穷举检查。
 - **工具永不抛异常**：ToolExecutor 将所有失败包装为 `ToolResult` — Agent 循环保持安全，LLM 看到错误后可调整策略。
 - **可选子系统**：审批、上下文管理、持久化默认关闭，不配置则无行为变化 — 完全向后兼容。

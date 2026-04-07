@@ -1,8 +1,8 @@
-# 7. 可选子系统 — 审批、上下文管理、记忆、循环检测
+# 7. 可选子系统 — 审批、上下文管理、记忆、循环检测、超时
 
 ## 设计哲学：默认关闭，按需启用
 
-这三个子系统有一个共同特点：**不配置就完全不存在**。
+这些子系统有一个共同特点：**不配置就完全不存在**。
 
 ```typescript
 // 最简配置 — 没有审批、没有上下文管理、没有持久化
@@ -452,7 +452,114 @@ loopDetection: {
 
 ---
 
-## 四个子系统的集成点
+## 超时系统
+
+### 解决什么问题？
+
+Agent 循环中有两类"卡住"风险：
+1. **工具卡死** — 外部 API 不响应、Shell 命令挂起、文件操作阻塞
+2. **LLM 卡死** — 模型服务超载、网络中断、流式传输停滞
+
+没有超时保护，一个卡死的工具或 LLM 调用就能让整个 Agent 永远挂起。
+
+### 类比：外卖超时
+
+你点外卖，设了两个闹钟：
+- **接单超时**（30 分钟没骑手接单 → 自动取消）≈ LLM 连接超时
+- **配送超时**（骑手接单后 1 小时没送到 → 申请退款）≈ LLM 流停滞超时
+- **餐厅出餐超时**（15 分钟没出餐 → 换一家）≈ 工具执行超时
+
+### 两层超时
+
+#### 1. 工具超时
+
+`ToolExecutor` 用 `Promise.race` 竞赛执行和计时器：
+
+```typescript
+// 全局设置（AgentConfig）
+toolTimeout: 30000     // 所有工具默认 30 秒
+
+// 工具级覆盖（优先级更高）
+const heavyTool = tool({
+  name: 'heavy_analysis',
+  timeout: 120000,     // 这个工具需要更久，允许 2 分钟
+  ...
+}, async (params) => { ... });
+```
+
+**优先级**：工具级 `timeout` > 全局 `toolTimeout` > 默认 30s。设为 `0` 或 `Infinity` 可禁用。
+
+超时后不会强制终止 Promise（JavaScript 限制），但会立即返回错误结果，Agent 循环继续推进。LLM 看到 `Tool [name] timed out after Xms` 后通常会缩小范围重试。
+
+#### 2. LLM 超时
+
+`withStreamTimeout()` 包装 LLM 的 AsyncGenerator 流，实现两阶段超时：
+
+```typescript
+llmTimeout: {
+  connectionMs: 60000,    // 等待首个事件最多 60 秒（连接阶段）
+  streamStallMs: 30000,   // 事件间隔最多 30 秒（传输阶段）
+}
+```
+
+```mermaid
+sequenceDiagram
+    participant Agent
+    participant Wrapper as withStreamTimeout
+    participant LLM
+
+    Agent->>Wrapper: 开始读取流
+    Note over Wrapper: ⏱ 启动连接超时计时器（60s）
+
+    LLM-->>Wrapper: 第一个事件
+    Note over Wrapper: ✅ 连接成功<br/>⏱ 切换为流停滞计时器（30s）
+
+    LLM-->>Wrapper: 第二个事件
+    Note over Wrapper: ⏱ 重置流停滞计时器
+
+    Note over LLM: ... 模型思考中，40 秒无响应 ...
+    Note over Wrapper: ⏱ 30s 到！抛 TimeoutError(phase: 'llm_stream')
+```
+
+**为什么分两阶段？** 连接和传输的超时预期完全不同。首个事件可能需要等待模型加载（60s 合理），但一旦流开始，30s 无数据几乎可以确定出了问题。分阶段让重试策略更精准：
+- 连接超时 → 重试 3 次，退避 5-30s（可能是冷启动）
+- 流停滞超时 → 重试 2 次，退避 1-5s（可能是临时网络抖动）
+
+### TimeoutError
+
+```typescript
+class TimeoutError extends AgentTeaError {
+  readonly timeoutMs: number
+  readonly phase: 'tool' | 'llm_connection' | 'llm_stream'
+}
+```
+
+`phase` 字段让错误处理代码可以区分超时发生在哪一层，采取不同的恢复策略。
+
+### 配置
+
+```typescript
+const agent = new Agent({
+  provider,
+  model: 'gpt-4o',
+  tools: [...],
+
+  // 工具超时 — 全局默认值
+  toolTimeout: 30000,
+
+  // LLM 超时 — 两阶段
+  llmTimeout: {
+    connectionMs: 60000,
+    streamStallMs: 30000,
+  },
+});
+```
+
+和其他子系统一样，不配置就使用默认值 — 超时保护始终存在，只是阈值可以调整。
+
+---
+
+## 五个子系统的集成点
 
 它们在 BaseAgent 中的嵌入位置：
 
@@ -462,6 +569,9 @@ Agent.run()
 ├─ 每轮 LLM 调用前
 │   └─ contextManager.prepare(messages)     ← 上下文管理
 │
+├─ 每轮 LLM 调用时
+│   └─ withStreamTimeout(stream, config)    ← LLM 超时保护
+│
 ├─ 每轮 LLM 响应后
 │   └─ loopDetector.check(response)         ← 循环检测
 │
@@ -469,13 +579,17 @@ Agent.run()
 │   ├─ requiresApproval(tool, policy)?      ← 审批检查
 │   └─ yield approval_request / 等待决定
 │
+├─ 每次工具执行时
+│   └─ Promise.race(execute, timeout)       ← 工具超时保护
+│
 └─ 运行结束后
     └─ conversationStore.save(sessionId, messages)  ← 持久化
 ```
 
-四者互不依赖，可以任意组合：
+五者互不依赖，可以任意组合：
 - 只要审批，不要持久化 ✓
 - 只要上下文管理 + 循环检测 ✓
+- 只调整超时参数，其他默认 ✓
 - 全部启用 ✓
 - 全部不启用 ✓
 
