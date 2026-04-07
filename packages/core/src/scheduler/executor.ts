@@ -11,9 +11,12 @@
  * 架构位置：Scheduler 层，被 Scheduler 调用来执行具体的工具。
  */
 
-import { ToolExecutionError, ToolValidationError } from '../errors/errors.js';
+import { TimeoutError, ToolExecutionError, ToolValidationError } from '../errors/errors.js';
 import type { ToolContext, ToolResult } from '../tools/types.js';
 import type { ToolRegistry } from '../tools/registry.js';
+
+/** 默认工具执行超时（30 秒），可通过工具级或全局参数覆盖 */
+const DEFAULT_TOOL_TIMEOUT = 30_000;
 
 /** 来自 LLM 的工具调用请求 */
 export interface ToolCallRequest {
@@ -34,12 +37,15 @@ export class ToolExecutor {
   constructor(private readonly registry: ToolRegistry) {}
 
   /**
-   * 执行单个工具调用：查找工具 → Zod 校验参数 → 执行 → 返回结果。
+   * 执行单个工具调用：查找工具 → Zod 校验参数 → 执行（含超时）→ 返回结果。
    * 任何阶段的失败都会被优雅处理为错误结果（不抛异常）。
+   *
+   * @param globalTimeout 全局超时（毫秒），被工具级 timeout 覆盖；0 或 Infinity 表示不限时
    */
   async execute(
     request: ToolCallRequest,
     context: ToolContext,
+    globalTimeout?: number,
   ): Promise<ToolCallResult> {
     const tool = this.registry.get(request.name);
 
@@ -72,9 +78,17 @@ export class ToolExecutor {
       };
     }
 
+    // 确定有效超时：工具级 > 全局 > 默认 30s
+    const effectiveTimeout = tool.timeout ?? globalTimeout ?? DEFAULT_TOOL_TIMEOUT;
+
     // 执行工具，捕获所有异常转为错误结果
     try {
-      const rawResult = await tool.execute(parseResult.data, context);
+      const executionPromise = tool.execute(parseResult.data, context);
+      const rawResult = await this.executeWithTimeout(
+        executionPromise,
+        effectiveTimeout,
+        request.name,
+      );
       const result: ToolResult =
         typeof rawResult === 'string' ? { content: rawResult } : rawResult;
 
@@ -84,6 +98,18 @@ export class ToolExecutor {
         result,
       };
     } catch (error) {
+      // 超时错误单独处理，提供更明确的错误信息
+      if (error instanceof TimeoutError) {
+        return {
+          id: request.id,
+          name: request.name,
+          result: {
+            content: `Tool "${request.name}" timed out after ${error.timeoutMs}ms`,
+            isError: true,
+          },
+        };
+      }
+
       const message =
         error instanceof Error ? error.message : String(error);
       return {
@@ -94,6 +120,42 @@ export class ToolExecutor {
           isError: true,
         },
       };
+    }
+  }
+
+  /**
+   * 用 Promise.race 为工具执行加超时保护。
+   * timeout <= 0 或 Infinity 时直接返回原 Promise（不限时）。
+   */
+  private async executeWithTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number,
+    toolName: string,
+  ): Promise<T> {
+    // 0 或 Infinity 表示不限时，直接透传
+    if (timeoutMs <= 0 || !isFinite(timeoutMs)) {
+      return promise;
+    }
+
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timer = setTimeout(() => {
+        reject(
+          new TimeoutError(
+            `Tool "${toolName}" timed out after ${timeoutMs}ms`,
+            timeoutMs,
+            'tool',
+          ),
+        );
+      }, timeoutMs);
+    });
+
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      // 无论正常完成还是超时，都清理定时器，避免内存泄漏
+      clearTimeout(timer);
     }
   }
 }
