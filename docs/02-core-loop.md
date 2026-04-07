@@ -69,13 +69,15 @@ provider.chat({
 
 ### 2.2 上下文裁剪
 
-如果配置了 `contextManager`，在发给 LLM 之前先检查消息总量是否超预算。现在才第一轮，消息很短，直接通过。
+如果配置了 `contextManager`，在发给 LLM 之前先检查消息总量是否超预算。推荐使用 `PipelineContextManager`（管道模式），它将多个处理器串联：先用 `ToolOutputTruncator` 截断过长的工具输出，再用 `SlidingWindowProcessor` 做滑动窗口裁剪。现在才第一轮，消息很短，直接通过。
 
 ### 2.3 发送并收集流式响应
 
 ```
 chatSession.sendMessage(messages) → AsyncGenerator<ChatStreamEvent>
 ```
+
+框架会用 `withStreamTimeout()` 包装这个流，提供两阶段超时保护：连接阶段（默认 60s 等首个事件）和流传输阶段（默认 30s 事件间隔上限）。超时后会抛 `TimeoutError`，BaseAgent 会根据 `phase` 自动重试。
 
 LLM 的流式响应一块块到达：
 

@@ -173,6 +173,36 @@ for await (const event of agent.run(input, controller.signal)) {
 - `AbortSignal`：从外部发信号给 Agent
 - `break`：消费者不再消费事件（Agent 下次 yield 时会收到提示）
 
+### 模式五：EventCollector 快照消费（TUI / 自定义 UI）
+
+前四种模式都要求消费者自己处理零散的事件：跟踪工具调用状态、累积流式文本、计算耗时。EventCollector 帮你把这些事情封装好，产出一个 **AgentSnapshot** 快照对象：
+
+```typescript
+import { createEventCollector } from '@agent-tea/tui';
+
+const collector = createEventCollector(agent, '分析这个项目');
+
+// 监听快照变化 — 每个事件更新后都会产出新快照
+collector.on('snapshot', (snapshot) => {
+    console.log(`状态: ${snapshot.status}`);             // 'thinking' | 'tool_executing' | ...
+    console.log(`历史: ${snapshot.history.length} 条`);   // 已完成的消息、工具调用、计划
+    console.log(`流式: ${snapshot.streaming ?? '无'}`);    // 正在输出的文本
+    console.log(`Token: ${snapshot.usage.inputTokens + snapshot.usage.outputTokens}`);
+});
+
+const finalSnapshot = await collector.start();
+```
+
+**EventCollector 自动做了什么：**
+
+- 将 `message` 事件的文本逐块累积到 `snapshot.streaming`，工具调用前自动刷入 `history`
+- 将 `tool_request` / `tool_response` 配对，自动计算 `durationMs`
+- 将 `plan_created` / `step_start` / `step_complete` / `step_failed` 映射为可视化的计划步骤状态
+- 追踪 token 用量（累加所有 `usage` 事件）
+- 支持 `collector.abort()` 中止运行
+
+TUI 包的 React Hooks（`useAgentEvents`）在内部使用 EventCollector，所以你不需要手动创建。但如果你要构建非 React 的 UI（比如 blessed、Web Dashboard），可以直接用 EventCollector 作为事件适配层。详见 [终端 UI](./09-tui.md)。
+
 ## 事件与可辨识联合
 
 所有事件都有 `type` 字段，TypeScript 在 `switch/case` 中自动收窄类型：

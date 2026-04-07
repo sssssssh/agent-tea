@@ -16,10 +16,14 @@ agent-tea 就是管理这个实习生工作流程的框架：
 - 你负责提供 LLM（大脑）和 Tool（工具）
 - 框架负责编排循环、传递消息、处理错误、流式输出
 
-## 三层架构
+## 四层架构
 
 ```
 ┌───────────────────────────────────────────────┐
+│  TUI 层 — 终端交互界面                           │
+│  "仪表盘，让 Agent 看得见摸得着"                    │
+│  EventCollector / React Hooks / Ink 组件 / AgentTUI │
+├───────────────────────────────────────────────┤
 │  SDK 层 — 给开发者用的高层 API                    │
 │  "打包好的工具箱，拿来即用"                         │
 │  Extension(能力包)  Skill(任务配方)  SubAgent(子代理) │
@@ -34,15 +38,16 @@ agent-tea 就是管理这个实习生工作流程的框架：
 └───────────────────────────────────────────────┘
 ```
 
-**为什么分三层？**
+**为什么分四层？**
 
 - **Core 不关心你用哪个 LLM** — 换模型只需换 Provider，Agent 逻辑不变
 - **Provider 不关心 Agent 怎么循环** — 它只负责"发消息、收流式响应"
 - **SDK 不关心底层细节** — 开发者用 `Extension` 打包能力、用 `SubAgent` 做委派，不需要手写循环
+- **TUI 不关心 Agent 内部逻辑** — 它只消费事件快照，渲染成终端界面
 
-这种分层让每一层可以独立演进。比如明天出了个新 LLM 厂商，你只需要写一个 Provider 适配器，Core 和 SDK 完全不动。
+这种分层让每一层可以独立演进。比如明天出了个新 LLM 厂商，你只需要写一个 Provider 适配器，Core、SDK、TUI 完全不动。要换成 Web UI？只需替换 TUI 层，其他三层原封不动。
 
-## 六个核心概念
+## 七个核心概念
 
 ### 概念 1：LLMProvider + ChatSession — "打电话"
 
@@ -168,6 +173,41 @@ type Message =
 
 TypeScript 看到 `type`/`role` 字段后，能自动推断后续字段的类型。你在 `switch` 里匹配 `case 'user'` 时，TypeScript 就知道 `content` 可以是 `string`。这让代码又安全又简洁，不需要手动类型断言。
 
+### 概念 7：EventCollector — "新闻编辑"
+
+Agent 通过 AsyncGenerator 逐个 yield 事件（概念 4），这很灵活，但也有问题：事件是**碎片化的**。`message` 事件只是一段文字，`tool_request` 和 `tool_response` 是分开的，你需要自己跟踪哪些工具在执行、当前状态是什么。
+
+EventCollector 就像新闻编辑 — 它接收一条条"电报"（事件），实时整理成一份"快照报纸"（AgentSnapshot）：
+
+```
+Agent 事件流（零散的电报）          EventCollector           AgentSnapshot（整理好的报纸）
+─────────────────────            ───────────            ──────────────────────
+message("我来查一下")    ──→                             status: "thinking"
+tool_request(search)    ──→      整理、累积、            status: "tool_executing"
+tool_response(结果)     ──→      计算耗时               history: [msg, toolCall]
+message("分析完了")     ──→                             status: "thinking"
+agent_end              ──→                             status: "completed"
+```
+
+```typescript
+interface AgentSnapshot {
+    status: AgentStatus;             // 当前状态（7 种）
+    history: HistoryItem[];          // 已完成的事件历史
+    streaming: string | null;        // 正在流式输出的文本
+    pendingApproval: ApprovalRequestEvent | null;  // 等待审批
+    usage: { inputTokens: number; outputTokens: number };
+    error: string | null;
+}
+```
+
+**为什么需要它？**
+
+- **UI 只关心"现在是什么状态"**，不想自己追踪事件拼装
+- **快照是不可变的** — 每次更新产出新对象，React 可以直接用 `===` 比较做高效更新
+- **自动计时** — 工具调用的 `durationMs` 是 EventCollector 自动计算的，你不需要手动 `Date.now()`
+
+TUI 包的 React Hooks 在内部使用 EventCollector，你也可以直接用它构建自己的非 React UI。详见 [终端 UI](./09-tui.md)。
+
 ## 模块依赖关系
 
 ```mermaid
@@ -198,6 +238,20 @@ graph TD
         PLAN[PlanAndExecuteAgent]
     end
 
+    subgraph SDK 层
+        EXT[Extension 能力包]
+        SKILL[Skill 任务配方]
+        SUB[SubAgent 子代理]
+        DISC[discover 自动发现]
+    end
+
+    subgraph TUI 层
+        COLLECT[EventCollector<br/>事件→快照适配器]
+        HOOKS[React Hooks<br/>useAgentEvents / useApproval]
+        COMP[Ink 组件库<br/>8 个可替换组件]
+        RUNNER[AgentTUI 运行器<br/>布局 + 键盘交互]
+    end
+
     ERR --> EXEC
     LLM --> REG
     LLM --> BASE
@@ -213,6 +267,16 @@ graph TD
     LOOP --> BASE
     BASE --> REACT
     BASE --> PLAN
+
+    REACT --> EXT
+    REACT --> SKILL
+    REACT --> SUB
+    BUILTIN --> DISC
+
+    REACT --> COLLECT
+    COLLECT --> HOOKS
+    HOOKS --> COMP
+    COMP --> RUNNER
 ```
 
 **从下往上看**：
@@ -221,6 +285,8 @@ graph TD
 2. **工具注册表、执行器、调度器、内置工具**组成执行层，**循环检测器**也在这层
 3. **BaseAgent** 把所有模块串起来
 4. **ReActAgent / PlanAndExecuteAgent** 只需实现自己的循环逻辑
+5. **SDK 层**在 Agent 之上提供 Extension / Skill / SubAgent / Discovery 抽象
+6. **TUI 层**从 EventCollector（事件适配）到 Hooks（状态管理）到 Components（UI 组件）到 Runner（完整应用），逐层向上构建终端交互界面
 
 ---
 

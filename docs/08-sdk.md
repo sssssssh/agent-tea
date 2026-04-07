@@ -291,6 +291,81 @@ CEO Agent (gpt-4o)
 | **透明性**   | 父 Agent 不需要知道子 Agent 的内部实现                 |
 | **复用性**   | 同一个 SubAgent 可以被多个父 Agent 使用                |
 
+## EventCollector — 事件流的快照适配器
+
+### 解决什么问题？
+
+Agent 的事件流是**碎片化的** — `message`、`tool_request`、`tool_response` 各自独立。如果你要构建 UI，需要自己维护一堆状态：当前在做什么、哪些工具在执行、流式文本累积了多少、已经用了多少 token。
+
+EventCollector 把这些零散事件整理成一个 **AgentSnapshot** — 一个包含完整状态的不可变对象。每个事件更新后产出新快照，UI 只需监听快照变化即可。
+
+### 类比：比分板
+
+体育比赛中，观众不需要跟踪每一次传球。记分板（Snapshot）实时显示当前比分、控球率、比赛时间。EventCollector 就是将赛场细节（事件）翻译成记分板（快照）的角色。
+
+### 快照数据结构
+
+```typescript
+interface AgentSnapshot {
+    status: AgentStatus;             // 'idle' | 'thinking' | 'tool_executing' | 'waiting_approval' | 'completed' | 'error' | 'aborted'
+    history: HistoryItem[];          // 已完成的事件：消息、工具调用、计划、错误
+    streaming: string | null;        // 正在流式累积的 assistant 文本
+    pendingApproval: ApprovalRequestEvent | null;  // 当前等待审批的请求
+    usage: { inputTokens: number; outputTokens: number };  // 累积 token 用量
+    error: string | null;            // 致命错误信息
+}
+```
+
+`history` 中的条目有四种类型：
+
+| 类型        | 含义             | 关键字段                                |
+| ----------- | ---------------- | --------------------------------------- |
+| `message`   | 消息（用户/AI）  | `role`, `content`                       |
+| `tool_call` | 工具调用（已完成）| `name`, `args`, `result`, `durationMs`  |
+| `plan`      | 执行计划         | `steps[]`（含状态：pending/completed/…）|
+| `error`     | 错误             | `message`, `fatal`                      |
+
+### 使用方式
+
+```typescript
+import { createEventCollector } from '@agent-tea/tui';
+
+const collector = createEventCollector(agent, '分析这个项目');
+
+collector.on('snapshot', (snapshot) => {
+    // 每个事件更新后触发，拿到最新状态
+    console.log(snapshot.status, snapshot.history.length);
+});
+
+const finalSnapshot = await collector.start();  // 阻塞直到 Agent 结束
+collector.abort();                               // 或者中途中止
+```
+
+### 事件映射规则
+
+EventCollector 内部的关键逻辑：
+
+```
+事件                      快照变化
+──────────────            ────────────────────────────
+agent_start         →     status: 'thinking'
+message (assistant) →     streaming 累积文本（不直接进 history）
+tool_request        →     先把 streaming 刷入 history，status: 'tool_executing'，记录 startTime
+tool_response       →     配对 request，计算 durationMs，追加 tool_call 到 history
+approval_request    →     status: 'waiting_approval'，记录 pendingApproval
+usage               →     累加 inputTokens / outputTokens
+error               →     追加 error 到 history，fatal 时 status: 'error'
+plan_created        →     追加 plan 到 history（含步骤列表）
+step_start/complete →     更新最近 plan 中对应步骤的状态
+agent_end           →     刷入剩余 streaming，status: 'completed' / 'aborted' / 'error'
+```
+
+**流式文本的刷入时机** 是一个关键细节：assistant 消息不是立刻进入 history，而是先累积在 `snapshot.streaming` 中。当 `tool_request`、`approval_request`、`plan_created` 或 `agent_end` 事件到来时，才把累积的文本作为一条完整的 `MessageItem` 刷入 history。这让 UI 可以分别渲染"正在输出的文本"和"已完成的消息"。
+
+EventCollector 是 TUI 包的 Adapter 层，详见 [终端 UI](./09-tui.md)。
+
+---
+
 ## 完整示例：构建一个日志分析 Agent
 
 把所有 SDK 概念组合起来：
@@ -492,4 +567,4 @@ SKILL.md 和 AGENT.md 中的 `tools` 字段写的是工具名称字符串。`Too
 
 ---
 
-以上就是 agent-tea 框架的完整架构文档。回到 [文档索引](./README.md) 查看所有章节。
+下一篇：[终端 UI — EventCollector / React Hooks / Ink 组件 / AgentTUI](./09-tui.md)
