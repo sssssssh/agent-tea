@@ -141,3 +141,12 @@ export { subAgent } from './sub-agent.js';
 export type { SubAgentConfig } from './sub-agent.js';
 
 export { builtinTools } from './extensions/builtin-tools.js';
+
+// ---- Discovery ----
+export { discover, ToolResolver } from './discovery/index.js';
+export type {
+  DiscoveryConfig,
+  DiscoveredAssets,
+  ParsedSkill,
+  ParsedAgent,
+} from './discovery/index.js';
