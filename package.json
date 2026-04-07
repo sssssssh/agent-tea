@@ -29,6 +29,10 @@
         "example:17": "node --env-file=.env --import tsx examples/17-event-collector.ts",
         "example:18": "node --env-file=.env --import tsx examples/18-batch-run.ts",
         "example:19": "node --env-file=.env --import tsx examples/19-sdk-subagent-collector.ts",
+        "example:20": "node --env-file=.env --import tsx examples/20-tui-minimal.tsx",
+        "example:21": "node --env-file=.env --import tsx examples/21-tui-custom-components.tsx",
+        "example:22": "node --env-file=.env --import tsx examples/22-tui-custom-layout.tsx",
+        "example:23": "node --env-file=.env --import tsx examples/23-tui-plan-execute.tsx",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
         "publish:all": "pnpm build && pnpm -r publish --no-git-checks"
