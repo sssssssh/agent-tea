@@ -146,6 +146,7 @@ export {
   ToolValidationError,
   MaxIterationsError,
   LoopDetectedError,
+  TimeoutError,
 } from './errors/errors.js';
 
 export { retryWithBackoff } from './errors/retry.js';

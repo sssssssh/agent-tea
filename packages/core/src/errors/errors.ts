@@ -82,3 +82,17 @@ export class LoopDetectedError extends AgentTeaError {
     this.name = 'LoopDetectedError';
   }
 }
+
+/** 超时错误，区分超时阶段以支持不同的重试策略 */
+export class TimeoutError extends AgentTeaError {
+  constructor(
+    message: string,
+    /** 超时阈值（毫秒） */
+    public readonly timeoutMs: number,
+    /** 超时发生的阶段：工具执行、LLM 连接、LLM 流式传输 */
+    public readonly phase: 'tool' | 'llm_connection' | 'llm_stream',
+  ) {
+    super(message);
+    this.name = 'TimeoutError';
+  }
+}

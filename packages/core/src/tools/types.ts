@@ -65,6 +65,8 @@ export interface Tool<TParams = Record<string, unknown>> {
   readonly parameters: ZodType<TParams>;
   /** 工具标签，用于分类过滤（如 'readonly' 表示只读工具） */
   readonly tags?: string[];
+  /** 执行超时（毫秒），不设置则使用框架默认值（30s） */
+  readonly timeout?: number;
 
   /**
    * 执行工具逻辑。参数已经过 Zod 校验，可安全使用。

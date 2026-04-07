@@ -63,6 +63,26 @@ export interface AgentConfig {
   /** 循环检测配置，默认开启 */
   loopDetection?: Partial<LoopDetectionConfig>;
 
+  // ---- 超时配置 ----
+
+  /**
+   * 工具执行默认超时（毫秒），默认 30000。
+   * 单个工具可通过 Tool.timeout 覆盖此值。
+   * 设为 0 或 Infinity 表示不限制。
+   */
+  toolTimeout?: number;
+
+  /**
+   * LLM 请求超时配置。
+   * 不设置时使用默认值（连接 60s，流停滞 30s）。
+   */
+  llmTimeout?: {
+    /** 连接超时：从发送请求到收到首个有效事件的最大等待时间（毫秒），默认 60000 */
+    connectionMs?: number;
+    /** 流停滞超时：两个连续事件之间的最大间隔（毫秒），默认 30000 */
+    streamStallMs?: number;
+  };
+
   // ---- 上下文管理 ----
 
   /** 上下文窗口管理配置，不设置时不做裁剪 */
