@@ -1,5 +1,10 @@
-import type { BaseAgent, AgentEvent } from '@agent-tea/sdk';
-import { type AgentSnapshot, type ToolCallItem, createInitialSnapshot } from './types.js';
+import type { BaseAgent, AgentEvent, Message } from '@agent-tea/sdk';
+import {
+    type AgentSnapshot,
+    type HistoryItem,
+    type ToolCallItem,
+    createInitialSnapshot,
+} from './types.js';
 
 type SnapshotListener = (snapshot: AgentSnapshot) => void;
 type DoneListener = (snapshot: AgentSnapshot) => void;
@@ -11,15 +16,25 @@ export interface EventCollector {
     abort(): void;
 }
 
+/**
+ * 创建事件收集器，将 Agent 事件流转为不可变快照。
+ *
+ * @param agent   - Agent 实例（仅需 run 方法）
+ * @param input   - 用户输入，支持纯字符串或完整消息历史（多轮对话场景）
+ * @param initialHistory - 可选的初始 UI 历史，用于跨轮次保持显示连续性
+ */
 export function createEventCollector(
     agent: Pick<BaseAgent, 'run'>,
-    query: string,
+    input: string | Message[],
+    initialHistory?: HistoryItem[],
 ): EventCollector {
     const snapshotListeners: SnapshotListener[] = [];
     const doneListeners: DoneListener[] = [];
     const abortController = new AbortController();
 
-    let snapshot = createInitialSnapshot();
+    let snapshot = initialHistory
+        ? { ...createInitialSnapshot(), history: initialHistory }
+        : createInitialSnapshot();
     const pendingToolCalls = new Map<
         string,
         { name: string; args: Record<string, unknown>; startTime: number }
@@ -193,7 +208,7 @@ export function createEventCollector(
         },
 
         async start(): Promise<AgentSnapshot> {
-            for await (const event of agent.run(query, abortController.signal)) {
+            for await (const event of agent.run(input, abortController.signal)) {
                 handleEvent(event);
             }
             for (const listener of doneListeners) {
