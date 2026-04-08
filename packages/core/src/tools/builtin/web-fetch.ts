@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { tool } from '../builder.js';
+import { safeTruncate } from '../../utils/safe-truncate.js';
 
 const DEFAULT_MAX_LENGTH = 50000;
 const TIMEOUT_MS = 10000;
@@ -58,7 +59,7 @@ export const webFetch = tool(
             }
 
             if (text.length > maxLength) {
-                text = text.slice(0, maxLength) + `\n[... 内容已截断，共 ${text.length} 字符 ...]`;
+                text = safeTruncate(text, maxLength) + `\n[... 内容已截断，共 ${text.length} 字符 ...]`;
             }
 
             return text;

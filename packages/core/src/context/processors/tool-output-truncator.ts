@@ -12,6 +12,7 @@
 
 import type { Message, ToolResultPart } from '../../llm/types.js';
 import type { ContextProcessor, TokenBudget } from '../types.js';
+import { safeTruncate } from '../../utils/safe-truncate.js';
 
 export interface ToolOutputTruncatorConfig {
     /** 单个工具输出的最大字符长度，默认 10000 */
@@ -104,7 +105,7 @@ export class ToolOutputTruncator implements ContextProcessor {
                 const tailLen = Math.floor(maxLen * tailRatio);
                 const omitted = part.content.length - headLen - tailLen;
                 const truncated =
-                    part.content.slice(0, headLen) +
+                    safeTruncate(part.content, headLen) +
                     `\n[... 已截断 ${omitted} 字符 ...]\n` +
                     part.content.slice(-tailLen);
                 newParts.push({ ...part, content: truncated });

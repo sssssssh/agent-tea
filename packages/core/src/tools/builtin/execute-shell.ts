@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { exec } from 'node:child_process';
 import { resolve } from 'node:path';
 import { tool } from '../builder.js';
+import { safeTruncate } from '../../utils/safe-truncate.js';
 
 const MAX_OUTPUT_LENGTH = 50000;
 
@@ -44,7 +45,7 @@ export const executeShell = tool(
                     const truncate = (s: string) => {
                         if (s.length <= MAX_OUTPUT_LENGTH) return s;
                         return (
-                            s.slice(0, MAX_OUTPUT_LENGTH) +
+                            safeTruncate(s, MAX_OUTPUT_LENGTH) +
                             `\n[... 输出已截断，共 ${s.length} 字符 ...]`
                         );
                     };
