@@ -209,6 +209,10 @@ export abstract class BaseAgent {
             });
         }
 
+        // 支持同一 Agent 实例多次调用：重置状态机和循环检测器
+        this.stateMachine.reset();
+        this.loopDetector.reset();
+
         yield { type: 'agent_start', sessionId, agentId: this.agentId };
 
         try {

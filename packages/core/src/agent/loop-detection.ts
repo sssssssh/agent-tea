@@ -216,6 +216,13 @@ export class LoopDetector {
         return { looping: false };
     }
 
+    /** 重置所有检测状态（用于复用同一 Agent 实例的场景） */
+    reset(): void {
+        this.toolTracker = new ToolCallTracker();
+        this.contentTracker = new ContentTracker();
+        this.warningCount = 0;
+    }
+
     /** 分级响应：警告次数未超限则警告，超限则终止 */
     private escalate(type: 'tool_call' | 'content'): LoopCheckResult {
         this.warningCount++;

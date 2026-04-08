@@ -49,6 +49,11 @@ export class AgentStateMachine {
         }
     }
 
+    /** 重置状态机到初始 idle 状态（用于复用同一 Agent 实例的场景） */
+    reset(): void {
+        this.state = 'idle';
+    }
+
     /** 监听状态变化，返回取消订阅函数 */
     onTransition(listener: TransitionListener): () => void {
         this.listeners.push(listener);

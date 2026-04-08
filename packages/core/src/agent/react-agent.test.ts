@@ -535,3 +535,73 @@ describe('ReActAgent with allowPlanMode', () => {
         expect(capturedOptions?.tools).toBeUndefined();
     });
 });
+
+describe('Agent reuse (multiple run() calls)', () => {
+    it('should support calling run() multiple times on the same agent instance', async () => {
+        const responses = [
+            // 第一次 run：直接返回文本
+            [{ type: 'text' as const, text: 'First response' }, { type: 'finish' as const }],
+            // 第二次 run：也直接返回文本
+            [{ type: 'text' as const, text: 'Second response' }, { type: 'finish' as const }],
+        ];
+
+        const agent = new ReActAgent({
+            provider: mockProvider(responses),
+            model: 'test',
+        });
+
+        // 第一次运行
+        const events1: AgentEvent[] = [];
+        for await (const event of agent.run('Hello')) {
+            events1.push(event);
+        }
+        expect(events1.some(e => e.type === 'message' && e.content === 'First response')).toBe(true);
+        expect(events1.some(e => e.type === 'agent_end' && e.reason === 'complete')).toBe(true);
+
+        // 第二次运行 — 之前会抛 "Invalid state transition: completed → reacting"
+        const events2: AgentEvent[] = [];
+        for await (const event of agent.run('Hello again')) {
+            events2.push(event);
+        }
+        expect(events2.some(e => e.type === 'message' && e.content === 'Second response')).toBe(true);
+        expect(events2.some(e => e.type === 'agent_end' && e.reason === 'complete')).toBe(true);
+    });
+
+    it('should support reuse with tool calls', async () => {
+        const responses = [
+            // 第一次 run：调用工具后返回
+            [
+                { type: 'tool_call' as const, id: 'tc1', name: 'echo', args: { text: 'a' } },
+                { type: 'finish' as const },
+            ],
+            [{ type: 'text' as const, text: 'Done first' }, { type: 'finish' as const }],
+            // 第二次 run：调用工具后返回
+            [
+                { type: 'tool_call' as const, id: 'tc2', name: 'echo', args: { text: 'b' } },
+                { type: 'finish' as const },
+            ],
+            [{ type: 'text' as const, text: 'Done second' }, { type: 'finish' as const }],
+        ];
+
+        const echoTool = tool(
+            { name: 'echo', description: 'Echo', parameters: z.object({ text: z.string() }) },
+            async ({ text }) => text,
+        );
+
+        const agent = new ReActAgent({
+            provider: mockProvider(responses),
+            model: 'test',
+            tools: [echoTool],
+        });
+
+        // 第一次运行
+        for await (const _event of agent.run('First')) { /* consume */ }
+
+        // 第二次运行
+        const events: AgentEvent[] = [];
+        for await (const event of agent.run('Second')) {
+            events.push(event);
+        }
+        expect(events.some(e => e.type === 'message' && e.content === 'Done second')).toBe(true);
+    });
+});
