@@ -17,7 +17,9 @@ import { OpenAIProvider } from '@agent-tea/provider-openai';
 const agent = new Agent({
     provider: new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! }),
     model: 'gpt-4o-mini',
-    tools: [/* 你的工具 */],
+    tools: [
+        /* 你的工具 */
+    ],
     systemPrompt: '你是一个助手。',
 });
 
@@ -98,9 +100,9 @@ function useAgentEvents(
     agent: BaseAgent,
     initialQuery?: string,
 ): {
-    snapshot: AgentSnapshot;   // 当前快照（React state）
-    run: (query: string) => void;  // 发起新查询
-    abort: () => void;             // 中止运行
+    snapshot: AgentSnapshot; // 当前快照（React state）
+    run: (query: string) => void; // 发起新查询
+    abort: () => void; // 中止运行
 };
 ```
 
@@ -122,11 +124,11 @@ function useApproval(agent: BaseAgent): {
 
 三种操作分别对应审批系统的三种决定：
 
-| 方法               | 效果                                |
-| ------------------ | ----------------------------------- |
-| `approve`          | 批准，按原参数执行                  |
-| `reject`           | 拒绝，reason 会发给 LLM            |
-| `modifyAndApprove` | 修改参数后批准（如修正文件路径）    |
+| 方法               | 效果                             |
+| ------------------ | -------------------------------- |
+| `approve`          | 批准，按原参数执行               |
+| `reject`           | 拒绝，reason 会发给 LLM          |
+| `modifyAndApprove` | 修改参数后批准（如修正文件路径） |
 
 ---
 
@@ -134,16 +136,16 @@ function useApproval(agent: BaseAgent): {
 
 ### 8 个内置组件
 
-| 组件              | 功能                 | 关键 Props                                        |
-| ----------------- | -------------------- | ------------------------------------------------- |
-| **UserMessage**   | 显示用户消息         | `content`                                          |
-| **AgentMessage**  | 显示 AI 回复         | `content`, `streaming`（是否正在输出）              |
-| **ToolCallCard**  | 工具调用卡片         | `name`, `args`, `result`, `isError`, `durationMs`  |
-| **ApprovalDialog**| 审批对话框           | `toolName`, `toolDescription`, `args`              |
-| **PlanView**      | 计划步骤列表         | `steps[]`（含状态图标：○/▶/✓/✗/–）                |
-| **ErrorMessage**  | 错误提示             | `message`, `fatal`                                 |
-| **StatusBar**     | 状态栏               | `status`, `usage`                                  |
-| **History**       | 历史列表容器         | `history[]`, `streaming`                           |
+| 组件               | 功能         | 关键 Props                                        |
+| ------------------ | ------------ | ------------------------------------------------- |
+| **UserMessage**    | 显示用户消息 | `content`                                         |
+| **AgentMessage**   | 显示 AI 回复 | `content`, `streaming`（是否正在输出）            |
+| **ToolCallCard**   | 工具调用卡片 | `name`, `args`, `result`, `isError`, `durationMs` |
+| **ApprovalDialog** | 审批对话框   | `toolName`, `toolDescription`, `args`             |
+| **PlanView**       | 计划步骤列表 | `steps[]`（含状态图标：○/▶/✓/✗/–）                |
+| **ErrorMessage**   | 错误提示     | `message`, `fatal`                                |
+| **StatusBar**      | 状态栏       | `status`, `usage`                                 |
+| **History**        | 历史列表容器 | `history[]`, `streaming`                          |
 
 ### ComponentContext — 可替换组件
 
@@ -169,12 +171,7 @@ function MyToolCard({ name, args, result, isError, durationMs }: ToolCallCardPro
 }
 
 // 只替换 toolCallCard，其他保持默认
-render(
-    <AgentTUI
-        agent={agent}
-        components={{ toolCallCard: MyToolCard }}
-    />,
-);
+render(<AgentTUI agent={agent} components={{ toolCallCard: MyToolCard }} />);
 ```
 
 **ComponentMap 接口**：
@@ -227,11 +224,11 @@ history.map(item =>
 ```typescript
 interface AgentTUIProps {
     agent: BaseAgent;
-    initialQuery?: string;                      // 启动后自动执行的查询
-    components?: Partial<ComponentMap>;          // 自定义组件（部分替换）
-    layout?: React.ComponentType<LayoutProps>;   // 自定义布局
-    onApproval?: (req: ApprovalRequestEvent) => Promise<ApprovalDecision>;  // 自定义审批处理
-    onComplete?: (snapshot: AgentSnapshot) => void;  // 运行结束回调
+    initialQuery?: string; // 启动后自动执行的查询
+    components?: Partial<ComponentMap>; // 自定义组件（部分替换）
+    layout?: React.ComponentType<LayoutProps>; // 自定义布局
+    onApproval?: (req: ApprovalRequestEvent) => Promise<ApprovalDecision>; // 自定义审批处理
+    onComplete?: (snapshot: AgentSnapshot) => void; // 运行结束回调
 }
 ```
 
@@ -283,8 +280,16 @@ function DualPanelLayout({ history, statusBar, composer, approval }: LayoutProps
                 <Box flexDirection="column" width="70%">
                     {history}
                 </Box>
-                <Box flexDirection="column" width="30%" borderStyle="single" borderColor="gray" paddingX={1}>
-                    <Text bold color="cyan">Info Panel</Text>
+                <Box
+                    flexDirection="column"
+                    width="30%"
+                    borderStyle="single"
+                    borderColor="gray"
+                    paddingX={1}
+                >
+                    <Text bold color="cyan">
+                        Info Panel
+                    </Text>
                     <Text color="gray">Custom layout demo</Text>
                 </Box>
             </Box>
@@ -303,11 +308,11 @@ render(<AgentTUI agent={agent} layout={DualPanelLayout} />);
 
 ### 键盘快捷键
 
-| 快捷键   | 条件           | 效果                                    |
-| -------- | -------------- | --------------------------------------- |
-| `Ctrl+C` | 任何时候       | 中止 Agent 运行（调用 `abort()`）        |
-| `Y` / `y`| 有待审批请求时  | 快速批准（仅在没有自定义 `onApproval` 时）|
-| `N` / `n`| 有待审批请求时  | 快速拒绝（同上）                         |
+| 快捷键    | 条件           | 效果                                       |
+| --------- | -------------- | ------------------------------------------ |
+| `Ctrl+C`  | 任何时候       | 中止 Agent 运行（调用 `abort()`）          |
+| `Y` / `y` | 有待审批请求时 | 快速批准（仅在没有自定义 `onApproval` 时） |
+| `N` / `n` | 有待审批请求时 | 快速拒绝（同上）                           |
 
 如果你传了 `onApproval` 回调，Y/N 快捷键会被禁用，改用你的自定义审批逻辑。
 
@@ -393,12 +398,7 @@ const agent = new PlanAndExecuteAgent({
     },
 });
 
-render(
-    <AgentTUI
-        agent={agent}
-        initialQuery="分析这个项目的架构设计"
-    />,
-);
+render(<AgentTUI agent={agent} initialQuery="分析这个项目的架构设计" />);
 ```
 
 运行时 TUI 会自动渲染 PlanView 组件，实时显示每个步骤的执行状态。
@@ -455,16 +455,21 @@ function MyCustomUI({ agent }: { agent: BaseAgent }) {
 ```typescript
 // 从 tui 包可以导入 Agent、tool、z、Extension、Skill、SubAgent、discover 等一切
 import {
-    Agent, PlanAndExecuteAgent, tool, z,
-    AgentTUI, createEventCollector, useAgentEvents,
+    Agent,
+    PlanAndExecuteAgent,
+    tool,
+    z,
+    AgentTUI,
+    createEventCollector,
+    useAgentEvents,
 } from '@agent-tea/tui';
 ```
 
-| 你想做什么               | 安装哪个包                     |
-| ------------------------ | ------------------------------ |
-| 纯后端 Agent（无 UI）    | `@agent-tea/sdk` + provider 包 |
-| 终端交互界面             | `@agent-tea/tui` + provider 包 |
-| 自定义 UI 框架           | `@agent-tea/tui`（只用 Adapter）|
+| 你想做什么            | 安装哪个包                       |
+| --------------------- | -------------------------------- |
+| 纯后端 Agent（无 UI） | `@agent-tea/sdk` + provider 包   |
+| 终端交互界面          | `@agent-tea/tui` + provider 包   |
+| 自定义 UI 框架        | `@agent-tea/tui`（只用 Adapter） |
 
 ---
 

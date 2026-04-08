@@ -27,9 +27,7 @@ export function PlanView({ steps }: PlanViewProps) {
             </Text>
             {steps.map((step) => (
                 <Box key={step.index}>
-                    <Text color={STATUS_COLOR[step.status]}>
-                        {STATUS_ICON[step.status]}{' '}
-                    </Text>
+                    <Text color={STATUS_COLOR[step.status]}>{STATUS_ICON[step.status]} </Text>
                     <Text color={step.status === 'pending' ? 'gray' : 'white'}>
                         {step.index + 1}. {step.description}
                     </Text>

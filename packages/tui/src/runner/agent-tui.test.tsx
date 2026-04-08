@@ -19,9 +19,7 @@ describe('AgentTUI', () => {
             { type: 'agent_end', sessionId: 's1', reason: 'complete' },
         ];
         const agent = mockAgentRun(events);
-        const { lastFrame } = render(
-            <AgentTUI agent={agent as any} initialQuery="你好" />,
-        );
+        const { lastFrame } = render(<AgentTUI agent={agent as any} initialQuery="你好" />);
 
         await new Promise((r) => setTimeout(r, 100));
         const frame = lastFrame();

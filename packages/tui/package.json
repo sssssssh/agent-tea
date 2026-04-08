@@ -1,35 +1,37 @@
 {
-  "name": "@agent-tea/tui",
-  "version": "0.1.0",
-  "description": "Terminal UI framework for agent-tea — build terminal AI applications with Ink components",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+    "name": "@agent-tea/tui",
+    "version": "0.1.0",
+    "description": "Terminal UI framework for agent-tea — build terminal AI applications with Ink components",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsup",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@agent-tea/sdk": "workspace:*",
+        "ink": "^5.1.0",
+        "react": "^18.3.1",
+        "ink-text-input": "^6.0.0",
+        "ink-spinner": "^5.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.0",
+        "ink-testing-library": "^4.0.0",
+        "tsup": "^8.4.0",
+        "typescript": "^5.7.0"
+    },
+    "peerDependencies": {
+        "@agent-tea/core": "workspace:*"
     }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@agent-tea/sdk": "workspace:*",
-    "ink": "^5.1.0",
-    "react": "^18.3.1",
-    "ink-text-input": "^6.0.0",
-    "ink-spinner": "^5.0.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.0",
-    "ink-testing-library": "^4.0.0",
-    "tsup": "^8.4.0",
-    "typescript": "^5.7.0"
-  },
-  "peerDependencies": {
-    "@agent-tea/core": "workspace:*"
-  }
 }

@@ -59,7 +59,9 @@ export const webFetch = tool(
             }
 
             if (text.length > maxLength) {
-                text = safeTruncate(text, maxLength) + `\n[... 内容已截断，共 ${text.length} 字符 ...]`;
+                text =
+                    safeTruncate(text, maxLength) +
+                    `\n[... 内容已截断，共 ${text.length} 字符 ...]`;
             }
 
             return text;

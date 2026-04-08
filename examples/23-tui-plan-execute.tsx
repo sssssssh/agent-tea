@@ -17,9 +17,4 @@ const agent = new PlanAndExecuteAgent({
     },
 });
 
-render(
-    <AgentTUI
-        agent={agent}
-        initialQuery={process.argv[2] || '分析这个项目的架构设计'}
-    />,
-);
+render(<AgentTUI agent={agent} initialQuery={process.argv[2] || '分析这个项目的架构设计'} />);

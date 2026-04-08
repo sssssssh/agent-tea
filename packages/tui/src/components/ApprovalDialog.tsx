@@ -18,9 +18,7 @@ export function ApprovalDialog({ request, onApprove, onReject }: ApprovalDialogP
                 <Text>
                     Tool: <Text bold>{request.toolName}</Text>
                 </Text>
-                {request.toolDescription && (
-                    <Text color="gray">{request.toolDescription}</Text>
-                )}
+                {request.toolDescription && <Text color="gray">{request.toolDescription}</Text>}
                 <Text color="gray">Args: {JSON.stringify(request.args, null, 2)}</Text>
             </Box>
             <Box marginTop={1}>

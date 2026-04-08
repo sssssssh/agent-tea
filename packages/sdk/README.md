@@ -24,7 +24,9 @@ const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY });
 const agent = new Agent({
     provider,
     model: 'gpt-4o',
-    tools: [/* ... */],
+    tools: [
+        /* ... */
+    ],
 });
 
 for await (const event of agent.run('你好')) {
@@ -83,7 +85,7 @@ const reviewSkill = skill({
     description: '代码审查',
     instructions: '仔细检查代码质量、安全性和性能…',
     tools: [readFileTool, grepTool],
-    trigger: '/review',   // 可选：命令式触发
+    trigger: '/review', // 可选：命令式触发
 });
 ```
 
@@ -101,7 +103,7 @@ const researcher = subAgent({
     model: 'gpt-4o-mini',
     tools: [webFetchTool, grepTool],
     systemPrompt: '你是一个调研助手…',
-    maxIterations: 10,   // 默认 10
+    maxIterations: 10, // 默认 10
 });
 
 // 作为工具传给父 Agent
@@ -124,9 +126,9 @@ import { discover } from '@agent-tea/sdk';
 const { skills, agents, tools, instructions } = await discover({
     provider,
     model: 'gpt-4o',
-    projectDir: process.cwd(),    // 默认
-    globalDir: '~/.agent-tea',    // 默认
-    extraTools: myToolMap,        // 可选：自定义工具注册表
+    projectDir: process.cwd(), // 默认
+    globalDir: '~/.agent-tea', // 默认
+    extraTools: myToolMap, // 可选：自定义工具注册表
 });
 
 const agent = new Agent({
@@ -147,7 +149,6 @@ version: 1.0.0
 trigger: /review
 tools: [read_file, grep]
 ---
-
 # 审查指南
 
 检查以下方面：
@@ -166,7 +167,6 @@ model: gpt-4o-mini
 maxIterations: 10
 tools: [web_fetch, grep]
 ---
-
 你是一个调研助手，擅长信息搜集和整理。
 ```
 
@@ -191,45 +191,45 @@ SDK 重新导出 `@agent-tea/core` 的全部公共 API，包括：
 
 ### Extension
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | `string` | 是 | Extension 名称 |
-| `description` | `string` | 否 | 描述 |
-| `instructions` | `string` | 否 | 注入系统提示词的指令 |
-| `tools` | `Tool[]` | 否 | 打包的工具 |
-| `skills` | `Skill[]` | 否 | 打包的技能 |
+| 字段           | 类型      | 必填 | 说明                 |
+| -------------- | --------- | ---- | -------------------- |
+| `name`         | `string`  | 是   | Extension 名称       |
+| `description`  | `string`  | 否   | 描述                 |
+| `instructions` | `string`  | 否   | 注入系统提示词的指令 |
+| `tools`        | `Tool[]`  | 否   | 打包的工具           |
+| `skills`       | `Skill[]` | 否   | 打包的技能           |
 
 ### Skill
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | `string` | 是 | Skill 名称 |
-| `description` | `string` | 是 | 描述（LLM 可见） |
-| `instructions` | `string` | 是 | 注入系统提示词的指令 |
-| `tools` | `Tool[]` | 否 | 关联的工具 |
-| `trigger` | `string` | 否 | 触发命令（如 `/review`） |
+| 字段           | 类型     | 必填 | 说明                     |
+| -------------- | -------- | ---- | ------------------------ |
+| `name`         | `string` | 是   | Skill 名称               |
+| `description`  | `string` | 是   | 描述（LLM 可见）         |
+| `instructions` | `string` | 是   | 注入系统提示词的指令     |
+| `tools`        | `Tool[]` | 否   | 关联的工具               |
+| `trigger`      | `string` | 否   | 触发命令（如 `/review`） |
 
 ### SubAgent
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `name` | `string` | 是 | 子 Agent 名称（也是工具名） |
-| `description` | `string` | 是 | 描述（父 Agent 可见） |
-| `provider` | `LLMProvider` | 是 | LLM Provider |
-| `model` | `string` | 是 | 模型 ID |
-| `tools` | `Tool[]` | 否 | 子 Agent 可用工具 |
-| `systemPrompt` | `string` | 否 | 系统提示词 |
-| `maxIterations` | `number` | 否 | 最大迭代次数（默认 10） |
+| 字段            | 类型          | 必填 | 说明                        |
+| --------------- | ------------- | ---- | --------------------------- |
+| `name`          | `string`      | 是   | 子 Agent 名称（也是工具名） |
+| `description`   | `string`      | 是   | 描述（父 Agent 可见）       |
+| `provider`      | `LLMProvider` | 是   | LLM Provider                |
+| `model`         | `string`      | 是   | 模型 ID                     |
+| `tools`         | `Tool[]`      | 否   | 子 Agent 可用工具           |
+| `systemPrompt`  | `string`      | 否   | 系统提示词                  |
+| `maxIterations` | `number`      | 否   | 最大迭代次数（默认 10）     |
 
 ### discover()
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `provider` | `LLMProvider` | 是 | 用于子 Agent 的 Provider |
-| `model` | `string` | 是 | 默认模型 |
-| `projectDir` | `string` | 否 | 项目目录（默认 `cwd()`） |
-| `globalDir` | `string` | 否 | 全局目录（默认 `~/.agent-tea`） |
-| `extraTools` | `Map<string, Tool>` | 否 | 自定义工具注册表 |
+| 字段         | 类型                | 必填 | 说明                            |
+| ------------ | ------------------- | ---- | ------------------------------- |
+| `provider`   | `LLMProvider`       | 是   | 用于子 Agent 的 Provider        |
+| `model`      | `string`            | 是   | 默认模型                        |
+| `projectDir` | `string`            | 否   | 项目目录（默认 `cwd()`）        |
+| `globalDir`  | `string`            | 否   | 全局目录（默认 `~/.agent-tea`） |
+| `extraTools` | `Map<string, Tool>` | 否   | 自定义工具注册表                |
 
 ## 要求
 

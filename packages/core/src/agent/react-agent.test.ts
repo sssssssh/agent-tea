@@ -555,16 +555,20 @@ describe('Agent reuse (multiple run() calls)', () => {
         for await (const event of agent.run('Hello')) {
             events1.push(event);
         }
-        expect(events1.some(e => e.type === 'message' && e.content === 'First response')).toBe(true);
-        expect(events1.some(e => e.type === 'agent_end' && e.reason === 'complete')).toBe(true);
+        expect(events1.some((e) => e.type === 'message' && e.content === 'First response')).toBe(
+            true,
+        );
+        expect(events1.some((e) => e.type === 'agent_end' && e.reason === 'complete')).toBe(true);
 
         // 第二次运行 — 之前会抛 "Invalid state transition: completed → reacting"
         const events2: AgentEvent[] = [];
         for await (const event of agent.run('Hello again')) {
             events2.push(event);
         }
-        expect(events2.some(e => e.type === 'message' && e.content === 'Second response')).toBe(true);
-        expect(events2.some(e => e.type === 'agent_end' && e.reason === 'complete')).toBe(true);
+        expect(events2.some((e) => e.type === 'message' && e.content === 'Second response')).toBe(
+            true,
+        );
+        expect(events2.some((e) => e.type === 'agent_end' && e.reason === 'complete')).toBe(true);
     });
 
     it('should support reuse with tool calls', async () => {
@@ -595,13 +599,15 @@ describe('Agent reuse (multiple run() calls)', () => {
         });
 
         // 第一次运行
-        for await (const _event of agent.run('First')) { /* consume */ }
+        for await (const _event of agent.run('First')) {
+            /* consume */
+        }
 
         // 第二次运行
         const events: AgentEvent[] = [];
         for await (const event of agent.run('Second')) {
             events.push(event);
         }
-        expect(events.some(e => e.type === 'message' && e.content === 'Done second')).toBe(true);
+        expect(events.some((e) => e.type === 'message' && e.content === 'Done second')).toBe(true);
     });
 });

@@ -99,14 +99,9 @@ export function AgentTUI({
         <ComponentProvider components={mergedComponents}>
             <Layout
                 statusBar={
-                    <mergedComponents.statusBar
-                        status={snapshot.status}
-                        usage={snapshot.usage}
-                    />
+                    <mergedComponents.statusBar status={snapshot.status} usage={snapshot.usage} />
                 }
-                history={
-                    <History items={snapshot.history} streaming={snapshot.streaming} />
-                }
+                history={<History items={snapshot.history} streaming={snapshot.streaming} />}
                 approval={approvalElement}
                 composer={<Composer onSubmit={handleSubmit} disabled={isRunning} />}
             />

@@ -70,6 +70,7 @@ examples/
 ## Task 1: 包脚手架
 
 **Files:**
+
 - Create: `packages/tui/package.json`
 - Create: `packages/tui/tsconfig.json`
 - Create: `packages/tui/tsup.config.ts`
@@ -79,40 +80,40 @@ examples/
 
 ```json
 {
-  "name": "@agent-tea/tui",
-  "version": "0.1.0",
-  "description": "Terminal UI framework for agent-tea — build terminal AI applications with Ink components",
-  "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "exports": {
-    ".": {
-      "import": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+    "name": "@agent-tea/tui",
+    "version": "0.1.0",
+    "description": "Terminal UI framework for agent-tea — build terminal AI applications with Ink components",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "import": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        }
+    },
+    "files": ["dist"],
+    "scripts": {
+        "build": "tsup",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@agent-tea/sdk": "workspace:*",
+        "ink": "^5.1.0",
+        "react": "^18.3.1",
+        "ink-text-input": "^6.0.0",
+        "ink-spinner": "^5.0.0",
+        "cli-markdown": "^3.4.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.3.0",
+        "ink-testing-library": "^4.0.0",
+        "tsup": "^8.4.0",
+        "typescript": "^5.7.0"
+    },
+    "peerDependencies": {
+        "@agent-tea/core": "workspace:*"
     }
-  },
-  "files": ["dist"],
-  "scripts": {
-    "build": "tsup",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@agent-tea/sdk": "workspace:*",
-    "ink": "^5.1.0",
-    "react": "^18.3.1",
-    "ink-text-input": "^6.0.0",
-    "ink-spinner": "^5.0.0",
-    "cli-markdown": "^3.4.0"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3.0",
-    "ink-testing-library": "^4.0.0",
-    "tsup": "^8.4.0",
-    "typescript": "^5.7.0"
-  },
-  "peerDependencies": {
-    "@agent-tea/core": "workspace:*"
-  }
 }
 ```
 
@@ -120,14 +121,14 @@ examples/
 
 ```json
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "jsx": "react-jsx"
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": ["src/**/*.ts", "src/**/*.tsx"],
+    "exclude": ["src/**/*.test.ts", "src/**/*.test.tsx"]
 }
 ```
 
@@ -172,6 +173,7 @@ git commit -m "feat(tui): scaffold @agent-tea/tui package"
 ## Task 2: Adapter 类型定义
 
 **Files:**
+
 - Create: `packages/tui/src/adapter/types.ts`
 - Create: `packages/tui/src/adapter/index.ts`
 
@@ -181,11 +183,7 @@ git commit -m "feat(tui): scaffold @agent-tea/tui package"
 import type { PlanStep, ApprovalRequestEvent } from '@agent-tea/sdk';
 
 /** 历史条目——已完成的事件 */
-export type HistoryItem =
-    | MessageItem
-    | ToolCallItem
-    | PlanItem
-    | ErrorItem;
+export type HistoryItem = MessageItem | ToolCallItem | PlanItem | ErrorItem;
 
 export interface MessageItem {
     type: 'message';
@@ -250,7 +248,13 @@ export function createInitialSnapshot(): AgentSnapshot {
 - [ ] **Step 2: 创建 adapter/index.ts**
 
 ```typescript
-export { type HistoryItem, type MessageItem, type ToolCallItem, type PlanItem, type ErrorItem } from './types.js';
+export {
+    type HistoryItem,
+    type MessageItem,
+    type ToolCallItem,
+    type PlanItem,
+    type ErrorItem,
+} from './types.js';
 export { type AgentStatus, type AgentSnapshot, createInitialSnapshot } from './types.js';
 ```
 
@@ -271,6 +275,7 @@ git commit -m "feat(tui): add Adapter layer type definitions"
 ## Task 3: EventCollector 实现
 
 **Files:**
+
 - Create: `packages/tui/src/test-utils.ts`
 - Create: `packages/tui/src/adapter/event-collector.ts`
 - Create: `packages/tui/src/adapter/event-collector.test.ts`
@@ -359,7 +364,12 @@ describe('createEventCollector', () => {
         const events: AgentEvent[] = [
             { type: 'agent_start', sessionId: 's1' },
             { type: 'tool_request', requestId: 'r1', toolName: 'readFile', args: { path: 'a.ts' } },
-            { type: 'tool_response', requestId: 'r1', toolName: 'readFile', content: 'file content' },
+            {
+                type: 'tool_response',
+                requestId: 'r1',
+                toolName: 'readFile',
+                content: 'file content',
+            },
             { type: 'message', role: 'assistant', content: '读完了' },
             { type: 'agent_end', sessionId: 's1', reason: 'complete' },
         ];
@@ -415,7 +425,15 @@ describe('createEventCollector', () => {
                 filePath: '/tmp/plan.json',
             },
             { type: 'step_start', step: { index: 0, description: 'Step 1', status: 'executing' } },
-            { type: 'step_complete', step: { index: 0, description: 'Step 1', status: 'completed', result: { summary: 'done', toolCallCount: 1 } } },
+            {
+                type: 'step_complete',
+                step: {
+                    index: 0,
+                    description: 'Step 1',
+                    status: 'completed',
+                    result: { summary: 'done', toolCallCount: 1 },
+                },
+            },
             { type: 'agent_end', sessionId: 's1', reason: 'complete' },
         ];
         const agent = mockAgentRun(events);
@@ -495,17 +513,17 @@ export interface EventCollector {
     abort(): void;
 }
 
-export function createEventCollector(
-    agent: Pick<BaseAgent, 'run'>,
-    query: string,
-): EventCollector {
+export function createEventCollector(agent: Pick<BaseAgent, 'run'>, query: string): EventCollector {
     const snapshotListeners: SnapshotListener[] = [];
     const doneListeners: DoneListener[] = [];
     const abortController = new AbortController();
 
     let snapshot = createInitialSnapshot();
     // 追踪正在进行的 tool call（requestId → 开始时间）
-    let pendingToolCalls = new Map<string, { name: string; args: Record<string, unknown>; startTime: number }>();
+    let pendingToolCalls = new Map<
+        string,
+        { name: string; args: Record<string, unknown>; startTime: number }
+    >();
 
     function emit() {
         for (const listener of snapshotListeners) {
@@ -534,7 +552,10 @@ export function createEventCollector(
 
             case 'message':
                 if (event.role === 'assistant') {
-                    snapshot = { ...snapshot, streaming: (snapshot.streaming ?? '') + event.content };
+                    snapshot = {
+                        ...snapshot,
+                        streaming: (snapshot.streaming ?? '') + event.content,
+                    };
                 } else {
                     snapshot = {
                         ...snapshot,
@@ -612,10 +633,7 @@ export function createEventCollector(
                 flushStreaming();
                 snapshot = {
                     ...snapshot,
-                    history: [
-                        ...snapshot.history,
-                        { type: 'plan', steps: [...event.plan.steps] },
-                    ],
+                    history: [...snapshot.history, { type: 'plan', steps: [...event.plan.steps] }],
                 };
                 break;
 
@@ -643,10 +661,13 @@ export function createEventCollector(
                 snapshot = {
                     ...snapshot,
                     status:
-                        event.reason === 'complete' ? 'completed'
-                        : event.reason === 'abort' ? 'aborted'
-                        : event.reason === 'error' ? 'error'
-                        : 'completed',
+                        event.reason === 'complete'
+                            ? 'completed'
+                            : event.reason === 'abort'
+                              ? 'aborted'
+                              : event.reason === 'error'
+                                ? 'error'
+                                : 'completed',
                     pendingApproval: null,
                 };
                 break;
@@ -686,7 +707,13 @@ export function createEventCollector(
 - [ ] **Step 5: 更新 adapter/index.ts 导出**
 
 ```typescript
-export { type HistoryItem, type MessageItem, type ToolCallItem, type PlanItem, type ErrorItem } from './types.js';
+export {
+    type HistoryItem,
+    type MessageItem,
+    type ToolCallItem,
+    type PlanItem,
+    type ErrorItem,
+} from './types.js';
 export { type AgentStatus, type AgentSnapshot, createInitialSnapshot } from './types.js';
 export { createEventCollector, type EventCollector } from './event-collector.js';
 ```
@@ -708,6 +735,7 @@ git commit -m "feat(tui): implement EventCollector with full event-to-snapshot m
 ## Task 4: React Hooks
 
 **Files:**
+
 - Create: `packages/tui/src/hooks/use-agent-events.ts`
 - Create: `packages/tui/src/hooks/use-approval.ts`
 - Create: `packages/tui/src/hooks/index.ts`
@@ -820,6 +848,7 @@ git commit -m "feat(tui): add useAgentEvents and useApproval hooks"
 ## Task 5: ComponentContext 与基础展示组件
 
 **Files:**
+
 - Create: `packages/tui/src/components/component-context.tsx`
 - Create: `packages/tui/src/components/UserMessage.tsx`
 - Create: `packages/tui/src/components/AgentMessage.tsx`
@@ -1057,6 +1086,7 @@ git commit -m "feat(tui): add ComponentContext, UserMessage, AgentMessage, Statu
 ## Task 6: ToolCallCard 组件
 
 **Files:**
+
 - Create: `packages/tui/src/components/ToolCallCard.tsx`
 - Modify: `packages/tui/src/components/components.test.tsx`
 
@@ -1176,6 +1206,7 @@ git commit -m "feat(tui): add ToolCallCard component with expand/collapse"
 ## Task 7: ApprovalDialog 和 PlanView 组件
 
 **Files:**
+
 - Create: `packages/tui/src/components/ApprovalDialog.tsx`
 - Create: `packages/tui/src/components/PlanView.tsx`
 - Modify: `packages/tui/src/components/components.test.tsx`
@@ -1213,7 +1244,12 @@ describe('PlanView', () => {
         const { lastFrame } = render(
             <PlanView
                 steps={[
-                    { index: 0, description: 'Read files', status: 'completed', result: { summary: 'done', toolCallCount: 2 } },
+                    {
+                        index: 0,
+                        description: 'Read files',
+                        status: 'completed',
+                        result: { summary: 'done', toolCallCount: 2 },
+                    },
                     { index: 1, description: 'Write code', status: 'executing' },
                     { index: 2, description: 'Run tests', status: 'pending' },
                 ]}
@@ -1254,9 +1290,7 @@ export function ApprovalDialog({ request, onApprove, onReject }: ApprovalDialogP
                 <Text>
                     Tool: <Text bold>{request.toolName}</Text>
                 </Text>
-                {request.toolDescription && (
-                    <Text color="gray">{request.toolDescription}</Text>
-                )}
+                {request.toolDescription && <Text color="gray">{request.toolDescription}</Text>}
                 <Text color="gray">Args: {JSON.stringify(request.args, null, 2)}</Text>
             </Box>
             <Box marginTop={1}>
@@ -1302,9 +1336,7 @@ export function PlanView({ steps }: PlanViewProps) {
             </Text>
             {steps.map((step) => (
                 <Box key={step.index}>
-                    <Text color={STATUS_COLOR[step.status]}>
-                        {STATUS_ICON[step.status]}{' '}
-                    </Text>
+                    <Text color={STATUS_COLOR[step.status]}>{STATUS_ICON[step.status]} </Text>
                     <Text color={step.status === 'pending' ? 'gray' : 'white'}>
                         {step.index + 1}. {step.description}
                     </Text>
@@ -1332,6 +1364,7 @@ git commit -m "feat(tui): add ApprovalDialog and PlanView components"
 ## Task 8: History 组件
 
 **Files:**
+
 - Create: `packages/tui/src/components/History.tsx`
 - Create: `packages/tui/src/components/ErrorMessage.tsx`
 - Create: `packages/tui/src/components/index.ts`
@@ -1363,9 +1396,7 @@ const defaultComponents: ComponentMap = {
 };
 
 function renderWithComponents(ui: React.ReactElement) {
-    return render(
-        <ComponentProvider components={defaultComponents}>{ui}</ComponentProvider>,
-    );
+    return render(<ComponentProvider components={defaultComponents}>{ui}</ComponentProvider>);
 }
 
 describe('History', () => {
@@ -1405,9 +1436,7 @@ describe('History', () => {
     });
 
     it('should render error items', () => {
-        const items: HistoryItem[] = [
-            { type: 'error', message: 'API rate limit', fatal: true },
-        ];
+        const items: HistoryItem[] = [{ type: 'error', message: 'API rate limit', fatal: true }];
         const { lastFrame } = renderWithComponents(<History items={items} />);
         expect(lastFrame()).toContain('API rate limit');
     });
@@ -1488,9 +1517,7 @@ export function History({ items, streaming }: HistoryProps) {
                         );
                 }
             })}
-            {streaming && (
-                <components.agentMessage content={streaming} streaming />
-            )}
+            {streaming && <components.agentMessage content={streaming} streaming />}
         </Box>
     );
 }
@@ -1500,7 +1527,16 @@ export function History({ items, streaming }: HistoryProps) {
 
 ```typescript
 export { ComponentProvider, useComponents } from './component-context.js';
-export type { ComponentMap, UserMessageProps, AgentMessageProps, ToolCallCardProps, ApprovalDialogProps, PlanViewProps, ErrorMessageProps, StatusBarProps } from './component-context.js';
+export type {
+    ComponentMap,
+    UserMessageProps,
+    AgentMessageProps,
+    ToolCallCardProps,
+    ApprovalDialogProps,
+    PlanViewProps,
+    ErrorMessageProps,
+    StatusBarProps,
+} from './component-context.js';
 export { UserMessage } from './UserMessage.js';
 export { AgentMessage } from './AgentMessage.js';
 export { ToolCallCard } from './ToolCallCard.js';
@@ -1528,6 +1564,7 @@ git commit -m "feat(tui): add History and ErrorMessage components with Component
 ## Task 9: Composer 输入框
 
 **Files:**
+
 - Create: `packages/tui/src/runner/Composer.tsx`
 
 - [ ] **Step 1: 实现 Composer**
@@ -1589,6 +1626,7 @@ git commit -m "feat(tui): add Composer input component"
 ## Task 10: DefaultLayout 和 AgentTUI Runner
 
 **Files:**
+
 - Create: `packages/tui/src/runner/DefaultLayout.tsx`
 - Create: `packages/tui/src/runner/AgentTUI.tsx`
 - Create: `packages/tui/src/runner/index.ts`
@@ -1618,9 +1656,7 @@ describe('AgentTUI', () => {
             { type: 'agent_end', sessionId: 's1', reason: 'complete' },
         ];
         const agent = mockAgentRun(events);
-        const { lastFrame } = render(
-            <AgentTUI agent={agent as any} initialQuery="你好" />,
-        );
+        const { lastFrame } = render(<AgentTUI agent={agent as any} initialQuery="你好" />);
 
         // 等待事件处理完成
         await new Promise((r) => setTimeout(r, 100));
@@ -1766,18 +1802,11 @@ export function AgentTUI({
         <ComponentProvider components={mergedComponents}>
             <Layout
                 statusBar={
-                    <mergedComponents.statusBar
-                        status={snapshot.status}
-                        usage={snapshot.usage}
-                    />
+                    <mergedComponents.statusBar status={snapshot.status} usage={snapshot.usage} />
                 }
-                history={
-                    <History items={snapshot.history} streaming={snapshot.streaming} />
-                }
+                history={<History items={snapshot.history} streaming={snapshot.streaming} />}
                 approval={approvalElement}
-                composer={
-                    <Composer onSubmit={handleSubmit} disabled={isRunning} />
-                }
+                composer={<Composer onSubmit={handleSubmit} disabled={isRunning} />}
             />
         </ComponentProvider>
     );
@@ -1809,6 +1838,7 @@ git commit -m "feat(tui): add AgentTUI runner with DefaultLayout and keyboard sh
 ## Task 11: 统一导出
 
 **Files:**
+
 - Modify: `packages/tui/src/index.ts`
 
 - [ ] **Step 1: 更新 src/index.ts**
@@ -1821,7 +1851,16 @@ export * from '@agent-tea/sdk';
 
 // Adapter 层
 export { createEventCollector, type EventCollector } from './adapter/index.js';
-export { type AgentSnapshot, type AgentStatus, type HistoryItem, type MessageItem, type ToolCallItem, type PlanItem, type ErrorItem, createInitialSnapshot } from './adapter/index.js';
+export {
+    type AgentSnapshot,
+    type AgentStatus,
+    type HistoryItem,
+    type MessageItem,
+    type ToolCallItem,
+    type PlanItem,
+    type ErrorItem,
+    createInitialSnapshot,
+} from './adapter/index.js';
 
 // Hooks 层
 export { useAgentEvents } from './hooks/index.js';
@@ -1829,8 +1868,26 @@ export { useApproval } from './hooks/index.js';
 
 // Components 层
 export { ComponentProvider, useComponents } from './components/index.js';
-export type { ComponentMap, UserMessageProps, AgentMessageProps, ToolCallCardProps, ApprovalDialogProps, PlanViewProps, ErrorMessageProps, StatusBarProps } from './components/index.js';
-export { UserMessage, AgentMessage, ToolCallCard, ApprovalDialog, PlanView, ErrorMessage, StatusBar, History } from './components/index.js';
+export type {
+    ComponentMap,
+    UserMessageProps,
+    AgentMessageProps,
+    ToolCallCardProps,
+    ApprovalDialogProps,
+    PlanViewProps,
+    ErrorMessageProps,
+    StatusBarProps,
+} from './components/index.js';
+export {
+    UserMessage,
+    AgentMessage,
+    ToolCallCard,
+    ApprovalDialog,
+    PlanView,
+    ErrorMessage,
+    StatusBar,
+    History,
+} from './components/index.js';
 
 // Runner 层
 export { AgentTUI, type AgentTUIProps } from './runner/index.js';
@@ -1860,6 +1917,7 @@ git commit -m "feat(tui): wire up package exports"
 ## Task 12: SDK Examples（17-19）
 
 **Files:**
+
 - Create: `examples/17-event-collector.ts`
 - Create: `examples/18-batch-run.ts`
 - Create: `examples/19-sdk-subagent-collector.ts`
@@ -1903,7 +1961,9 @@ collector.on('snapshot', (snapshot) => {
 
 const result = await collector.start();
 console.log('\n\n--- 最终结果 ---');
-const lastMessage = result.history.filter((h) => h.type === 'message' && h.role === 'assistant').at(-1);
+const lastMessage = result.history
+    .filter((h) => h.type === 'message' && h.role === 'assistant')
+    .at(-1);
 if (lastMessage?.type === 'message') {
     console.log(lastMessage.content);
 }
@@ -1939,11 +1999,7 @@ const agent = new Agent({
     systemPrompt: '你是一个数学助手，用 calculate 工具计算后回答。',
 });
 
-const queries = [
-    '123 * 456 等于多少？',
-    '圆周率的前 10 位是什么？',
-    '2 的 10 次方是多少？',
-];
+const queries = ['123 * 456 等于多少？', '圆周率的前 10 位是什么？', '2 的 10 次方是多少？'];
 
 console.log(`\n批量运行 ${queries.length} 个查询\n`);
 
@@ -2013,7 +2069,9 @@ collector.on('snapshot', (snapshot) => {
 
 const result = await collector.start();
 console.log('\n--- 最终结果 ---');
-const lastMessage = result.history.filter((h) => h.type === 'message' && h.role === 'assistant').at(-1);
+const lastMessage = result.history
+    .filter((h) => h.type === 'message' && h.role === 'assistant')
+    .at(-1);
 if (lastMessage?.type === 'message') {
     console.log(lastMessage.content);
 }
@@ -2041,6 +2099,7 @@ git commit -m "feat(examples): add SDK examples 17-19 using EventCollector"
 ## Task 13: TUI Examples（20-23）
 
 **Files:**
+
 - Create: `examples/20-tui-minimal.tsx`
 - Create: `examples/21-tui-custom-components.tsx`
 - Create: `examples/22-tui-custom-layout.tsx`
@@ -2176,13 +2235,7 @@ const agent = new Agent({
     systemPrompt: '你是一个代码分析助手。',
 });
 
-render(
-    <AgentTUI
-        agent={agent}
-        layout={DualPanelLayout}
-        initialQuery="分析当前目录的项目结构"
-    />,
-);
+render(<AgentTUI agent={agent} layout={DualPanelLayout} initialQuery="分析当前目录的项目结构" />);
 ```
 
 - [ ] **Step 4: 创建 example 23 — PlanAndExecute TUI**
@@ -2190,7 +2243,14 @@ render(
 ```tsx
 import React from 'react';
 import { render } from 'ink';
-import { PlanAndExecuteAgent, tool, z, readFile, listDirectory, grep } from '../packages/sdk/src/index.js';
+import {
+    PlanAndExecuteAgent,
+    tool,
+    z,
+    readFile,
+    listDirectory,
+    grep,
+} from '../packages/sdk/src/index.js';
 import { AgentTUI } from '../packages/tui/src/index.js';
 import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 
@@ -2208,12 +2268,7 @@ const agent = new PlanAndExecuteAgent({
     },
 });
 
-render(
-    <AgentTUI
-        agent={agent}
-        initialQuery={process.argv[2] || '分析这个项目的架构设计'}
-    />,
-);
+render(<AgentTUI agent={agent} initialQuery={process.argv[2] || '分析这个项目的架构设计'} />);
 ```
 
 - [ ] **Step 5: 在根 package.json 添加 TUI example 脚本**

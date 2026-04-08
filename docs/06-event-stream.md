@@ -184,9 +184,9 @@ const collector = createEventCollector(agent, '分析这个项目');
 
 // 监听快照变化 — 每个事件更新后都会产出新快照
 collector.on('snapshot', (snapshot) => {
-    console.log(`状态: ${snapshot.status}`);             // 'thinking' | 'tool_executing' | ...
-    console.log(`历史: ${snapshot.history.length} 条`);   // 已完成的消息、工具调用、计划
-    console.log(`流式: ${snapshot.streaming ?? '无'}`);    // 正在输出的文本
+    console.log(`状态: ${snapshot.status}`); // 'thinking' | 'tool_executing' | ...
+    console.log(`历史: ${snapshot.history.length} 条`); // 已完成的消息、工具调用、计划
+    console.log(`流式: ${snapshot.streaming ?? '无'}`); // 正在输出的文本
     console.log(`Token: ${snapshot.usage.inputTokens + snapshot.usage.outputTokens}`);
 });
 

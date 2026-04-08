@@ -21,7 +21,9 @@ const provider = new AnthropicProvider({
 const agent = new Agent({
     provider,
     model: 'claude-sonnet-4-20250514',
-    tools: [/* ... */],
+    tools: [
+        /* ... */
+    ],
 });
 
 for await (const event of agent.run('你好')) {
@@ -67,26 +69,26 @@ const anthropicTools = toAnthropicTools(toolDefinitions);
 
 ### AnthropicProviderOptions
 
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `apiKey` | `string` | `ANTHROPIC_API_KEY` 环境变量 | API 密钥 |
-| `baseURL` | `string` | Anthropic 官方地址 | API 地址 |
+| 选项      | 类型     | 默认值                       | 说明     |
+| --------- | -------- | ---------------------------- | -------- |
+| `apiKey`  | `string` | `ANTHROPIC_API_KEY` 环境变量 | API 密钥 |
+| `baseURL` | `string` | Anthropic 官方地址           | API 地址 |
 
 ### 环境变量
 
-| 变量 | 说明 |
-|------|------|
+| 变量                | 说明                       |
+| ------------------- | -------------------------- |
 | `ANTHROPIC_API_KEY` | 未传入 `apiKey` 时自动读取 |
 
 ### 支持的模型参数
 
 通过 `AgentConfig` 传递：
 
-| 参数 | 说明 |
-|------|------|
-| `model` | 模型 ID（如 `'claude-sonnet-4-20250514'`、`'claude-haiku-4-5-20251001'`） |
-| `temperature` | 温度参数 |
-| `maxTokens` | 单次响应最大 token（默认 4096） |
+| 参数          | 说明                                                                      |
+| ------------- | ------------------------------------------------------------------------- |
+| `model`       | 模型 ID（如 `'claude-sonnet-4-20250514'`、`'claude-haiku-4-5-20251001'`） |
+| `temperature` | 温度参数                                                                  |
+| `maxTokens`   | 单次响应最大 token（默认 4096）                                           |
 
 ## 要求
 

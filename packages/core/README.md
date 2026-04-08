@@ -46,10 +46,10 @@ for await (const event of agent.run('跟张三打个招呼')) {
 
 提供两种策略的 Agent 实现：
 
-| 类 | 说明 |
-|---|------|
+| 类                     | 说明                                                                               |
+| ---------------------- | ---------------------------------------------------------------------------------- |
 | `Agent` / `ReActAgent` | 经典 ReAct 循环：思考 → 工具调用 → 观察 → 循环，直到纯文本回复或达到 maxIterations |
-| `PlanAndExecuteAgent` | 三阶段：规划（仅只读工具）→ 审批 → 逐步执行，支持失败恢复 |
+| `PlanAndExecuteAgent`  | 三阶段：规划（仅只读工具）→ 审批 → 逐步执行，支持失败恢复                          |
 
 ```typescript
 // ReAct（默认）
@@ -74,8 +74,8 @@ const search = tool(
             pattern: z.string().describe('搜索模式'),
             path: z.string().optional().describe('搜索路径'),
         }),
-        tags: ['readonly'],   // 用于审批策略和工具过滤
-        timeout: 10000,       // 工具级超时（ms）
+        tags: ['readonly'], // 用于审批策略和工具过滤
+        timeout: 10000, // 工具级超时（ms）
     },
     async ({ pattern, path }, context) => {
         // context: { sessionId, cwd, messages, signal }
@@ -92,16 +92,16 @@ const search = tool(
 
 `agent.run()` 产出的事件类型（可辨识联合，按 `type` 字段匹配）：
 
-| 事件类型 | 说明 |
-|---------|------|
-| `agent_start` / `agent_end` | Agent 生命周期 |
-| `message` | LLM 文本输出 |
-| `tool_request` / `tool_response` | 工具调用请求和结果 |
-| `usage` | Token 用量统计 |
-| `error` | 错误事件 |
-| `state_change` | 状态机转换 |
-| `approval_request` | 审批请求（等待用户确认） |
-| `plan_created` / `step_start` / `step_complete` / `step_failed` / `execution_paused` | 计划执行相关 |
+| 事件类型                                                                             | 说明                     |
+| ------------------------------------------------------------------------------------ | ------------------------ |
+| `agent_start` / `agent_end`                                                          | Agent 生命周期           |
+| `message`                                                                            | LLM 文本输出             |
+| `tool_request` / `tool_response`                                                     | 工具调用请求和结果       |
+| `usage`                                                                              | Token 用量统计           |
+| `error`                                                                              | 错误事件                 |
+| `state_change`                                                                       | 状态机转换               |
+| `approval_request`                                                                   | 审批请求（等待用户确认） |
+| `plan_created` / `step_start` / `step_complete` / `step_failed` / `execution_paused` | 计划执行相关             |
 
 ### LLMProvider 接口
 
@@ -114,10 +114,7 @@ interface LLMProvider {
 }
 
 interface ChatSession {
-    sendMessage(
-        messages: Message[],
-        signal?: AbortSignal,
-    ): AsyncGenerator<ChatStreamEvent>;
+    sendMessage(messages: Message[], signal?: AbortSignal): AsyncGenerator<ChatStreamEvent>;
 }
 ```
 
@@ -143,6 +140,7 @@ const agent = new Agent({
 ```
 
 两种策略：
+
 - **`sliding_window`** — 保留系统消息 + 最新消息，中间截断
 - **`pipeline`** — 管道式组合多个处理器（`SlidingWindowProcessor`、`ToolOutputTruncator`、`MessageCompressor`）
 
@@ -193,12 +191,12 @@ for await (const event of agent.run(input)) {
 
 无需子类化即可定制 Agent 行为：
 
-| 钩子 | 触发时机 |
-|------|---------|
-| `onBeforeIteration` / `onAfterIteration` | 每次迭代前/后 |
-| `onToolFilter` | 动态过滤可用工具集 |
-| `onBeforeToolCall` / `onAfterToolCall` | 工具执行前/后拦截 |
-| `onPlanCreated` | 计划审批门 |
+| 钩子                                              | 触发时机             |
+| ------------------------------------------------- | -------------------- |
+| `onBeforeIteration` / `onAfterIteration`          | 每次迭代前/后        |
+| `onToolFilter`                                    | 动态过滤可用工具集   |
+| `onBeforeToolCall` / `onAfterToolCall`            | 工具执行前/后拦截    |
+| `onPlanCreated`                                   | 计划审批门           |
 | `onStepStart` / `onStepComplete` / `onStepFailed` | 步骤级监控和错误恢复 |
 
 ### 错误层级
@@ -217,27 +215,27 @@ AgentTeaError
 
 `AgentConfig` 完整配置参考：
 
-| 选项 | 类型 | 默认值 | 说明 |
-|-----|------|--------|------|
-| `provider` | `LLMProvider` | **必填** | LLM Provider 实例 |
-| `model` | `string` | **必填** | 模型 ID |
-| `tools` | `Tool[]` | `[]` | 可用工具列表 |
-| `systemPrompt` | `string` | — | 系统提示词 |
-| `maxIterations` | `number` | `500` | 最大迭代次数 |
-| `temperature` | `number` | — | 温度参数 |
-| `maxTokens` | `number` | — | 单次响应最大 token |
-| `agentId` | `string` | 自动 UUID | Agent 标识 |
-| `strategy` | `'react' \| 'plan-and-execute'` | `'react'` | Agent 策略 |
-| `allowPlanMode` | `boolean` | — | 允许运行时切换计划模式 |
-| `planStoreDir` | `string` | `'.agent-tea/plans'` | 计划持久化目录 |
-| `approvalPolicy` | `ApprovalPolicy` | — | 审批策略（`'always'` / `'tagged'` / `'never'`） |
-| `loopDetection` | `LoopDetectionConfig` | 已启用 | 循环检测配置 |
-| `toolTimeout` | `number` | `30000` | 全局工具超时（ms） |
-| `llmTimeout.connectionMs` | `number` | `60000` | LLM 首次响应超时 |
-| `llmTimeout.streamStallMs` | `number` | `30000` | 流式响应停滞超时 |
-| `contextManager` | `ContextManagerConfig` | — | 上下文管理器配置 |
-| `conversationStore` | `ConversationStore` | — | 会话存储 |
-| `memoryStore` | `MemoryStore` | — | 记忆存储 |
+| 选项                       | 类型                            | 默认值               | 说明                                            |
+| -------------------------- | ------------------------------- | -------------------- | ----------------------------------------------- |
+| `provider`                 | `LLMProvider`                   | **必填**             | LLM Provider 实例                               |
+| `model`                    | `string`                        | **必填**             | 模型 ID                                         |
+| `tools`                    | `Tool[]`                        | `[]`                 | 可用工具列表                                    |
+| `systemPrompt`             | `string`                        | —                    | 系统提示词                                      |
+| `maxIterations`            | `number`                        | `500`                | 最大迭代次数                                    |
+| `temperature`              | `number`                        | —                    | 温度参数                                        |
+| `maxTokens`                | `number`                        | —                    | 单次响应最大 token                              |
+| `agentId`                  | `string`                        | 自动 UUID            | Agent 标识                                      |
+| `strategy`                 | `'react' \| 'plan-and-execute'` | `'react'`            | Agent 策略                                      |
+| `allowPlanMode`            | `boolean`                       | —                    | 允许运行时切换计划模式                          |
+| `planStoreDir`             | `string`                        | `'.agent-tea/plans'` | 计划持久化目录                                  |
+| `approvalPolicy`           | `ApprovalPolicy`                | —                    | 审批策略（`'always'` / `'tagged'` / `'never'`） |
+| `loopDetection`            | `LoopDetectionConfig`           | 已启用               | 循环检测配置                                    |
+| `toolTimeout`              | `number`                        | `30000`              | 全局工具超时（ms）                              |
+| `llmTimeout.connectionMs`  | `number`                        | `60000`              | LLM 首次响应超时                                |
+| `llmTimeout.streamStallMs` | `number`                        | `30000`              | 流式响应停滞超时                                |
+| `contextManager`           | `ContextManagerConfig`          | —                    | 上下文管理器配置                                |
+| `conversationStore`        | `ConversationStore`             | —                    | 会话存储                                        |
+| `memoryStore`              | `MemoryStore`                   | —                    | 记忆存储                                        |
 
 ## 设计原则
 

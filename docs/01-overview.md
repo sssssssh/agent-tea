@@ -191,10 +191,10 @@ agent_end              ──→                             status: "completed"
 
 ```typescript
 interface AgentSnapshot {
-    status: AgentStatus;             // 当前状态（7 种）
-    history: HistoryItem[];          // 已完成的事件历史
-    streaming: string | null;        // 正在流式输出的文本
-    pendingApproval: ApprovalRequestEvent | null;  // 等待审批
+    status: AgentStatus; // 当前状态（7 种）
+    history: HistoryItem[]; // 已完成的事件历史
+    streaming: string | null; // 正在流式输出的文本
+    pendingApproval: ApprovalRequestEvent | null; // 等待审批
     usage: { inputTokens: number; outputTokens: number };
     error: string | null;
 }

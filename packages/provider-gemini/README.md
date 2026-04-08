@@ -21,7 +21,9 @@ const provider = new GeminiProvider({
 const agent = new Agent({
     provider,
     model: 'gemini-2.0-flash',
-    tools: [/* ... */],
+    tools: [
+        /* ... */
+    ],
 });
 
 for await (const event of agent.run('你好')) {
@@ -67,25 +69,25 @@ const geminiTools = toGeminiTools(toolDefinitions);
 
 ### GeminiProviderOptions
 
-| 选项 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
+| 选项     | 类型     | 默认值                    | 说明                                       |
+| -------- | -------- | ------------------------- | ------------------------------------------ |
 | `apiKey` | `string` | `GEMINI_API_KEY` 环境变量 | API 密钥（**必填**，环境变量或参数二选一） |
 
 ### 环境变量
 
-| 变量 | 说明 |
-|------|------|
+| 变量             | 说明                       |
+| ---------------- | -------------------------- |
 | `GEMINI_API_KEY` | 未传入 `apiKey` 时自动读取 |
 
 ### 支持的模型参数
 
 通过 `AgentConfig` 传递：
 
-| 参数 | 说明 |
-|------|------|
-| `model` | 模型 ID（如 `'gemini-2.0-flash'`、`'gemini-2.5-pro'`） |
-| `temperature` | 温度参数 |
-| `maxTokens` | 单次响应最大 token（映射为 `maxOutputTokens`） |
+| 参数          | 说明                                                   |
+| ------------- | ------------------------------------------------------ |
+| `model`       | 模型 ID（如 `'gemini-2.0-flash'`、`'gemini-2.5-pro'`） |
+| `temperature` | 温度参数                                               |
+| `maxTokens`   | 单次响应最大 token（映射为 `maxOutputTokens`）         |
 
 ## 要求
 

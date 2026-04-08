@@ -38,6 +38,4 @@ const lastMessage = result.history
 if (lastMessage?.type === 'message') {
     console.log(lastMessage.content);
 }
-console.log(
-    `\nToken 用量: ${result.usage.inputTokens} in / ${result.usage.outputTokens} out`,
-);
+console.log(`\nToken 用量: ${result.usage.inputTokens} in / ${result.usage.outputTokens} out`);

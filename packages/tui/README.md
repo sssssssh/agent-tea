@@ -90,8 +90,8 @@ interface AgentSnapshot {
     status: AgentStatus;
     // 'idle' | 'thinking' | 'tool_executing' | 'waiting_approval'
     // | 'completed' | 'error' | 'aborted'
-    history: HistoryItem[];      // 对话历史
-    streaming: string | null;    // 当前流式文本
+    history: HistoryItem[]; // 对话历史
+    streaming: string | null; // 当前流式文本
     pendingApproval: ApprovalRequestEvent | null;
     usage: { inputTokens: number; outputTokens: number };
     error: string | null;
@@ -119,15 +119,15 @@ function MyApp({ agent }) {
 
 所有 UI 组件可通过 `components` prop 替换：
 
-| 组件 | Props | 说明 |
-|------|-------|------|
-| `UserMessage` | `{ content }` | 用户消息 |
-| `AgentMessage` | `{ content, streaming? }` | Agent 回复 |
-| `ToolCallCard` | `{ requestId, name, args, result, isError, durationMs }` | 工具调用卡片 |
-| `ApprovalDialog` | `{ request, onApprove, onReject }` | 审批对话框 |
-| `PlanView` | `{ steps }` | 执行计划视图 |
-| `ErrorMessage` | `{ message, fatal }` | 错误提示 |
-| `StatusBar` | `{ status, usage }` | 状态栏 |
+| 组件             | Props                                                    | 说明         |
+| ---------------- | -------------------------------------------------------- | ------------ |
+| `UserMessage`    | `{ content }`                                            | 用户消息     |
+| `AgentMessage`   | `{ content, streaming? }`                                | Agent 回复   |
+| `ToolCallCard`   | `{ requestId, name, args, result, isError, durationMs }` | 工具调用卡片 |
+| `ApprovalDialog` | `{ request, onApprove, onReject }`                       | 审批对话框   |
+| `PlanView`       | `{ steps }`                                              | 执行计划视图 |
+| `ErrorMessage`   | `{ message, fatal }`                                     | 错误提示     |
+| `StatusBar`      | `{ status, usage }`                                      | 状态栏       |
 
 ```typescript
 import { AgentTUI } from '@agent-tea/tui';
@@ -164,9 +164,9 @@ const MyLayout = ({ history, statusBar, composer, approval }) => (
 
 ### 键盘快捷键
 
-| 快捷键 | 功能 |
-|--------|------|
-| `Ctrl+C` | 优雅中止 |
+| 快捷键    | 功能         |
+| --------- | ------------ |
+| `Ctrl+C`  | 优雅中止     |
 | `Y` / `y` | 批准工具调用 |
 | `N` / `n` | 拒绝工具调用 |
 
@@ -174,22 +174,22 @@ const MyLayout = ({ history, statusBar, composer, approval }) => (
 
 ### AgentTUI Props
 
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `agent` | `BaseAgent` | 是 | Agent 实例 |
-| `initialQuery` | `string` | 否 | 启动时自动发送的查询 |
-| `components` | `Partial<ComponentMap>` | 否 | 替换默认组件 |
-| `layout` | `React.ComponentType<LayoutProps>` | 否 | 自定义布局组件 |
-| `onApproval` | `(req) => Promise<ApprovalDecision>` | 否 | 自定义审批处理 |
-| `onComplete` | `(snapshot) => void` | 否 | 完成回调 |
+| Prop           | 类型                                 | 必填 | 说明                 |
+| -------------- | ------------------------------------ | ---- | -------------------- |
+| `agent`        | `BaseAgent`                          | 是   | Agent 实例           |
+| `initialQuery` | `string`                             | 否   | 启动时自动发送的查询 |
+| `components`   | `Partial<ComponentMap>`              | 否   | 替换默认组件         |
+| `layout`       | `React.ComponentType<LayoutProps>`   | 否   | 自定义布局组件       |
+| `onApproval`   | `(req) => Promise<ApprovalDecision>` | 否   | 自定义审批处理       |
+| `onComplete`   | `(snapshot) => void`                 | 否   | 完成回调             |
 
 ### Composer Props
 
-| Prop | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `onSubmit` | `(query: string) => void` | 是 | 提交回调 |
-| `disabled` | `boolean` | 否 | 禁用输入 |
-| `placeholder` | `string` | 否 | 占位文本（默认 `'输入你的问题...'`） |
+| Prop          | 类型                      | 必填 | 说明                                 |
+| ------------- | ------------------------- | ---- | ------------------------------------ |
+| `onSubmit`    | `(query: string) => void` | 是   | 提交回调                             |
+| `disabled`    | `boolean`                 | 否   | 禁用输入                             |
+| `placeholder` | `string`                  | 否   | 占位文本（默认 `'输入你的问题...'`） |
 
 ## 重新导出
 

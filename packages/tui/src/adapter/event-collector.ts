@@ -69,7 +69,10 @@ export function createEventCollector(
             case 'message':
                 if (event.role === 'assistant') {
                     // assistant 消息逐块累积到 streaming
-                    snapshot = { ...snapshot, streaming: (snapshot.streaming ?? '') + event.content };
+                    snapshot = {
+                        ...snapshot,
+                        streaming: (snapshot.streaming ?? '') + event.content,
+                    };
                 } else {
                     // 用户消息直接追加到 history
                     snapshot = {
@@ -128,8 +131,7 @@ export function createEventCollector(
                     ...snapshot,
                     usage: {
                         inputTokens: snapshot.usage.inputTokens + (event.usage.inputTokens ?? 0),
-                        outputTokens:
-                            snapshot.usage.outputTokens + (event.usage.outputTokens ?? 0),
+                        outputTokens: snapshot.usage.outputTokens + (event.usage.outputTokens ?? 0),
                     },
                 };
                 break;
@@ -150,10 +152,7 @@ export function createEventCollector(
                 flushStreaming();
                 snapshot = {
                     ...snapshot,
-                    history: [
-                        ...snapshot.history,
-                        { type: 'plan', steps: [...event.plan.steps] },
-                    ],
+                    history: [...snapshot.history, { type: 'plan', steps: [...event.plan.steps] }],
                 };
                 break;
 

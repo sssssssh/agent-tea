@@ -24,9 +24,7 @@ const defaultComponents: ComponentMap = {
 };
 
 function renderWithComponents(ui: React.ReactElement) {
-    return render(
-        <ComponentProvider components={defaultComponents}>{ui}</ComponentProvider>,
-    );
+    return render(<ComponentProvider components={defaultComponents}>{ui}</ComponentProvider>);
 }
 
 describe('UserMessage', () => {
@@ -168,9 +166,7 @@ describe('PlanView', () => {
 
 describe('ErrorMessage', () => {
     it('should render fatal error', () => {
-        const { lastFrame } = render(
-            <ErrorMessage message="API rate limit" fatal={true} />,
-        );
+        const { lastFrame } = render(<ErrorMessage message="API rate limit" fatal={true} />);
         expect(lastFrame()).toContain('API rate limit');
         expect(lastFrame()).toContain('Fatal');
     });
@@ -213,9 +209,7 @@ describe('History', () => {
     });
 
     it('should render error items', () => {
-        const items: HistoryItem[] = [
-            { type: 'error', message: 'API rate limit', fatal: true },
-        ];
+        const items: HistoryItem[] = [{ type: 'error', message: 'API rate limit', fatal: true }];
         const { lastFrame } = renderWithComponents(<History items={items} />);
         expect(lastFrame()).toContain('API rate limit');
     });

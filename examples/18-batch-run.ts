@@ -24,11 +24,7 @@ const agent = new Agent({
     systemPrompt: '你是一个数学助手，用 calculate 工具计算后回答。',
 });
 
-const queries = [
-    '123 * 456 等于多少？',
-    '圆周率的前 10 位是什么？',
-    '2 的 10 次方是多少？',
-];
+const queries = ['123 * 456 等于多少？', '圆周率的前 10 位是什么？', '2 的 10 次方是多少？'];
 
 console.log(`\n批量运行 ${queries.length} 个查询\n`);
 

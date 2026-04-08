@@ -307,23 +307,23 @@ EventCollector 把这些零散事件整理成一个 **AgentSnapshot** — 一个
 
 ```typescript
 interface AgentSnapshot {
-    status: AgentStatus;             // 'idle' | 'thinking' | 'tool_executing' | 'waiting_approval' | 'completed' | 'error' | 'aborted'
-    history: HistoryItem[];          // 已完成的事件：消息、工具调用、计划、错误
-    streaming: string | null;        // 正在流式累积的 assistant 文本
-    pendingApproval: ApprovalRequestEvent | null;  // 当前等待审批的请求
-    usage: { inputTokens: number; outputTokens: number };  // 累积 token 用量
-    error: string | null;            // 致命错误信息
+    status: AgentStatus; // 'idle' | 'thinking' | 'tool_executing' | 'waiting_approval' | 'completed' | 'error' | 'aborted'
+    history: HistoryItem[]; // 已完成的事件：消息、工具调用、计划、错误
+    streaming: string | null; // 正在流式累积的 assistant 文本
+    pendingApproval: ApprovalRequestEvent | null; // 当前等待审批的请求
+    usage: { inputTokens: number; outputTokens: number }; // 累积 token 用量
+    error: string | null; // 致命错误信息
 }
 ```
 
 `history` 中的条目有四种类型：
 
-| 类型        | 含义             | 关键字段                                |
-| ----------- | ---------------- | --------------------------------------- |
-| `message`   | 消息（用户/AI）  | `role`, `content`                       |
-| `tool_call` | 工具调用（已完成）| `name`, `args`, `result`, `durationMs`  |
-| `plan`      | 执行计划         | `steps[]`（含状态：pending/completed/…）|
-| `error`     | 错误             | `message`, `fatal`                      |
+| 类型        | 含义               | 关键字段                                 |
+| ----------- | ------------------ | ---------------------------------------- |
+| `message`   | 消息（用户/AI）    | `role`, `content`                        |
+| `tool_call` | 工具调用（已完成） | `name`, `args`, `result`, `durationMs`   |
+| `plan`      | 执行计划           | `steps[]`（含状态：pending/completed/…） |
+| `error`     | 错误               | `message`, `fatal`                       |
 
 ### 使用方式
 
@@ -337,8 +337,8 @@ collector.on('snapshot', (snapshot) => {
     console.log(snapshot.status, snapshot.history.length);
 });
 
-const finalSnapshot = await collector.start();  // 阻塞直到 Agent 结束
-collector.abort();                               // 或者中途中止
+const finalSnapshot = await collector.start(); // 阻塞直到 Agent 结束
+collector.abort(); // 或者中途中止
 ```
 
 ### 事件映射规则

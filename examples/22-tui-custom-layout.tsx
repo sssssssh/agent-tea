@@ -43,10 +43,4 @@ const agent = new Agent({
     systemPrompt: '你是一个代码分析助手。',
 });
 
-render(
-    <AgentTUI
-        agent={agent}
-        layout={DualPanelLayout}
-        initialQuery="分析当前目录的项目结构"
-    />,
-);
+render(<AgentTUI agent={agent} layout={DualPanelLayout} initialQuery="分析当前目录的项目结构" />);

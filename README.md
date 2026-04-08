@@ -119,12 +119,12 @@ pnpm example:23         # TUI Plan-Execute — 终端中的规划-执行流
 
 | 包                              | 说明                                            |
 | ------------------------------- | ----------------------------------------------- |
-| `@agent-tea/core`               | 框架核心 — Agent 循环、工具系统、事件流、状态机   |
-| `@agent-tea/sdk`                | 开发者 API — Extension、Skill、SubAgent 抽象     |
-| `@agent-tea/tui`                | 终端 UI — 基于 Ink 的 Agent 交互界面              |
-| `@agent-tea/provider-openai`    | OpenAI / 兼容 API 适配器                         |
-| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器                          |
-| `@agent-tea/provider-gemini`    | Google Gemini 适配器                             |
+| `@agent-tea/core`               | 框架核心 — Agent 循环、工具系统、事件流、状态机 |
+| `@agent-tea/sdk`                | 开发者 API — Extension、Skill、SubAgent 抽象    |
+| `@agent-tea/tui`                | 终端 UI — 基于 Ink 的 Agent 交互界面            |
+| `@agent-tea/provider-openai`    | OpenAI / 兼容 API 适配器                        |
+| `@agent-tea/provider-anthropic` | Anthropic Claude 适配器                         |
+| `@agent-tea/provider-gemini`    | Google Gemini 适配器                            |
 
 ## 要求
 
