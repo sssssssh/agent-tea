@@ -25,6 +25,20 @@ const STEP_MAX_ITERATIONS = 10;
 export class PlanAndExecuteAgent extends BaseAgent {
     private readonly planStore: PlanStore;
 
+    /** 注入到规划阶段的格式指令，引导 LLM 输出结构化的编号步骤列表 */
+    private readonly PLAN_FORMAT_INSTRUCTION = `[计划格式要求]
+你的计划必须使用编号列表格式，每一步是一个具体可执行的动作。
+格式示例：
+1. [具体动作] — [目的或预期结果]
+2. [具体动作] — [目的或预期结果]
+3. [具体动作] — [目的或预期结果]
+
+要求：
+- 每步只包含一个明确的操作，避免在一步中放多个动作
+- 描述要具体，包含操作对象（服务名、文件名等）
+- 不要写解释性段落，只写步骤列表
+- 步骤总数控制在 3-10 步`;
+
     constructor(config: AgentConfig) {
         super(config);
         this.planStore = new PlanStore(config.planStoreDir);
@@ -102,6 +116,9 @@ export class PlanAndExecuteAgent extends BaseAgent {
                 agentId: this.agentId,
             };
         }
+
+        // 注入计划格式指令，确保 LLM 输出结构化的步骤列表
+        messages.push({ role: 'user', content: this.PLAN_FORMAT_INSTRUCTION });
 
         // 运行规划循环，获取计划文本
         const planText = yield* this.runPlanningLoop(messages, sessionId, abortController);

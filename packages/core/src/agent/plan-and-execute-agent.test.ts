@@ -661,6 +661,90 @@ describe('PlanAndExecuteAgent', () => {
         }
     });
 
+    // ============================================================
+    // Plan 解析单元测试
+    // ============================================================
+
+    describe('plan parsing', () => {
+        // 通过子类暴露 private parsePlan 方法进行单元测试
+        class TestablePlanAgent extends PlanAndExecuteAgent {
+            testParsePlan(text: string) {
+                return (this as any).parsePlan(text);
+            }
+        }
+
+        const createTestAgent = () =>
+            new TestablePlanAgent({
+                provider: mockProvider([]),
+                model: 'test',
+            });
+
+        it('should parse numbered list with period', () => {
+            const plan = createTestAgent().testParsePlan(
+                '1. 检查环境配置\n2. 部署 API 服务\n3. 运行健康检查',
+            );
+            expect(plan.steps).toHaveLength(3);
+            expect(plan.steps[0].description).toBe('检查环境配置');
+            expect(plan.steps[2].description).toBe('运行健康检查');
+        });
+
+        it('should parse numbered list with parenthesis', () => {
+            const plan = createTestAgent().testParsePlan('1) First step\n2) Second step');
+            expect(plan.steps).toHaveLength(2);
+        });
+
+        it('should parse bullet list', () => {
+            const plan = createTestAgent().testParsePlan('- Step A\n- Step B\n- Step C');
+            expect(plan.steps).toHaveLength(3);
+        });
+
+        it('should ignore non-step lines (headings, blank lines, descriptions)', () => {
+            const text = [
+                '## 部署计划',
+                '',
+                '以下是具体步骤：',
+                '',
+                '1. 检查服务状态',
+                '2. 备份数据库',
+                '3. 执行部署',
+                '',
+                '请确认后执行。',
+            ].join('\n');
+
+            const plan = createTestAgent().testParsePlan(text);
+            expect(plan.steps).toHaveLength(3);
+            expect(plan.steps[0].description).toBe('检查服务状态');
+        });
+
+        it('should extract steps from ```plan code block', () => {
+            const text = [
+                '根据分析，制定以下计划：',
+                '',
+                '```plan',
+                '1. 更新配置文件',
+                '2. 重启服务',
+                '3. 验证接口',
+                '```',
+                '',
+                '以上就是计划。',
+            ].join('\n');
+
+            const plan = createTestAgent().testParsePlan(text);
+            expect(plan.steps).toHaveLength(3);
+        });
+
+        it('should treat unstructured text as single step', () => {
+            const plan = createTestAgent().testParsePlan('直接执行部署操作即可');
+            expect(plan.steps).toHaveLength(1);
+            expect(plan.steps[0].description).toBe('直接执行部署操作即可');
+        });
+
+        it('all steps should have pending status', () => {
+            const plan = createTestAgent().testParsePlan('1. A\n2. B');
+            expect(plan.steps.every((s: any) => s.status === 'pending')).toBe(true);
+        });
+    });
+
     it('saves plan to temp directory via PlanStore', async () => {
         const tmpDir = await createTmpDir();
 
