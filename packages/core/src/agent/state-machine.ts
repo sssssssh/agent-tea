@@ -49,7 +49,7 @@ export class AgentStateMachine {
         }
     }
 
-    /** 重置状态机到初始 idle 状态（用于复用同一 Agent 实例的场景） */
+    /** 重置状态机到初始 idle 状态（用于复用同一 Agent 实例的场景）。不触发 transition listener。 */
     reset(): void {
         this.state = 'idle';
     }
