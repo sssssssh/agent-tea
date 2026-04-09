@@ -35,6 +35,8 @@ export function createEventCollector(
     let snapshot = initialHistory
         ? { ...createInitialSnapshot(), history: initialHistory }
         : createInitialSnapshot();
+    // 递增 ID 生成器，用于为 HistoryItem 分配稳定的 React key
+    let nextId = initialHistory ? initialHistory.length : 0;
     const pendingToolCalls = new Map<
         string,
         { name: string; args: Record<string, unknown>; startTime: number }
@@ -53,7 +55,12 @@ export function createEventCollector(
                 ...snapshot,
                 history: [
                     ...snapshot.history,
-                    { type: 'message', role: 'assistant', content: snapshot.streaming },
+                    {
+                        type: 'message',
+                        id: nextId++,
+                        role: 'assistant',
+                        content: snapshot.streaming,
+                    },
                 ],
                 streaming: null,
             };
@@ -79,7 +86,12 @@ export function createEventCollector(
                         ...snapshot,
                         history: [
                             ...snapshot.history,
-                            { type: 'message', role: 'user', content: event.content },
+                            {
+                                type: 'message',
+                                id: nextId++,
+                                role: 'user',
+                                content: event.content,
+                            },
                         ],
                     };
                 }
@@ -101,6 +113,7 @@ export function createEventCollector(
                 const durationMs = pending ? Date.now() - pending.startTime : 0;
                 const toolCall: ToolCallItem = {
                     type: 'tool_call',
+                    id: nextId++,
                     requestId: event.requestId,
                     name: event.toolName,
                     args: pending?.args ?? {},
@@ -143,7 +156,12 @@ export function createEventCollector(
                     error: event.fatal ? event.message : snapshot.error,
                     history: [
                         ...snapshot.history,
-                        { type: 'error', message: event.message, fatal: event.fatal },
+                        {
+                            type: 'error',
+                            id: nextId++,
+                            message: event.message,
+                            fatal: event.fatal,
+                        },
                     ],
                 };
                 break;
@@ -152,7 +170,10 @@ export function createEventCollector(
                 flushStreaming();
                 snapshot = {
                     ...snapshot,
-                    history: [...snapshot.history, { type: 'plan', steps: [...event.plan.steps] }],
+                    history: [
+                        ...snapshot.history,
+                        { type: 'plan', id: nextId++, steps: [...event.plan.steps] },
+                    ],
                 };
                 break;
 

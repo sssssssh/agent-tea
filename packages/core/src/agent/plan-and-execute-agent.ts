@@ -613,13 +613,29 @@ export class PlanAndExecuteAgent extends BaseAgent {
             }
         }
 
-        // 没找到结构化步骤，整段文本作为单步
+        // 没找到结构化步骤，尝试按句号+换行分拆
         if (steps.length === 0) {
-            steps.push({
-                index: 0,
-                description: content,
-                status: 'pending',
-            });
+            const sentences = content
+                .split(/(?<=[。.!！?？])\s*\n+/)
+                .map((s) => s.trim())
+                .filter((s) => s.length > 0);
+
+            if (sentences.length > 1) {
+                for (const sentence of sentences) {
+                    steps.push({
+                        index: steps.length,
+                        description: sentence,
+                        status: 'pending',
+                    });
+                }
+            } else {
+                // 仍然只有一段，作为单步计划（可能是 LLM 未按格式输出）
+                steps.push({
+                    index: 0,
+                    description: content,
+                    status: 'pending',
+                });
+            }
         }
 
         return {

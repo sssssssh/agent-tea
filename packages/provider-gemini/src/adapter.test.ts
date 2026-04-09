@@ -97,6 +97,38 @@ describe('toGeminiContents', () => {
         expect(result[2].role).toBe('user');
         expect(result[3].role).toBe('model');
     });
+
+    it('extracts tool name from preceding assistant message for functionResponse', () => {
+        const messages: Message[] = [
+            {
+                role: 'assistant',
+                content: [
+                    {
+                        type: 'tool_call',
+                        toolCallId: 'fc1',
+                        toolName: 'search',
+                        args: { query: 'test' },
+                    },
+                ],
+            },
+            {
+                role: 'tool',
+                content: [{ type: 'tool_result', toolCallId: 'fc1', content: 'found it' }],
+            },
+        ];
+        const result = toGeminiContents(messages);
+        const toolResponsePart = result[1].parts![0] as any;
+        expect(toolResponsePart.functionResponse.name).toBe('search');
+        expect(toolResponsePart.functionResponse.id).toBe('fc1');
+    });
+
+    it('preserves empty assistant messages (no parts skipping)', () => {
+        const messages: Message[] = [{ role: 'assistant', content: [] }];
+        const result = toGeminiContents(messages);
+        expect(result).toHaveLength(1);
+        expect(result[0].role).toBe('model');
+        expect(result[0].parts).toEqual([]);
+    });
 });
 
 describe('toGeminiTools', () => {

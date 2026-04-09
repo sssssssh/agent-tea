@@ -57,17 +57,29 @@ export function toGeminiContents(messages: Message[]): Content[] {
                     }
                 }
 
-                if (parts.length > 0) {
-                    result.push({ role: 'model', parts });
-                }
+                // 始终保留 assistant 消息，即使 parts 为空
+                // 跳过空消息会破坏对话历史连续性，与 OpenAI adapter 行为一致
+                result.push({ role: 'model', parts });
                 break;
             }
 
             case 'tool': {
                 // Gemini 的工具结果放在 user Content 的 functionResponse parts 中
+                // 需要从前面的 assistant 消息中提取工具名，因为 Gemini 需要 name 匹配
+                const toolNameMap = new Map<string, string>();
+                for (const prev of messages) {
+                    if (prev.role === 'assistant') {
+                        for (const p of prev.content) {
+                            if (p.type === 'tool_call') {
+                                toolNameMap.set(p.toolCallId, p.toolName);
+                            }
+                        }
+                    }
+                }
+
                 const parts: Part[] = msg.content.map((part) => ({
                     functionResponse: {
-                        name: '', // Gemini SDK 会从原始调用中自动匹配 name
+                        name: toolNameMap.get(part.toolCallId) ?? '',
                         id: part.toolCallId,
                         response: { result: part.content },
                     },

@@ -62,7 +62,14 @@ export function useAgentEvents(
                 }
             });
 
-            collector.start();
+            collector.start().catch((error) => {
+                // 将未捕获的错误通过 snapshot 暴露给 UI 层
+                setSnapshot((prev) => ({
+                    ...prev,
+                    status: 'error',
+                    error: error instanceof Error ? error.message : String(error),
+                }));
+            });
         },
         [agent],
     );
@@ -75,6 +82,7 @@ export function useAgentEvents(
         if (initialQuery !== null) {
             run(initialQuery);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- 仅在挂载时触发一次
     }, []);
 
     return { snapshot, run, abort };

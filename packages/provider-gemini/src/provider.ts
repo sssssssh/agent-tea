@@ -74,12 +74,23 @@ class GeminiChatSession implements ChatSession {
 
             let finishReason: FinishReason = 'stop';
             let hasToolCalls = false;
-
+            // 追踪最后一个 usageMetadata，用于在流结束后始终 yield finish 事件
+            let lastUsageMetadata: {
+                promptTokenCount?: number;
+                candidatesTokenCount?: number;
+                totalTokenCount?: number;
+            } | null = null;
             for await (const chunk of response) {
                 if (signal?.aborted) break;
 
                 const candidate = chunk.candidates?.[0];
-                if (!candidate?.content?.parts) continue;
+                if (!candidate?.content?.parts) {
+                    // 即使没有 parts，也可能有 usageMetadata（如最终 chunk）
+                    if (chunk.usageMetadata) {
+                        lastUsageMetadata = chunk.usageMetadata;
+                    }
+                    continue;
+                }
 
                 for (const part of candidate.content.parts) {
                     if (part.text) {
@@ -113,17 +124,22 @@ class GeminiChatSession implements ChatSession {
                 }
 
                 if (chunk.usageMetadata) {
-                    yield {
-                        type: 'finish',
-                        reason: finishReason,
-                        usage: {
-                            inputTokens: chunk.usageMetadata.promptTokenCount,
-                            outputTokens: chunk.usageMetadata.candidatesTokenCount,
-                            totalTokens: chunk.usageMetadata.totalTokenCount,
-                        },
-                    };
+                    lastUsageMetadata = chunk.usageMetadata;
                 }
             }
+
+            // 始终 yield finish 事件，确保 Agent 循环不会卡死
+            yield {
+                type: 'finish',
+                reason: finishReason,
+                usage: lastUsageMetadata
+                    ? {
+                          inputTokens: lastUsageMetadata.promptTokenCount,
+                          outputTokens: lastUsageMetadata.candidatesTokenCount,
+                          totalTokens: lastUsageMetadata.totalTokenCount,
+                      }
+                    : undefined,
+            };
         } catch (error) {
             if (error instanceof Error) {
                 yield { type: 'error', error };

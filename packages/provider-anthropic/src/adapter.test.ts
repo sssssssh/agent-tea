@@ -102,6 +102,14 @@ describe('toAnthropicMessages', () => {
             },
         ]);
     });
+
+    it('preserves empty assistant messages (no blocks skipping)', () => {
+        const messages: Message[] = [{ role: 'assistant', content: [] }];
+        const result = toAnthropicMessages(messages);
+        expect(result).toHaveLength(1);
+        expect(result[0].role).toBe('assistant');
+        expect(result[0].content).toEqual([]);
+    });
 });
 
 describe('toAnthropicTools', () => {

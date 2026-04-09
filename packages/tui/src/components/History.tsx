@@ -13,18 +13,18 @@ export function History({ items, streaming }: HistoryProps) {
 
     return (
         <Box flexDirection="column">
-            {items.map((item, i) => {
+            {items.map((item) => {
                 switch (item.type) {
                     case 'message':
                         return item.role === 'user' ? (
-                            <components.userMessage key={i} content={item.content} />
+                            <components.userMessage key={item.id} content={item.content} />
                         ) : (
-                            <components.agentMessage key={i} content={item.content} />
+                            <components.agentMessage key={item.id} content={item.content} />
                         );
                     case 'tool_call':
                         return (
                             <components.toolCallCard
-                                key={i}
+                                key={item.id}
                                 requestId={item.requestId}
                                 name={item.name}
                                 args={item.args}
@@ -34,11 +34,11 @@ export function History({ items, streaming }: HistoryProps) {
                             />
                         );
                     case 'plan':
-                        return <components.planView key={i} steps={item.steps} />;
+                        return <components.planView key={item.id} steps={item.steps} />;
                     case 'error':
                         return (
                             <components.errorMessage
-                                key={i}
+                                key={item.id}
                                 message={item.message}
                                 fatal={item.fatal}
                             />

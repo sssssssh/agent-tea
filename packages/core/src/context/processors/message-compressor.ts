@@ -25,19 +25,32 @@ export interface MessageCompressorConfig {
     protectedTurns?: number;
 }
 
+/**
+ * @experimental 当前为占位实现，不会实际压缩消息。
+ * 完整的 LLM 摘要功能需要异步接口支持（AsyncContextProcessor），留待后续版本实现。
+ * 配置此处理器不会产生副作用，但也不会获得压缩收益。
+ */
 export class MessageCompressor implements ContextProcessor {
     readonly name = 'message_compressor';
+    private warned = false;
 
     constructor(private config: MessageCompressorConfig) {}
 
     /**
      * 当前为占位实现，直接返回原始消息。
      * 完整的 LLM 摘要功能需要异步接口支持，留待后续版本实现。
+     *
+     * @experimental
      */
     process(messages: Message[], _budget: TokenBudget): Message[] {
-        // 占位实现：不做实际压缩
-        // 未来异步版本将在消息数超过 triggerThreshold 时，
-        // 对受保护区域外的早期消息调用 summarize 生成摘要
+        // 首次调用时发出警告，避免用户误以为压缩已生效
+        if (!this.warned) {
+            console.warn(
+                '[agent-tea] MessageCompressor 当前为占位实现，不会实际压缩消息。' +
+                    '完整实现需要异步接口支持，请关注后续版本更新。',
+            );
+            this.warned = true;
+        }
         return messages;
     }
 }

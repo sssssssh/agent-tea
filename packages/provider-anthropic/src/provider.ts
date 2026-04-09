@@ -88,6 +88,8 @@ class AnthropicChatSession implements ChatSession {
                 { id: string; name: string; inputJson: string }
             >();
             let blockIndex = 0;
+            // 累积 input tokens（来自 message_start），用于合并到 finish 事件
+            let inputTokens: number | undefined;
 
             for await (const event of stream) {
                 switch (event.type) {
@@ -147,24 +149,31 @@ class AnthropicChatSession implements ChatSession {
                     // 消息级别的结束事件，包含 stop_reason 和 output token 用量
                     case 'message_delta': {
                         const stopReason = event.delta.stop_reason;
+                        const outputTokens = event.usage?.output_tokens;
                         yield {
                             type: 'finish',
                             // Anthropic 用 'tool_use' 表示需要调用工具，映射为框架的 'tool_calls'
                             reason: stopReason === 'tool_use' ? 'tool_calls' : 'stop',
-                            usage: event.usage
-                                ? {
-                                      outputTokens: event.usage.output_tokens,
-                                  }
-                                : undefined,
+                            usage:
+                                inputTokens !== undefined || outputTokens !== undefined
+                                    ? {
+                                          inputTokens,
+                                          outputTokens,
+                                          totalTokens:
+                                              inputTokens !== undefined ||
+                                              outputTokens !== undefined
+                                                  ? (inputTokens ?? 0) + (outputTokens ?? 0)
+                                                  : undefined,
+                                      }
+                                    : undefined,
                         };
                         break;
                     }
 
                     case 'message_start': {
-                        // message_start 中包含 input token 用量
-                        // 当前简化处理，未合并到 finish 事件中（后续可优化）
+                        // message_start 中包含 input token 用量，累积到变量中
                         if (event.message.usage) {
-                            // TODO: 将 input tokens 合并到最终的 usage 统计中
+                            inputTokens = event.message.usage.input_tokens;
                         }
                         break;
                     }

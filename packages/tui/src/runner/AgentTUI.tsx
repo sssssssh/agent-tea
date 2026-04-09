@@ -74,18 +74,26 @@ export function AgentTUI({
     // 自定义审批处理
     React.useEffect(() => {
         if (snapshot.pendingApproval && onApproval) {
-            onApproval(snapshot.pendingApproval).then((decision) => {
-                agent.resolveApproval(snapshot.pendingApproval!.requestId, decision);
-            });
+            onApproval(snapshot.pendingApproval)
+                .then((decision) => {
+                    agent.resolveApproval(snapshot.pendingApproval!.requestId, decision);
+                })
+                .catch(() => {
+                    // 审批处理失败时自动拒绝
+                    agent.resolveApproval(snapshot.pendingApproval!.requestId, {
+                        approved: false,
+                        reason: 'Approval handler failed',
+                    });
+                });
         }
-    }, [snapshot.pendingApproval]);
+    }, [snapshot.pendingApproval, onApproval, agent]);
 
     // 完成回调
     React.useEffect(() => {
         if (snapshot.status === 'completed' && onComplete) {
             onComplete(snapshot);
         }
-    }, [snapshot.status]);
+    }, [snapshot.status, onComplete, snapshot]);
 
     const approvalElement = snapshot.pendingApproval ? (
         <mergedComponents.approvalDialog

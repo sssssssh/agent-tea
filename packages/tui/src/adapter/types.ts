@@ -1,16 +1,18 @@
 import type { PlanStep, ApprovalRequestEvent } from '@agent-tea/sdk';
 
-/** 历史条目——已完成的事件 */
+/** 历史条目——已完成的事件，每条都有唯一 id 用于 React key */
 export type HistoryItem = MessageItem | ToolCallItem | PlanItem | ErrorItem;
 
 export interface MessageItem {
     type: 'message';
+    id: number;
     role: 'user' | 'assistant';
     content: string;
 }
 
 export interface ToolCallItem {
     type: 'tool_call';
+    id: number;
     requestId: string;
     name: string;
     args: Record<string, unknown>;
@@ -21,11 +23,13 @@ export interface ToolCallItem {
 
 export interface PlanItem {
     type: 'plan';
+    id: number;
     steps: PlanStep[];
 }
 
 export interface ErrorItem {
     type: 'error';
+    id: number;
     message: string;
     fatal: boolean;
 }

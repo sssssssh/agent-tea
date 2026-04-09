@@ -56,9 +56,9 @@ export function toAnthropicMessages(messages: Message[]): AnthropicMessage[] {
                     }
                 }
 
-                if (blocks.length > 0) {
-                    result.push({ role: 'assistant', content: blocks });
-                }
+                // 始终保留 assistant 消息，即使 content blocks 为空
+                // 跳过空 assistant 消息会破坏对话历史连续性
+                result.push({ role: 'assistant', content: blocks });
                 break;
             }
 

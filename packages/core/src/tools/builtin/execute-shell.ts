@@ -37,9 +37,22 @@ export const executeShell = tool(
                     signal: context.signal,
                 },
                 (error, stdout, stderr) => {
-                    const exitCode = error
-                        ? (((error as NodeJS.ErrnoException).code as unknown as number) ?? 1)
-                        : 0;
+                    // 安全提取退出码：优先用 exec 回调的标准 error 属性
+                    let exitCode = 0;
+                    if (error) {
+                        // exec 的 error 对象有 code (退出码数字) 或 killed/signal 等属性
+                        // 注意 NodeJS.ErrnoException.code 是 string (如 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER')
+                        // 而 ExecException 额外有 number 类型的退出码在 error.code 中（但类型定义不准确）
+                        const status = (error as { status?: number }).status;
+                        const code = (error as { code?: string | number }).code;
+                        if (typeof status === 'number') {
+                            exitCode = status;
+                        } else if (typeof code === 'number') {
+                            exitCode = code;
+                        } else {
+                            exitCode = 1;
+                        }
+                    }
 
                     // 截断超长输出
                     const truncate = (s: string) => {

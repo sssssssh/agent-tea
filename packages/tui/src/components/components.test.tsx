@@ -175,8 +175,8 @@ describe('ErrorMessage', () => {
 describe('History', () => {
     it('should render message items', () => {
         const items: HistoryItem[] = [
-            { type: 'message', role: 'user', content: '你好' },
-            { type: 'message', role: 'assistant', content: '你好！有什么可以帮你？' },
+            { type: 'message', id: 0, role: 'user', content: '你好' },
+            { type: 'message', id: 1, role: 'assistant', content: '你好！有什么可以帮你？' },
         ];
         const { lastFrame } = renderWithComponents(<History items={items} />);
         expect(lastFrame()).toContain('你好');
@@ -187,6 +187,7 @@ describe('History', () => {
         const items: HistoryItem[] = [
             {
                 type: 'tool_call',
+                id: 0,
                 requestId: 'r1',
                 name: 'readFile',
                 args: { path: 'a.ts' },
@@ -209,7 +210,9 @@ describe('History', () => {
     });
 
     it('should render error items', () => {
-        const items: HistoryItem[] = [{ type: 'error', message: 'API rate limit', fatal: true }];
+        const items: HistoryItem[] = [
+            { type: 'error', id: 0, message: 'API rate limit', fatal: true },
+        ];
         const { lastFrame } = renderWithComponents(<History items={items} />);
         expect(lastFrame()).toContain('API rate limit');
     });

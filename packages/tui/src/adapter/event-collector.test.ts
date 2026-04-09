@@ -18,11 +18,12 @@ describe('createEventCollector', () => {
 
         expect(snapshot.status).toBe('completed');
         expect(snapshot.history).toHaveLength(1);
-        expect(snapshot.history[0]).toEqual({
+        expect(snapshot.history[0]).toMatchObject({
             type: 'message',
             role: 'assistant',
             content: '你好',
         });
+        expect(snapshot.history[0].id).toBeTypeOf('number');
         expect(snapshot.usage).toEqual({ inputTokens: 10, outputTokens: 5 });
     });
 
@@ -77,11 +78,12 @@ describe('createEventCollector', () => {
         expect(snapshot.status).toBe('error');
         expect(snapshot.error).toBe('something broke');
         expect(snapshot.history).toHaveLength(1);
-        expect(snapshot.history[0]).toEqual({
+        expect(snapshot.history[0]).toMatchObject({
             type: 'error',
             message: 'something broke',
             fatal: true,
         });
+        expect(snapshot.history[0].id).toBeTypeOf('number');
     });
 
     it('should handle plan events', async () => {
@@ -145,7 +147,7 @@ describe('createEventCollector', () => {
         // tool_request 事件触发 flushStreaming，文本转入 history
         const afterToolReq = snapshots[2];
         expect(afterToolReq.streaming).toBeNull();
-        expect(afterToolReq.history[0]).toEqual({
+        expect(afterToolReq.history[0]).toMatchObject({
             type: 'message',
             role: 'assistant',
             content: '正在思考',

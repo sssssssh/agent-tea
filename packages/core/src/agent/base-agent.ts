@@ -312,22 +312,14 @@ export abstract class BaseAgent {
                 this.config.llmTimeout?.streamStallMs ?? DEFAULT_LLM_STREAM_STALL_TIMEOUT,
         };
 
-        // 根据超时 phase 选择不同的重试策略
-        const retryOptions = {
-            ...CONNECTION_RETRY_OPTIONS,
+        // 共用的重试判断
+        const baseRetryOptions = {
             signal,
             isRetryable: (error: unknown) => error instanceof TimeoutError,
-            onRetry: (_attempt: number, error: unknown, _delayMs: number) => {
-                // 流中超时用更快的重试策略
-                if (error instanceof TimeoutError && error.phase === 'llm_stream') {
-                    retryOptions.maxAttempts = STREAM_STALL_RETRY_OPTIONS.maxAttempts;
-                    retryOptions.initialDelayMs = STREAM_STALL_RETRY_OPTIONS.initialDelayMs;
-                    retryOptions.maxDelayMs = STREAM_STALL_RETRY_OPTIONS.maxDelayMs;
-                }
-            },
         };
 
-        return retryWithBackoff(async () => {
+        // 将单次 LLM 调用封装为可重试的函数
+        const doCollect = async () => {
             let text = '';
             const toolCalls: ToolCallInfo[] = [];
             let usage:
@@ -354,7 +346,23 @@ export abstract class BaseAgent {
             }
 
             return { text, toolCalls, usage };
-        }, retryOptions);
+        };
+
+        // 两阶段重试：先用连接超时策略，若失败且为流停滞则切换到更快的流停滞策略
+        try {
+            return await retryWithBackoff(doCollect, {
+                ...CONNECTION_RETRY_OPTIONS,
+                ...baseRetryOptions,
+            });
+        } catch (error) {
+            if (error instanceof TimeoutError && error.phase === 'llm_stream') {
+                return await retryWithBackoff(doCollect, {
+                    ...STREAM_STALL_RETRY_OPTIONS,
+                    ...baseRetryOptions,
+                });
+            }
+            throw error;
+        }
     }
 
     /**
