@@ -7,7 +7,7 @@ const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 // 研究子 Agent
 const researchAgent = new Agent({
     provider,
-    model: 'gpt-4o-mini',
+    model: process.env.MODEL || 'gpt-4o-mini',
     systemPrompt: '你是一个研究助手，简洁回答问题。',
 });
 
@@ -20,7 +20,7 @@ const researchTool = subAgent({
 // 主 Agent
 const agent = new Agent({
     provider,
-    model: 'gpt-4o-mini',
+    model: process.env.MODEL || 'gpt-4o-mini',
     tools: [researchTool],
     systemPrompt: '你是项目经理，遇到需要研究的问题就委派给 research 工具。',
 });

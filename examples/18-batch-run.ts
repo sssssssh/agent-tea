@@ -19,7 +19,7 @@ const calcTool = tool({
 
 const agent = new Agent({
     provider,
-    model: 'gpt-4o-mini',
+    model: process.env.MODEL || 'gpt-4o-mini',
     tools: [calcTool],
     systemPrompt: '你是一个数学助手，用 calculate 工具计算后回答。',
 });

@@ -8,7 +8,7 @@ const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
 
 const agent = new PlanAndExecuteAgent({
     provider,
-    model: 'gpt-4o',
+    model: process.env.MODEL || 'gpt-4o',
     tools: [readFile, listDirectory, grep],
     systemPrompt: '你是一个代码分析专家。先制定计划，再逐步执行。',
     onPlanCreated: async (plan) => {

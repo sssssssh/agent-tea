@@ -36,12 +36,12 @@
  * 运行：pnpm example:16
  */
 
-import { Agent, discover } from '@agent-tea/sdk';
-import { OpenAIProvider } from '@agent-tea/provider-openai';
+import { Agent, discover } from '../packages/sdk/src/index.js';
+import { OpenAIProvider } from '../packages/provider-openai/src/index.js';
 
 async function main() {
     const provider = new OpenAIProvider({ apiKey: process.env.OPENAI_API_KEY! });
-    const model = 'gpt-4o-mini';
+    const model = process.env.MODEL || 'gpt-4o-mini';
 
     // 自动发现所有 Skill 和 Agent
     console.log('--- 扫描 ~/.agent-tea/ 和 .agent-tea/ ---\n');

@@ -38,7 +38,7 @@ function DualPanelLayout({ history, statusBar, composer, approval }: LayoutProps
 
 const agent = new Agent({
     provider,
-    model: 'gpt-4o-mini',
+    model: process.env.MODEL || 'gpt-4o-mini',
     tools: [readFile, listDirectory],
     systemPrompt: '你是一个代码分析助手。',
 });

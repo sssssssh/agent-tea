@@ -33,14 +33,32 @@
         "example:21": "node --env-file=.env --import tsx examples/21-tui-custom-components.tsx",
         "example:22": "node --env-file=.env --import tsx examples/22-tui-custom-layout.tsx",
         "example:23": "node --env-file=.env --import tsx examples/23-tui-plan-execute.tsx",
+        "lint": "eslint packages/",
+        "lint:fix": "eslint packages/ --fix",
         "format": "prettier --write .",
         "format:check": "prettier --check .",
-        "publish:all": "pnpm build && pnpm -r publish --no-git-checks"
+        "publish:all": "pnpm build && pnpm -r publish --no-git-checks",
+        "prepare": "husky"
     },
     "devDependencies": {
+        "@eslint/js": "^10.0.1",
         "@types/node": "^25.5.2",
+        "eslint": "^10.2.0",
+        "eslint-config-prettier": "^10.1.8",
+        "husky": "^9.1.7",
+        "lint-staged": "^16.4.0",
         "prettier": "^3.8.1",
         "tsx": "^4.21.0",
+        "typescript-eslint": "^8.58.1",
         "vitest": "^3.2.0"
+    },
+    "lint-staged": {
+        "*.{ts,tsx}": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{js,json,md}": [
+            "prettier --write"
+        ]
     }
 }

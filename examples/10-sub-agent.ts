@@ -259,6 +259,7 @@ const coder = subAgent({
 const manager = new Agent({
     provider,
     model,
+    toolTimeout: 120_000, // 子 Agent 需要多轮 LLM 调用，给足超时时间
     tools: [researcher, coder],
     systemPrompt: `你是一个项目经理。当用户提出需求时，你负责:
 1. 分析需求，拆解为研究和编码两类子任务
